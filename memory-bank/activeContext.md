@@ -35,4 +35,4 @@ Login → catálogo (4 produtos) → pedido #1001 → status accepted → outbox
 - Spec Kit bash: `.specify/scripts/bash/` (script `sh` em init-options)
 - MCP Cloudflare (bindings/builds/observability): autenticados
 - MCP GitLab: pendente auth manual no Cursor Settings
-- Git remote GitHub: aguardando URL do usuário
+- Git remote GitHub: https://github.com/Kadu207/inova-gastro-360 (push master OK)

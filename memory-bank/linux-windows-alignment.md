@@ -52,9 +52,9 @@ Legenda: ✅ concluído | ⚠️ parcial / ação manual | ❌ pendente
 | # | Item | Status | Notas |
 |---|------|--------|-------|
 | 4.1 | Repositório local (`.git`) | ⚠️ | Existe, sem commits iniciais nesta máquina |
-| 4.2 | `remote.origin` | ❌ | **Informar URL GitLab/GitHub do Windows** |
-| 4.3 | Commit inicial Linux | ❌ | Após definir remote e `.gitignore` |
-| 4.4 | Push para backup | ❌ | `git push -u origin master` (ou branch principal) |
+| 4.2 | `remote.origin` | ✅ | `https://github.com/Kadu207/inova-gastro-360.git` |
+| 4.3 | Commit inicial Linux | ✅ | `chore: baseline Inova Gastro 360 no Linux Debian 13` |
+| 4.4 | Push para backup | ✅ | Branch `master` → `origin/master` |
 
 **Comandos (após URL do remote):**
 ```bash
