@@ -8,6 +8,8 @@ O pipeline de CI **não exige secrets** — roda `npm ci`, lint, typecheck, test
 
 Dispara em push/PR para: `master`, `main`, `develop`.
 
+**Status check:** `pipeline` (CI verde em 2026-06-16).
+
 ## Deploy (`deploy.yml`)
 
 Deploy **manual** (Actions → Deploy — Cloudflare Workers → Run workflow).
