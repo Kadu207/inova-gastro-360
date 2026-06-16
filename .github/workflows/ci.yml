@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # Prisma config exige DATABASE_URL; generate não conecta ao banco real
+  DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/inova_gastro_ci?schema=public
+
 jobs:
   pipeline:
     runs-on: ubuntu-latest
