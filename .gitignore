@@ -40,3 +40,12 @@ packages/database/prisma/migrations/**/migration_lock.toml
 
 # Temp
 docx_extract.txt
+
+# Screenshots e docs legados (manter só em disco local)
+/*.PNG
+/*.png
+/*.docx
+/*.pdf
+
+# TypeScript build info
+*.tsbuildinfo
