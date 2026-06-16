@@ -1,0 +1,19 @@
+{
+  "name": "@inova-gastro-360/integrations",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev --port 8791 --inspector-port 9233 --local",
+    "build": "wrangler deploy --dry-run",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "4.20250613.0",
+    "typescript": "5.8.3",
+    "vitest": "3.2.4",
+    "wrangler": "4.20.0"
+  }
+}

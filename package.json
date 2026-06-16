@@ -1,0 +1,47 @@
+{
+  "name": "inova-gastro-360",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "npm@10.9.2",
+  "description": "Inova Gastro 360 — SaaS para hamburgueria, delivery e gestão operacional",
+  "workspaces": [
+    "apps/*",
+    "apps/workers/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "clean:web": "node scripts/clean-web.mjs",
+    "dev:web": "npm run dev -w @inova-gastro-360/web",
+    "dev:web:fresh": "node scripts/clean-web.mjs && npm run dev -w @inova-gastro-360/web",
+    "dev:api": "npm run dev -w @inova-gastro-360/api-gateway",
+    "dev:msg": "npm run dev -w @inova-gastro-360/messaging-bus",
+    "dev:rt": "npm run dev -w @inova-gastro-360/realtime-hub",
+    "dev:integrations": "npm run dev -w @inova-gastro-360/integrations",
+    "dev:stack": "node scripts/clean-web.mjs && concurrently -n web,api,msg,rt,int -c blue,green,yellow,magenta,cyan \"npm run dev:web\" \"npm run dev:api\" \"npm run dev:msg\" \"npm run dev:rt\" \"npm run dev:integrations\"",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:unit": "turbo run test --filter=!@inova-gastro-360/web",
+    "db:generate": "npm run generate -w @inova-gastro-360/database",
+    "db:migrate": "npm run migrate:deploy -w @inova-gastro-360/database",
+    "db:migrate:dev": "npm run migrate -w @inova-gastro-360/database",
+    "db:seed": "npm run seed -w @inova-gastro-360/database",
+    "deploy:workers": "npm run deploy -w @inova-gastro-360/messaging-bus && npm run deploy -w @inova-gastro-360/realtime-hub && npm run deploy -w @inova-gastro-360/integrations && npm run deploy -w @inova-gastro-360/api-gateway",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\""
+  },
+  "devDependencies": {
+    "concurrently": "9.1.2",
+    "prettier": "3.5.3",
+    "prisma": "^7.8.0",
+    "turbo": "2.5.4",
+    "typescript": "5.8.3"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.8.0"
+  }
+}

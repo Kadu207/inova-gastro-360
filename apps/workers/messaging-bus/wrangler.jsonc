@@ -1,0 +1,42 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "inova-gastro-360-messaging-bus",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-06-14",
+  "compatibility_flags": ["nodejs_compat"],
+  "dev": {
+    "port": 8789
+  },
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "ENVIRONMENT": "development"
+  },
+  "services": [
+    {
+      "binding": "REALTIME_SERVICE",
+      "service": "inova-gastro-360-realtime-hub"
+    },
+    {
+      "binding": "INTEGRATIONS_SERVICE",
+      "service": "inova-gastro-360-integrations"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "ORDERS_QUEUE",
+        "queue": "inova-gastro-orders-events"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "inova-gastro-orders-events",
+        "max_batch_size": 10,
+        "max_retries": 3,
+        "dead_letter_queue": "inova-gastro-orders-dlq"
+      }
+    ]
+  }
+}

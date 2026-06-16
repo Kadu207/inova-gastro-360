@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: inova-gastro-360-postgres
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5440:5432"
+    environment:
+      POSTGRES_DB: inova_gastro_360
+      POSTGRES_USER: inova_gastro
+      POSTGRES_PASSWORD: inova_gastro_dev
+    volumes:
+      - inova_gastro_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inova_gastro -d inova_gastro_360"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: inova-gastro-360-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6390:6379"
+    volumes:
+      - inova_gastro_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  inova_gastro_pg_data:
+  inova_gastro_redis_data:

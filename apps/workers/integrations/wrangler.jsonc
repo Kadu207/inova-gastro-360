@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "inova-gastro-360-integrations",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-06-14",
+  "compatibility_flags": ["nodejs_compat"],
+  "dev": {
+    "port": 8791
+  },
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "ENVIRONMENT": "development"
+  }
+}

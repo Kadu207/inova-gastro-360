@@ -1,0 +1,96 @@
+import { healthHandler, jsonResponse } from "./lib";
+import { handleLogin, handleMe } from "./routes/auth";
+import { handleCatalogCategories, handleCatalogProducts } from "./routes/catalog";
+import {
+  handleCreateOrder,
+  handleListOrders,
+  handleUpdateOrderStatus,
+  handleGetOrder,
+} from "./routes/orders";
+import { requireAuth } from "./middleware/auth";
+
+import type { GatewayEnv } from "./types/env";
+
+export interface Env extends GatewayEnv {}
+
+const CORS_HEADERS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET, POST, PATCH, OPTIONS",
+  "access-control-allow-headers": "Content-Type, Authorization",
+};
+
+function withCors(response: Response): Response {
+  const headers = new Headers(response.headers);
+  for (const [k, v] of Object.entries(CORS_HEADERS)) headers.set(k, v);
+  return new Response(response.body, { status: response.status, headers });
+}
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    if (request.method === "OPTIONS") {
+      return withCors(new Response(null, { status: 204 }));
+    }
+
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    if (path === "/health" || path === "/api/health") {
+      return withCors(healthHandler("api-gateway"));
+    }
+
+    if (path === "/api/v1/status" && request.method === "GET") {
+      return withCors(
+        jsonResponse({
+          app: "Inova Gastro 360",
+          layer: "api-gateway",
+          environment: env.ENVIRONMENT ?? "development",
+          onda: 2,
+        }),
+      );
+    }
+
+    if (path === "/api/v1/auth/login" && request.method === "POST") {
+      return withCors(await handleLogin(request, env));
+    }
+
+    if (path === "/api/v1/auth/me" && request.method === "GET") {
+      return withCors(await handleMe(request, env));
+    }
+
+    const branchMatch = path.match(/^\/api\/v1\/branches\/([^/]+)\/catalog\/(categories|products)$/);
+    if (branchMatch && request.method === "GET") {
+      const branchId = branchMatch[1];
+      const type = branchMatch[2];
+      if (type === "categories") return withCors(await handleCatalogCategories(request, env, branchId));
+      return withCors(await handleCatalogProducts(request, env, branchId));
+    }
+
+    if (path === "/api/v1/orders" && request.method === "GET") {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      return withCors(await handleListOrders(request, env, auth.user));
+    }
+
+    if (path === "/api/v1/orders" && request.method === "POST") {
+      const auth = await requireAuth(request, env);
+      const user = auth.ok ? auth.user : undefined;
+      return withCors(await handleCreateOrder(request, env, user));
+    }
+
+    const orderMatch = path.match(/^\/api\/v1\/orders\/([^/]+)(?:\/status)?$/);
+    if (orderMatch) {
+      const orderId = orderMatch[1];
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+
+      if (path.endsWith("/status") && request.method === "PATCH") {
+        return withCors(await handleUpdateOrderStatus(request, env, auth.user, orderId));
+      }
+      if (request.method === "GET") {
+        return withCors(await handleGetOrder(request, env, auth.user, orderId));
+      }
+    }
+
+    return withCors(jsonResponse({ error: "not_found", path }, 404));
+  },
+};

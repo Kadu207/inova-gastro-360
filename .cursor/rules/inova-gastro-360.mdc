@@ -1,0 +1,37 @@
+---
+description: Regras permanentes do projeto Inova Gastro 360 — sempre aplicar
+globs: "**/*"
+alwaysApply: true
+---
+
+# Inova Gastro 360 — Regras do Projeto
+
+## Identidade
+- Nome: **Inova Gastro 360** (não usar "Inova Food")
+- Domínio: inovagastro360.inovatitech.com.br
+
+## Memória permanente
+No início de cada sessão, ler:
+- `memory-bank/activeContext.md`
+- `AGENTS.md`
+- `.specify/memory/constitution.md`
+
+Ao final, atualizar `memory-bank/activeContext.md` e `progress.md`.
+
+## Portas
+Antes de expor serviços, consultar `PORT_REGISTRY.md`. Portas reservadas do projeto: 3100, 5440, 6390, 5680, 8788-8791, 9100-9101.
+
+## Desenvolvimento
+- SDD + TDD + Spec Kit obrigatórios
+- Specs em `specs/` antes de código de produção
+- Multitenant: sempre `tenant_id` + RLS
+- Event-first: mudanças de estado via filas
+- Workers separados: API, mensageria, realtime, integrações
+
+## Segurança
+- Sem segredos no repositório
+- HTTPS via Cloudflare em produção
+- Validar uploads; rate limit em auth
+
+## Idioma
+Specs, docs e mensagens de usuário em português (pt-BR).
