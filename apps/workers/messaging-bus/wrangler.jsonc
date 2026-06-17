@@ -22,21 +22,8 @@
       "binding": "INTEGRATIONS_SERVICE",
       "service": "inova-gastro-360-integrations"
     }
-  ],
-  "queues": {
-    "producers": [
-      {
-        "binding": "ORDERS_QUEUE",
-        "queue": "inova-gastro-orders-events"
-      }
-    ],
-    "consumers": [
-      {
-        "queue": "inova-gastro-orders-events",
-        "max_batch_size": 10,
-        "max_retries": 3,
-        "dead_letter_queue": "inova-gastro-orders-dlq"
-      }
-    ]
-  }
+  ]
+  // Filas Cloudflare (Workers Paid ~US$5/mês) — adiar para fase 2.
+  // O handler /internal/publish já encaminha direto para rt + integrations.
+  // Ver infra/cloudflare/QUEUES-DEFERRED.md
 }
