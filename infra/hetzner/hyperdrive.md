@@ -153,8 +153,8 @@ npm run deploy:workers
 ## Passo 7 — Validar
 
 ```bash
-curl https://inova-gastro-360-api-gateway.<sua-conta>.workers.dev/health
-curl -X POST https://api.inovagastro360.inovatitech.com.br/api/v1/auth/login \
+curl https://inovagastro360-api.inovatitech.com.br/health
+curl -X POST https://inovagastro360-api.inovatitech.com.br/api/v1/auth/login \
   -H "content-type: application/json" \
   -d "{\"email\":\"admin@inovagastro360.local\",\"password\":\"InovaGastro360!\",\"tenantSlug\":\"demo-burger\"}"
 ```

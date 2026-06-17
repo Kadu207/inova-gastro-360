@@ -69,9 +69,12 @@ npm run deploy -w @inova-gastro-360/api-gateway   # por último (depende dos bin
 
 | Host | Tipo | Destino |
 |------|------|---------|
-| `inovagastro360` | CNAME | Pages project ou tunnel |
-| `api.inovagastro360` | CNAME | `inova-gastro-360-api-gateway.<account>.workers.dev` |
-| `rt.inovagastro360` | CNAME | `inova-gastro-360-realtime-hub.<account>.workers.dev` |
+| `inovagastro360` | CNAME/A | Pages (futuro) — hoje ainda Excellence Dental |
+| `inovagastro360-api` | CNAME/A (proxied) | Worker `inova-gastro-360-api-gateway` |
+| `inovagastro360-rt` | CNAME/A (proxied) | Worker `inova-gastro-360-realtime-hub` |
+
+> **SSL Free:** use hostnames com **um** nível sob `inovatitech.com.br` (`inovagastro360-api.*`).  
+> `api.inovagastro360.*` (dois níveis) não é coberto pelo wildcard Universal SSL.
 
 **Importante:** remover vínculo do domínio com Excellence Dental antes do cutover.
 

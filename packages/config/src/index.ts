@@ -14,8 +14,9 @@ export const PORTS = {
 
 export const DOMAINS = {
   PRODUCTION: "inovagastro360.inovatitech.com.br",
-  API: "api.inovagastro360.inovatitech.com.br",
-  REALTIME: "rt.inovagastro360.inovatitech.com.br",
+  /** Um nível sob inovatitech.com.br — coberto pelo SSL Universal Free */
+  API: "inovagastro360-api.inovatitech.com.br",
+  REALTIME: "inovagastro360-rt.inovatitech.com.br",
 } as const;
 
 /** Onda 1+: escopo de entrega por fase */

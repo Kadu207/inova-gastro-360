@@ -49,5 +49,5 @@
 ## Domínio
 
 - Produção: `https://inovagastro360.inovatitech.com.br`
-- API edge: `api.inovagastro360.inovatitech.com.br` (Worker)
-- Realtime: `rt.inovagastro360.inovatitech.com.br` (Worker + DO)
+- API edge: `inovagastro360-api.inovatitech.com.br` (Worker + Hyperdrive)
+- Realtime: `inovagastro360-rt.inovatitech.com.br` (Worker + DO)

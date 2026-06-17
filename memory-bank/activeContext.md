@@ -6,7 +6,8 @@
 - **Ondas 0–2:** concluídas e validadas E2E
 - **Onda 3:** core entregue (realtime, messaging, print jobs, integrations, LGPD banner)
 - **Onda 4:** financeiro completo adiado (spec 005)
-- **Deploy produção:** PR #2 — deploy Free **sem** Cloudflare Queues (`infra/cloudflare/QUEUES-DEFERRED.md`)
+- **Deploy produção:** Workers + Hyperdrive + DNS (`inovagastro360-api` / `inovagastro360-rt`)
+- **Hyperdrive ID:** `2d88f8f56f0542da84cc76b5f2cb9aee` (VPS `128.140.77.31:5440`)
 - **Conta Cloudflare oficial:** `Carlosedu207@hotmail.com` — Account ID `0252c61a2109e807b883c4d466617ebb`
 
 ## Portas ativas (dev)
