@@ -9,6 +9,7 @@ HYPERDRIVE_CA_CERT_ID=535de0ad-bc23-4a46-b5dd-821ff25d580f
 API_URL=https://inovagastro360-api.inovatitech.com.br
 REALTIME_URL=https://inovagastro360-rt.inovatitech.com.br
 WEB_URL=https://inovagastro360.inovatitech.com.br
+WEB_WORKER=inova-gastro-360-web
 
 # Usuários DB (nomes apenas)
 POSTGRES_APP_USER=inova_gastro

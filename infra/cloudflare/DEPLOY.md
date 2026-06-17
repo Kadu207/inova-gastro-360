@@ -80,24 +80,18 @@ npm run deploy -w @inova-gastro-360/api-gateway   # por último (depende dos bin
 
 ## 5. Web (Next.js)
 
-### Opção A — Cloudflare Pages
+Export estático (`output: "export"`) + Worker com assets na Cloudflare (plano Free).
 
 ```bash
-cd apps/web
-npm run build
-npx wrangler pages deploy .next --project-name=inova-gastro-360-web
+# Na raiz do monorepo
+export NEXT_PUBLIC_API_URL=https://inovagastro360-api.inovatitech.com.br
+export NEXT_PUBLIC_REALTIME_URL=https://inovagastro360-rt.inovatitech.com.br
+npm run deploy:web
 ```
 
-Variáveis no Pages:
-- `NEXT_PUBLIC_API_URL=https://api.inovagastro360.inovatitech.com.br`
-- `NEXT_PUBLIC_REALTIME_URL=https://rt.inovagastro360.inovatitech.com.br`
+**Cutover DNS:** se `inovagastro360` ainda apontar para outro app, siga `infra/cloudflare/cutover-web-dns.md`.
 
-### Opção B — VPS + Node
-
-```bash
-npm run build -w @inova-gastro-360/web
-npm run start -w @inova-gastro-360/web
-```
+Variáveis são embutidas no build (`NEXT_PUBLIC_*`).
 
 ## 6. Pós-deploy (smoke test)
 
