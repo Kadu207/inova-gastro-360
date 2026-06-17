@@ -38,6 +38,18 @@ export default {
       return withCors(healthHandler("api-gateway"));
     }
 
+    if (path === "/" && request.method === "GET") {
+      return withCors(
+        jsonResponse({
+          service: "api-gateway",
+          app: "Inova Gastro 360",
+          health: "/health",
+          api: "/api/v1/status",
+          docs: "https://github.com/Kadu207/inova-gastro-360",
+        }),
+      );
+    }
+
     if (path === "/api/v1/status" && request.method === "GET") {
       return withCors(
         jsonResponse({

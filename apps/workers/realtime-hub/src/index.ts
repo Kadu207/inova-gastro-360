@@ -14,6 +14,15 @@ export default {
       return healthHandler("realtime-hub");
     }
 
+    if (url.pathname === "/" && request.method === "GET") {
+      return Response.json({
+        service: "realtime-hub",
+        app: "Inova Gastro 360",
+        health: "/health",
+        websocket: "/ws?branchId=<uuid>",
+      });
+    }
+
     const branchId = url.searchParams.get("branchId") ?? "default";
     const id = env.BRANCH_HUB.idFromName(branchId);
     const stub = env.BRANCH_HUB.get(id);
