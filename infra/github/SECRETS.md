@@ -32,10 +32,34 @@ Deploy **manual** (Actions → Deploy — Cloudflare Workers → Run workflow).
 
 ### Configurar via CLI
 
+> **ATENÇÃO — nome vs valor**
+>
+> | O que você vê no Cloudflare | Vai em |
+> |------------------------------|--------|
+> | Token que começa com `cfat_...` ou string longa | **valor** de `CLOUDFLARE_API_TOKEN` |
+> | Account ID (32 hex, ex. `0252c61a2109e807b883c4d466617ebb`) | **valor** de `CLOUDFLARE_ACCOUNT_ID` |
+>
+> **Nunca** use o token ou o Account ID como **nome** do secret no GitHub.
+> Os nomes são fixos: `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID`.
+
 ```bash
+# Onde: terminal Linux, pasta do projeto
+source ~/.bashrc
+cd ~/Projetos\ DEV/App\ WEB\ -\ Hamburgueria\ e\ Delivery
+
+# 1) Nome fixo → quando pedir "Paste your secret", cole o TOKEN do Cloudflare
 gh secret set CLOUDFLARE_API_TOKEN -R Kadu207/inova-gastro-360
+
+# 2) Nome fixo → quando pedir "Paste your secret", cole o Account ID (32 caracteres)
 gh secret set CLOUDFLARE_ACCOUNT_ID -R Kadu207/inova-gastro-360
+
+# 3) Confirmar — deve listar EXATAMENTE estes dois nomes:
 gh secret list -R Kadu207/inova-gastro-360
+```
+
+**Remover secret criado com nome errado (opcional):**
+```bash
+gh secret delete CFAT_IFKPT1VGEWLTWKNZBCG9FXHCVM9TYRLW2LUNUIE216BE9F66 -R Kadu207/inova-gastro-360
 ```
 
 ## Branch protection
