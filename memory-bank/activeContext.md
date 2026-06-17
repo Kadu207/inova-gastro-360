@@ -1,11 +1,13 @@
 # Contexto ativo — Inova Gastro 360
 
-**Última atualização:** 2026-06-16
+**Última atualização:** 2026-06-17
 
 ## Status atual
 - **Ondas 0–2:** concluídas e validadas E2E
 - **Onda 3:** core entregue (realtime, messaging, print jobs, integrations, LGPD banner)
 - **Onda 4:** financeiro completo adiado (spec 005)
+- **Deploy produção:** PR #2 — deploy Free **sem** Cloudflare Queues (`infra/cloudflare/QUEUES-DEFERRED.md`)
+- **Conta Cloudflare oficial:** `Carlosedu207@hotmail.com` — Account ID `0252c61a2109e807b883c4d466617ebb`
 
 ## Portas ativas (dev)
 | Serviço | Porta |
