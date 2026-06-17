@@ -10,6 +10,12 @@
   "observability": {
     "enabled": true
   },
+  "routes": [
+    {
+      "pattern": "inovagastro360-rt.inovatitech.com.br",
+      "custom_domain": true
+    }
+  ],
   "durable_objects": {
     "bindings": [
       {

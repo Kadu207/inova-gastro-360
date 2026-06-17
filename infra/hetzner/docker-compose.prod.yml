@@ -1,0 +1,32 @@
+# Postgres produção — VPS Hetzner (Inova Gastro 360)
+# Porta 5440 + SSL obrigatório para Hyperdrive. Restrinja com UFW (só IPs Cloudflare).
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: inova-gastro-360-postgres
+    restart: unless-stopped
+    ports:
+      - "5440:5432"
+    environment:
+      POSTGRES_DB: inova_gastro_360
+      POSTGRES_USER: inova_gastro
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    command:
+      - postgres
+      - -c
+      - ssl=on
+      - -c
+      - ssl_cert_file=/var/lib/postgresql/ssl/server.crt
+      - -c
+      - ssl_key_file=/var/lib/postgresql/ssl/server.key
+    volumes:
+      - inova_gastro_pg_data:/var/lib/postgresql/data
+      - ./ssl:/var/lib/postgresql/ssl:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inova_gastro -d inova_gastro_360"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  inova_gastro_pg_data:

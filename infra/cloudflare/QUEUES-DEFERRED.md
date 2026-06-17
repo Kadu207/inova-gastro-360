@@ -21,6 +21,8 @@ O `messaging-bus` em `/internal/publish` **já faz**:
 1. (Opcional) `ORDERS_QUEUE.send` — removido do `wrangler.jsonc` por enquanto  
 2. **Sempre** encaminha para `realtime-hub` e `integrations` via Service Binding
 
+**Durable Objects (realtime-hub):** no Free use `new_sqlite_classes` na migration (não `new_classes`). Ver PR #3 / `apps/workers/realtime-hub/wrangler.jsonc`.
+
 Ou seja: pedidos e outbox continuam funcionando **sem fila**, com entrega **síncrona** worker→worker.
 
 ### O que você perde sem filas (aceitável no MVP)

@@ -18,8 +18,20 @@
     "head_sampling_rate": 1
   },
   "vars": {
-    "ENVIRONMENT": "development"
+    "ENVIRONMENT": "production"
   },
+  "routes": [
+    {
+      "pattern": "inovagastro360-api.inovatitech.com.br",
+      "custom_domain": true
+    }
+  ],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "2d88f8f56f0542da84cc76b5f2cb9aee"
+    }
+  ],
   "services": [
     {
       "binding": "MESSAGING_SERVICE",
