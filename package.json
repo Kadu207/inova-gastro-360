@@ -28,7 +28,7 @@
     "db:migrate": "npm run migrate:deploy -w @inova-gastro-360/database",
     "db:migrate:dev": "npm run migrate -w @inova-gastro-360/database",
     "db:seed": "npm run seed -w @inova-gastro-360/database",
-    "deploy:workers": "npm run deploy -w @inova-gastro-360/messaging-bus && npm run deploy -w @inova-gastro-360/realtime-hub && npm run deploy -w @inova-gastro-360/integrations && npm run deploy -w @inova-gastro-360/api-gateway",
+    "deploy:workers": "npm run deploy -w @inova-gastro-360/integrations && npm run deploy -w @inova-gastro-360/realtime-hub && npm run deploy -w @inova-gastro-360/messaging-bus && npm run deploy -w @inova-gastro-360/api-gateway",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\""
   },
   "devDependencies": {
