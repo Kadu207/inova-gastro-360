@@ -1,0 +1,6 @@
+/login /login.html 200
+/dashboard /dashboard.html 200
+/cardapio /cardapio.html 200
+/painel/balcao /painel/balcao.html 200
+/painel/cozinha /painel/cozinha.html 200
+/painel/delivery /painel/delivery.html 200

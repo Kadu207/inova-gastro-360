@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "inova-gastro-360-web",
+  "compatibility_date": "2025-06-14",
+  "assets": {
+    "directory": "./out",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  "routes": [
+    {
+      "pattern": "inovagastro360.inovatitech.com.br",
+      "custom_domain": true
+    }
+  ]
+}
