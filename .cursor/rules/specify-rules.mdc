@@ -1,0 +1,62 @@
+---
+description: Spec Kit SDD/TDD — fluxo obrigatório para features Inova Gastro 360
+globs: "specs/**/*,.specify/**/*,apps/**/*,packages/**/*"
+alwaysApply: false
+---
+
+# Spec Kit — SDD + TDD (Inova Gastro 360)
+
+## Comandos (skills locais)
+
+| Fase | Skill / comando | Saída |
+|------|-----------------|-------|
+| Constitution | `/speckit-constitution` | `.specify/memory/constitution.md` |
+| Especificar | `/speckit-specify` | `specs/###-nome/spec.md` |
+| Clarificar | `/speckit-clarify` | perguntas na spec |
+| Planejar | `/speckit-plan` | `plan.md`, `research.md`, `data-model.md` |
+| Tarefas | `/speckit-tasks` | `tasks.md` |
+| Analisar | `/speckit-analyze` | gaps spec/plan/tasks |
+| Checklist | `/speckit-checklist` | checklist pré-implementação |
+| Implementar | `/speckit-implement` | código + testes |
+| Git | `/speckit-git-feature`, `/speckit-git-commit` | branch + commit convencional |
+
+Feature ativa: ler `.specify/feature.json` → `feature_directory`.
+
+## Gates (constitution)
+
+1. **Spec aprovada** antes de código de produção  
+2. **Plan** passa constitution check  
+3. **TDD** em pedidos, auth, multitenant, pagamentos — teste antes ou junto da implementação  
+4. **`npm run test`** verde antes de PR  
+5. Atualizar `memory-bank/activeContext.md` ao fim da sessão  
+
+## TDD — onde testar
+
+| Área | Pacote/worker | Prioridade |
+|------|---------------|------------|
+| Auth JWT/senha | `packages/auth` | P1 |
+| Validação Zod | `packages/validation` | P1 |
+| Contratos eventos | `packages/contracts` | P1 |
+| API rotas | `apps/workers/api-gateway` | P1 |
+| Workers health/smoke | `apps/workers/*` | P2 |
+| Web | `apps/web` | P2 |
+
+```bash
+npm run test              # turbo — todos os workspaces
+npm run test:unit         # exclui web se lento
+npm run typecheck
+```
+
+## Scripts bash Spec Kit
+
+```bash
+.specify/scripts/bash/create-new-feature.sh "descrição"
+.specify/scripts/bash/setup-plan.sh
+.specify/scripts/bash/setup-tasks.sh
+.specify/scripts/bash/check-prerequisites.sh
+.specify/scripts/bash/update-agent-context.sh
+```
+
+## Idioma
+
+Specs, plans, tasks e mensagens de usuário: **pt-BR**.

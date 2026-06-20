@@ -13,17 +13,22 @@ alwaysApply: true
 ## Memória permanente
 No início de cada sessão, ler:
 - `memory-bank/activeContext.md`
+- `memory-bank/projectbrief.md`
 - `AGENTS.md`
 - `.specify/memory/constitution.md`
+- `docs/cursor-tooling.md` (se deploy/MCP/skills)
 
 Ao final, atualizar `memory-bank/activeContext.md` e `progress.md`.
 
-## Portas
-Antes de expor serviços, consultar `PORT_REGISTRY.md`. Portas reservadas do projeto: 3100, 5440, 6390, 5680, 8788-8791, 9100-9101.
+## Spec Kit (SDD)
+- Feature ativa: `.specify/feature.json`
+- Skills: `.cursor/skills/speckit-*` — `/speckit-specify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`
+- Rules: `.cursor/rules/specify-rules.mdc`, `.cursor/rules/cloudflare-workers.mdc`
 
 ## Desenvolvimento
 - SDD + TDD + Spec Kit obrigatórios
 - Specs em `specs/` antes de código de produção
+- `npm run test` verde antes de merge
 - Multitenant: sempre `tenant_id` + RLS
 - Event-first: mudanças de estado via filas
 - Workers separados: API, mensageria, realtime, integrações

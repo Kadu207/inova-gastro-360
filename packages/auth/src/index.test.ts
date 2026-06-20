@@ -30,4 +30,11 @@ describe("auth jwt", () => {
   it("returns expiry seconds", () => {
     expect(accessTokenExpiresInSeconds()).toBe(900);
   });
+
+  it("preserva tenant_id no payload (isolamento multitenant)", async () => {
+    const token = await signAccessToken({ ...payload, tid: "tenant-A" }, secret);
+    const decoded = await verifyAccessToken(token, secret);
+    expect(decoded?.tid).toBe("tenant-A");
+    expect(decoded?.tid).not.toBe("tenant-B");
+  });
 });

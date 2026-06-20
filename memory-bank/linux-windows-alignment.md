@@ -26,7 +26,9 @@ Legenda: ✅ concluído | ⚠️ parcial / ação manual | ❌ pendente
 | 2.1 | Plugins instalados (Cloudflare, Prisma, GitLab, etc.) | ✅ | Via conta Cursor em `~/.cursor/plugins/` |
 | 2.2 | Skills globais Cursor | ✅ | `~/.cursor/skills-cursor/` |
 | 2.3 | Regras do projeto | ✅ | `.cursor/rules/inova-gastro-360.mdc` |
-| 2.4 | Skills Spec Kit do projeto | ✅ | `.cursor/skills/speckit-*` |
+| 2.5 | Rules SDD + Workers | ✅ | `specify-rules.mdc`, `cloudflare-workers.mdc` |
+| 2.6 | MCP example no repo | ✅ | `.cursor/mcp.json.example` |
+| 2.7 | docs/cursor-tooling.md | ✅ | Matriz MCP/skills |
 
 ---
 
@@ -74,7 +76,9 @@ git push -u origin master
 | 5.1 | Scripts PowerShell (Windows) | ✅ | `.specify/scripts/powershell/` (mantidos) |
 | 5.2 | Scripts bash (Linux) | ✅ | `.specify/scripts/bash/` (spec-kit upstream) |
 | 5.3 | `init-options.json` script | ✅ | Atualizado para `sh` |
-| 5.4 | `.specify/feature.json` | ✅ | Apontando para feature ativa |
+| 5.4 | `.specify/feature.json` | ✅ | `specs/012-cursor-tooling-sdd-tdd` |
+| 5.5 | `update-agent-context.sh` (bash) | ✅ | `.specify/scripts/bash/` |
+| 5.6 | `workflow-registry.json` | ✅ | `.specify/workflows/speckit/` |
 
 **Testar:**
 ```bash
