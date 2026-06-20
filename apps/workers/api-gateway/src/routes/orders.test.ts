@@ -1,0 +1,149 @@
+import { describe, it, expect } from "vitest";
+import {
+  handleCreateOrder,
+  handleListOrders,
+  handleUpdateOrderStatus,
+  handleGetOrder,
+} from "./orders";
+import { testEnv, DEMO_BRANCH_ID, DEMO_PRODUCT_ID, bearerToken } from "../test/helpers";
+
+describe("orders handlers — validação (sem DB)", () => {
+  const env = testEnv();
+
+  it("create order rejeita body inválido", async () => {
+    const req = new Request("http://test/api/v1/orders", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ branchId: "not-uuid", items: [] }),
+    });
+    const user = {
+      sub: "user-1",
+      tid: "tenant-1",
+      email: "a@b.com",
+      role: "admin_cliente",
+      branches: [],
+    };
+    const res = await handleCreateOrder(req, env, user);
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe("validation_error");
+  });
+
+  it("create order exige tenant_id no JWT", async () => {
+    const req = new Request("http://test/api/v1/orders", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        branchId: DEMO_BRANCH_ID,
+        items: [{ productId: DEMO_PRODUCT_ID, quantity: 1 }],
+      }),
+    });
+    const res = await handleCreateOrder(req, env, undefined);
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe("tenant_required");
+  });
+
+  it("list orders exige branchId", async () => {
+    const req = new Request("http://test/api/v1/orders");
+    const user = {
+      sub: "user-1",
+      tid: "tenant-1",
+      email: "a@b.com",
+      role: "admin_cliente",
+      branches: [],
+    };
+    const res = await handleListOrders(req, env, user);
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe("branch_id_required");
+  });
+
+  it("update status rejeita status inválido", async () => {
+    const req = new Request("http://test/api/v1/orders/x/status", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status: "invalid" }),
+    });
+    const user = {
+      sub: "user-1",
+      tid: "tenant-1",
+      email: "a@b.com",
+      role: "admin_cliente",
+      branches: [],
+    };
+    const res = await handleUpdateOrderStatus(req, env, user, DEMO_BRANCH_ID);
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe("validation_error");
+  });
+
+  it("get order com id inexistente retorna 404 (sem conexão DB)", async () => {
+    const envNoDb = testEnv({ DATABASE_URL: undefined, HYPERDRIVE: undefined });
+    const user = {
+      sub: "user-1",
+      tid: "tenant-1",
+      email: "a@b.com",
+      role: "admin_cliente",
+      branches: [],
+    };
+    await expect(
+      handleGetOrder(new Request("http://test"), envNoDb, user, DEMO_BRANCH_ID),
+    ).rejects.toThrow(/Banco não configurado/);
+  });
+});
+
+describe("orders — auth via worker", () => {
+  it("GET /api/v1/orders sem token retorna 401", async () => {
+    const worker = (await import("../index")).default;
+    const res = await worker.fetch(new Request("https://api.test/api/v1/orders?branchId=x"), testEnv());
+    expect(res.status).toBe(401);
+  });
+
+  it("POST /api/v1/orders sem token retorna tenant_required após validação", async () => {
+    const worker = (await import("../index")).default;
+    const res = await worker.fetch(
+      new Request("https://api.test/api/v1/orders", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          branchId: DEMO_BRANCH_ID,
+          items: [{ productId: DEMO_PRODUCT_ID, quantity: 1 }],
+        }),
+      }),
+      testEnv(),
+    );
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe("tenant_required");
+  });
+
+  it("GET /api/v1/orders com token inválido retorna 401", async () => {
+    const worker = (await import("../index")).default;
+    const res = await worker.fetch(
+      new Request("https://api.test/api/v1/orders?branchId=x", {
+        headers: { authorization: "Bearer invalid.token.here" },
+      }),
+      testEnv(),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("GET /api/v1/orders com token válido estrutura auth", async () => {
+    const token = await bearerToken({
+      sub: "00000000-0000-4000-8000-000000000001",
+      tid: "00000000-0000-4000-8000-000000000099",
+      email: "test@test.com",
+      role: "admin_cliente",
+      branches: [DEMO_BRANCH_ID],
+    });
+    const worker = (await import("../index")).default;
+    const res = await worker.fetch(
+      new Request(`https://api.test/api/v1/orders?branchId=${DEMO_BRANCH_ID}`, {
+        headers: { authorization: `Bearer ${token}` },
+      }),
+      testEnv(),
+    );
+    expect(res.status).not.toBe(401);
+  });
+});

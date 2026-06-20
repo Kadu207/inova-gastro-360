@@ -21,12 +21,8 @@
 - [x] Rules specify-rules + cloudflare-workers
 - [x] docs/cursor-tooling.md + mcp.json.example
 - [x] vitest.config.ts + testes auth/api-gateway
-- [x] PR #7 mergeado em master
-
-## SDD retrospectivo specs 002–011 (2026-06-20)
-- [x] plan.md + tasks.md para 002-cardapio até 011-messaging-bus
-- [x] .gitignore — tokens/senhas em docs/
-- [ ] TDD pedidos + cross-tenant (spec 003 fase 2)
+- [x] PR #8 mergeado — plan/tasks specs 002–011
+- [x] TDD pedidos + cross-tenant (spec 003 T009–T010)
 - [ ] print-agent local (spec 006)
 - [ ] Queues/DLQ Paid (spec 011 fase 2)
 
