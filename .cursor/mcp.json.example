@@ -1,0 +1,20 @@
+{
+  "_comment": "Exemplo para onboarding — copie para ~/.cursor/mcp.json ou configure em Cursor Settings → MCP. NÃO commitar tokens reais.",
+  "mcpServers": {
+    "cloudflare-bindings": {
+      "comment": "Plugin Cursor — OAuth na conta Carlosedu207@hotmail.com"
+    },
+    "cloudflare-builds": {},
+    "cloudflare-observability": {},
+    "cloudflare-docs": {},
+    "cursor-ide-browser": {
+      "comment": "Smoke test web produção /login"
+    },
+    "plugin-prisma-Prisma-Local": {
+      "comment": "Prisma Studio / migrate local"
+    },
+    "plugin-gitlab-GitLab": {
+      "comment": "Requer PAT + URL GitLab — auth manual se 404"
+    }
+  }
+}

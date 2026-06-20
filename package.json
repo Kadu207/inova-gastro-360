@@ -30,6 +30,7 @@
     "db:seed": "npm run seed -w @inova-gastro-360/database",
     "deploy:workers": "npm run deploy -w @inova-gastro-360/integrations && npm run deploy -w @inova-gastro-360/realtime-hub && npm run deploy -w @inova-gastro-360/messaging-bus && npm run deploy -w @inova-gastro-360/api-gateway",
     "deploy:web": "npm run build:pages -w @inova-gastro-360/web && npm run deploy:web -w @inova-gastro-360/web",
+    "speckit:context": "bash .specify/scripts/bash/update-agent-context.sh",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\""
   },
   "devDependencies": {

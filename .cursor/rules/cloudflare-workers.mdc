@@ -1,0 +1,58 @@
+---
+description: Cloudflare Workers — arquitetura edge, bindings, deploy (Inova Gastro 360)
+globs: "apps/workers/**/*,infra/cloudflare/**/*,apps/web/wrangler.jsonc"
+alwaysApply: false
+---
+
+# Cloudflare Workers — Edge Architecture
+
+## Workers (4 + web)
+
+| Worker | Porta dev | Domínio prod | Bindings |
+|--------|-----------|--------------|----------|
+| api-gateway | 8792 | inovagastro360-api.* | Hyperdrive, MESSAGING_SERVICE |
+| messaging-bus | 8789 | (interno) | REALTIME_SERVICE, INTEGRATIONS_SERVICE |
+| realtime-hub | 8790 | inovagastro360-rt.* | BRANCH_HUB (DO sqlite) |
+| integrations | 8791 | (interno) | — |
+| web (assets) | 3102 | inovagastro360.* | ASSETS estáticos |
+
+## Ordem de deploy
+
+```bash
+npm run deploy:workers   # int → rt → msg → api
+npm run deploy:web       # build export + wrangler deploy
+```
+
+## Service Bindings twist (desacoplamento)
+
+- API **nunca** chama RT/INT diretamente — usa `MESSAGING_SERVICE` → `/internal/publish`
+- messaging-bus encaminha **síncrono** para rt + int (Queues adiadas no Free)
+- realtime-hub: DO por `branchId`; WebSocket `/ws?branchId=`
+
+## Hyperdrive (api-gateway)
+
+- Dev: `DATABASE_URL` em `.dev.vars`
+- Prod: binding `HYPERDRIVE` — ver `infra/hetzner/PRODUCTION.md`
+- Postgres VPS exige **SSL** para Hyperdrive
+
+## MCPs Cloudflare (usar em deploy/debug)
+
+| MCP | Quando usar |
+|-----|-------------|
+| cloudflare-bindings | workers_list, hyperdrive_configs_list |
+| cloudflare-builds | logs de deploy CI |
+| cloudflare-observability | tail logs produção |
+| cloudflare-docs | wrangler, DO, Queues, Pages |
+
+Skills: `wrangler`, `workers-best-practices`, `cloudflare` (plugins globais).
+
+## Plano Free — limitações
+
+- **Queues:** adiadas — `infra/cloudflare/QUEUES-DEFERRED.md`
+- **DO:** usar `new_sqlite_classes` (não `new_classes`)
+- **SSL DNS:** hostnames planos `inovagastro360-api.*` (não `api.inovagastro360.*`)
+
+## Segredos
+
+- `JWT_SECRET` via `wrangler secret put` — nunca no Git
+- Account ID produção: `0252c61a2109e807b883c4d466617ebb`

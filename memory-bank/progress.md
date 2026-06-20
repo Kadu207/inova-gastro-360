@@ -13,7 +13,14 @@
 - [x] Banner cookies LGPD (spec 009 — básico)
 - [x] `dev:stack` com 5 workers
 - [x] API porta 8792 (conflito 8788 documentado)
-- [ ] Deploy Cloudflare + Hyperdrive (aguarda VPS/usuário)
+- [x] Deploy Cloudflare + Hyperdrive + Web (2026-06-17)
+
+## Infra engenharia — Cursor / Spec Kit / TDD (2026-06-17)
+- [x] Spec 012 cursor-tooling-sdd-tdd (plan + tasks)
+- [x] Spec 010 workers retrospectivo (produção)
+- [x] Rules specify-rules + cloudflare-workers
+- [x] docs/cursor-tooling.md + mcp.json.example
+- [x] vitest.config.ts + testes auth/api-gateway
 
 ## Onda 4 — Financeiro completo
 Adiado conforme decisão do usuário (spec 005)

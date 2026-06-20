@@ -1,0 +1,12 @@
+{
+  "workflows": [
+    {
+      "id": "speckit",
+      "path": ".specify/workflows/speckit/workflow.yml",
+      "description": "Ciclo completo SDD: specify → plan → tasks → implement"
+    }
+  ],
+  "default_workflow": "speckit",
+  "integration": "cursor-agent",
+  "invoke_separator": "-"
+}
