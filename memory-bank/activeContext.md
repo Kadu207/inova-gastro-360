@@ -1,6 +1,6 @@
 # Contexto ativo — Inova Gastro 360
 
-**Última atualização:** 2026-06-17
+**Última atualização:** 2026-06-20
 
 ## Status atual
 - **Ondas 0–2:** concluídas e validadas E2E
@@ -10,6 +10,8 @@
 - **Hyperdrive ID:** `2d88f8f56f0542da84cc76b5f2cb9aee` (VPS `128.140.77.31:5440`)
 - **Conta Cloudflare:** `Carlosedu207@hotmail.com` — `0252c61a2109e807b883c4d466617ebb`
 - **Engenharia:** Spec Kit + TDD + MCPs — `docs/cursor-tooling.md`, spec `012-cursor-tooling-sdd-tdd`
+- **SDD retrospectivo:** plan/tasks specs **002–011** (2026-06-20)
+- **Segredos:** paths sensíveis em `docs/` ignorados no `.gitignore`
 
 ## Portas ativas (dev)
 | Serviço | Porta |
