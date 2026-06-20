@@ -16,6 +16,21 @@ env:
 jobs:
   pipeline:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: inova_gastro_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -29,6 +44,12 @@ jobs:
 
       - name: Prisma generate
         run: npm run db:generate
+
+      - name: Database migrate
+        run: npm run db:migrate
+
+      - name: Database seed
+        run: npm run db:seed
 
       - name: Lint
         run: npm run lint
