@@ -37,6 +37,12 @@ packages/database/prisma/migrations/**/migration_lock.toml
 # Secrets
 *.pem
 *.key
+docs/Cloudflare Deploy Token.txt
+docs/Senhas - produção.txt
+docs/Senhas - produção.odt
+docs/**/*[Tt]oken*.txt
+docs/**/*[Ss]enha*.txt
+docs/**/*[Ss]enha*.odt
 
 # Temp
 docx_extract.txt
