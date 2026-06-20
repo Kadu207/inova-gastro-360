@@ -245,4 +245,61 @@ describe.runIf(integrationReady)("orders integration — DB", () => {
     );
     expect(okRes.status).toBe(201);
   });
+
+  it("idempotência: retry com mesma Idempotency-Key retorna mesmo pedido", async () => {
+    const token = await bearerToken({
+      sub: demoUserId,
+      tid: demoTenantId,
+      email: "admin@inovagastro360.local",
+      role: "admin_cliente",
+      branches: [DEMO_BRANCH_ID],
+    });
+
+    const body = JSON.stringify({
+      branchId: DEMO_BRANCH_ID,
+      items: [{ productId: DEMO_PRODUCT_ID, quantity: 1 }],
+    });
+    const idempotencyKey = `test-idem-${crypto.randomUUID()}`;
+
+    const first = await worker.fetch(
+      authRequest("https://api.test/api/v1/orders", token, { method: "POST", body }, { "Idempotency-Key": idempotencyKey }),
+      env,
+    );
+    expect(first.status).toBe(201);
+    const firstBody = (await first.json()) as { order: { id: string; orderNumber: number } };
+
+    const second = await worker.fetch(
+      authRequest("https://api.test/api/v1/orders", token, { method: "POST", body }, { "Idempotency-Key": idempotencyKey }),
+      env,
+    );
+    expect(second.status).toBe(200);
+    const secondBody = (await second.json()) as { order: { id: string; orderNumber: number }; idempotent: boolean };
+    expect(secondBody.idempotent).toBe(true);
+    expect(secondBody.order.id).toBe(firstBody.order.id);
+    expect(secondBody.order.orderNumber).toBe(firstBody.order.orderNumber);
+  });
+
+  it("paginação: limit e page retornam metadados", async () => {
+    const token = await bearerToken({
+      sub: demoUserId,
+      tid: demoTenantId,
+      email: "admin@inovagastro360.local",
+      role: "admin_cliente",
+      branches: [DEMO_BRANCH_ID],
+    });
+
+    const res = await worker.fetch(
+      authRequest(`https://api.test/api/v1/orders?branchId=${DEMO_BRANCH_ID}&limit=2&page=1`, token),
+      env,
+    );
+    expect(res.status).toBe(200);
+    const data = (await res.json()) as {
+      orders: unknown[];
+      pagination: { page: number; limit: number; total: number; totalPages: number; hasMore: boolean };
+    };
+    expect(data.pagination.page).toBe(1);
+    expect(data.pagination.limit).toBe(2);
+    expect(data.orders.length).toBeLessThanOrEqual(2);
+    expect(typeof data.pagination.total).toBe("number");
+  });
 });

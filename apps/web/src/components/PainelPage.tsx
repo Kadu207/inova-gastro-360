@@ -13,11 +13,22 @@ interface Order {
   created_at: string;
 }
 
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
 const STATUSES = ["pending", "accepted", "preparing", "ready", "out_for_delivery", "delivered"] as const;
+const PAGE_LIMIT = 10;
 
 export default function PainelPage({ defaultFilter }: { title?: string; defaultFilter?: string }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState(defaultFilter ?? "");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
 
   const load = useCallback(async () => {
     const token = getToken();
@@ -25,12 +36,18 @@ export default function PainelPage({ defaultFilter }: { title?: string; defaultF
       window.location.href = "/login";
       return;
     }
-    const q = filter ? `&status=${filter}` : "";
-    const res = await fetch(`${API_BASE}/api/v1/orders?branchId=${DEMO_BRANCH_ID}${q}`, {
-      headers: { authorization: `Bearer ${token}` },
-    });
+    const statusQ = filter ? `&status=${filter}` : "";
+    const res = await fetch(
+      `${API_BASE}/api/v1/orders?branchId=${DEMO_BRANCH_ID}&page=${page}&limit=${PAGE_LIMIT}${statusQ}`,
+      { headers: { authorization: `Bearer ${token}` } },
+    );
     const data = await res.json();
     setOrders(data.orders ?? []);
+    setPagination(data.pagination ?? null);
+  }, [filter, page]);
+
+  useEffect(() => {
+    setPage(1);
   }, [filter]);
 
   useEffect(() => {
@@ -61,6 +78,14 @@ export default function PainelPage({ defaultFilter }: { title?: string; defaultF
     load();
   }
 
+  function handlePrevPage() {
+    setPage((p) => Math.max(1, p - 1));
+  }
+
+  function handleNextPage() {
+    if (pagination?.hasMore) setPage((p) => p + 1);
+  }
+
   return (
     <div className="os-page">
       <div className="filters">
@@ -73,6 +98,19 @@ export default function PainelPage({ defaultFilter }: { title?: string; defaultF
           </button>
         ))}
       </div>
+      {pagination && pagination.totalPages > 0 && (
+        <nav className="pagination" aria-label="Paginação de pedidos">
+          <button type="button" onClick={handlePrevPage} disabled={page <= 1} aria-label="Página anterior">
+            ← Anterior
+          </button>
+          <span>
+            Página {pagination.page} de {pagination.totalPages} ({pagination.total} pedidos)
+          </span>
+          <button type="button" onClick={handleNextPage} disabled={!pagination.hasMore} aria-label="Próxima página">
+            Próxima →
+          </button>
+        </nav>
+      )}
       <div className="orders-grid">
         {orders.map((o) => (
           <article key={o.id} className="order-card">

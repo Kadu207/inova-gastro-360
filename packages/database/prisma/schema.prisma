@@ -185,6 +185,7 @@ model Order {
   customerPhone String?  @map("customer_phone")
   notes         String?
   totalCents    Int      @default(0) @map("total_cents")
+  idempotencyKey String? @map("idempotency_key")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -192,6 +193,7 @@ model Order {
   items         OrderItem[]
   statusHistory OrderStatusHistory[]
 
+  @@unique([tenantId, idempotencyKey])
   @@unique([branchId, orderNumber])
   @@index([tenantId, branchId, status])
   @@map("orders")
