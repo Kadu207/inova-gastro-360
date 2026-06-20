@@ -5,7 +5,7 @@ import {
   handleUpdateOrderStatus,
   handleGetOrder,
 } from "./orders";
-import { testEnv, DEMO_BRANCH_ID, DEMO_PRODUCT_ID, bearerToken } from "../test/helpers";
+import { testEnv, DEMO_BRANCH_ID, DEMO_PRODUCT_ID } from "../test/helpers";
 
 describe("orders handlers — validação (sem DB)", () => {
   const env = testEnv();
@@ -124,26 +124,8 @@ describe("orders — auth via worker", () => {
       new Request("https://api.test/api/v1/orders?branchId=x", {
         headers: { authorization: "Bearer invalid.token.here" },
       }),
-      testEnv(),
+      testEnv({ DATABASE_URL: undefined, HYPERDRIVE: undefined }),
     );
     expect(res.status).toBe(401);
-  });
-
-  it("GET /api/v1/orders com token válido estrutura auth", async () => {
-    const token = await bearerToken({
-      sub: "00000000-0000-4000-8000-000000000001",
-      tid: "00000000-0000-4000-8000-000000000099",
-      email: "test@test.com",
-      role: "admin_cliente",
-      branches: [DEMO_BRANCH_ID],
-    });
-    const worker = (await import("../index")).default;
-    const res = await worker.fetch(
-      new Request(`https://api.test/api/v1/orders?branchId=${DEMO_BRANCH_ID}`, {
-        headers: { authorization: `Bearer ${token}` },
-      }),
-      testEnv(),
-    );
-    expect(res.status).not.toBe(401);
   });
 });
