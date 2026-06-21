@@ -7,6 +7,7 @@ import {
   handleUpdateOrderStatus,
   handleGetOrder,
 } from "./routes/orders";
+import { handleListPrintJobs, handleUpdatePrintJobStatus } from "./routes/print-jobs";
 import { requireAuth } from "./middleware/auth";
 
 import type { GatewayEnv } from "./types/env";
@@ -101,6 +102,19 @@ export default {
       if (request.method === "GET") {
         return withCors(await handleGetOrder(request, env, auth.user, orderId));
       }
+    }
+
+    if (path === "/api/v1/print-jobs" && request.method === "GET") {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      return withCors(await handleListPrintJobs(request, env, auth.user));
+    }
+
+    const printJobMatch = path.match(/^\/api\/v1\/print-jobs\/([^/]+)$/);
+    if (printJobMatch && request.method === "PATCH") {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      return withCors(await handleUpdatePrintJobStatus(request, env, auth.user, printJobMatch[1]));
     }
 
     return withCors(jsonResponse({ error: "not_found", path }, 404));

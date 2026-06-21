@@ -69,9 +69,9 @@ Config exemplo: `.cursor/mcp.json.example` (sem secrets).
 
 ---
 
-## Workers — estrutura edge (Service Bindings)
+## Workers — estrutura lógica (runtime: VPS spec 013; edge CF spec 010 futuro)
 
-Ver rule `.cursor/rules/cloudflare-workers.mdc` e spec `specs/010-cloudflare-workers/`.
+Ver rule `.cursor/rules/cloudflare-workers.mdc` (dev Wrangler) e spec `specs/013-vps-runtime/`.
 
 ```bash
 npm run dev:stack          # local: web + 4 workers

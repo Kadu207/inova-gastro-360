@@ -302,4 +302,47 @@ describe.runIf(integrationReady)("orders integration — DB", () => {
     expect(data.orders.length).toBeLessThanOrEqual(2);
     expect(typeof data.pagination.total).toBe("number");
   });
+
+  it("print-jobs: pedido cria job pending e agente marca printed", async () => {
+    const token = await bearerToken({
+      sub: demoUserId,
+      tid: demoTenantId,
+      email: "admin@inovagastro360.local",
+      role: "admin_cliente",
+      branches: [DEMO_BRANCH_ID],
+    });
+
+    const createRes = await worker.fetch(
+      authRequest("https://api.test/api/v1/orders", token, {
+        method: "POST",
+        body: JSON.stringify({
+          branchId: DEMO_BRANCH_ID,
+          items: [{ productId: DEMO_PRODUCT_ID, quantity: 1 }],
+        }),
+      }),
+      env,
+    );
+    expect(createRes.status).toBe(201);
+
+    const listRes = await worker.fetch(
+      authRequest(
+        `https://api.test/api/v1/print-jobs?branchId=${DEMO_BRANCH_ID}&sector=cozinha&status=pending`,
+        token,
+      ),
+      env,
+    );
+    expect(listRes.status).toBe(200);
+    const listed = (await listRes.json()) as { printJobs: { id: string }[] };
+    expect(listed.printJobs.length).toBeGreaterThan(0);
+
+    const jobId = listed.printJobs[0].id;
+    const patchRes = await worker.fetch(
+      authRequest(`https://api.test/api/v1/print-jobs/${jobId}`, token, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "printed" }),
+      }),
+      env,
+    );
+    expect(patchRes.status).toBe(200);
+  });
 });

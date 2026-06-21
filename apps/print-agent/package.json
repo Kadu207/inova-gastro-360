@@ -1,0 +1,21 @@
+{
+  "name": "@inova-gastro-360/print-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Agente local de impressão — poll print_jobs na API (spec 006)",
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.21",
+    "tsx": "4.19.4",
+    "typescript": "5.8.3",
+    "vitest": "3.2.4"
+  }
+}

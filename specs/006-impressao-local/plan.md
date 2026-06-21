@@ -11,15 +11,17 @@ Fila de impressão por setor (balcão/cozinha/A4) disparada na criação do pedi
 **Storage**: tabela `print_jobs` (sector, status, payload JSON)  
 **API**: insert em `orders.ts` ao criar pedido (setor `cozinha`)  
 **Evento**: `PRINT_JOB_REQUESTED` via outbox  
-**Agente local**: **não implementado** — previsto em `apps/print-agent/` (docs)  
-**Setores**: cozinha, balcao, a4
+**Agente local**: **não implementado** — previsto em `apps/print-agent/`  
+**Deploy alvo**: VPS Hetzner (spec **013-vps-runtime**) — API na LAN/VPS; agente faz poll HTTP
 
 ## Arquitetura alvo
 
 ```text
 order.created → print_jobs (pending)
-print-agent (LAN) → poll/API → imprime → PATCH status printed
+print-agent (LAN/VPS) → GET/PATCH api-gateway → imprime → status printed
 ```
+
+**Setores**: cozinha, balcao, a4
 
 ## Constitution Check
 
