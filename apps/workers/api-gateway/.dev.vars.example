@@ -1,3 +1,4 @@
-# Prisma aceita ?schema=public; postgres.js (api-gateway) normaliza automaticamente via lib/db.ts
+# Copie para .dev.vars: cp .dev.vars.example .dev.vars
+# Wrangler Hyperdrive local usa localConnectionString em wrangler.jsonc (5440)
 DATABASE_URL=postgresql://inova_gastro:inova_gastro_dev@127.0.0.1:5440/inova_gastro_360?schema=public
 JWT_SECRET=dev-secret-change-in-production-32chars-min

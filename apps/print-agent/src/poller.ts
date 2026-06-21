@@ -36,7 +36,6 @@ export async function runPollLoop(
   config: PrintAgentConfig,
   log: (msg: string) => void = console.log,
 ): Promise<never> {
-  await client.login();
   log(
     `Print-agent iniciado — API ${config.apiBase} branch=${config.branchId} sector=${config.sector} interval=${config.pollIntervalMs}ms`,
   );

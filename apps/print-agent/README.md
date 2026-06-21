@@ -6,9 +6,9 @@ Poll de `print_jobs` na API e marcação `printed` (ESC/POS em T012).
 
 ```bash
 docker compose up -d
-npm run db:seed
-npm run dev:api          # ou dev:stack
-npm run print-agent:dev  # outro terminal
+cp apps/workers/api-gateway/.dev.vars.example apps/workers/api-gateway/.dev.vars
+npm run dev:api          # terminal 1 — porta 8792
+npm run print-agent:dev  # terminal 2
 ```
 
 Variáveis: `apps/print-agent/.env.example`
