@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "test -f .dev.vars || cp .dev.vars.example .dev.vars",
     "dev": "wrangler dev --port 8792 --inspector-port 9230 --local",
     "build": "wrangler deploy --dry-run",
     "deploy": "wrangler deploy",
