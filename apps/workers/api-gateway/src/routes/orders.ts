@@ -166,13 +166,14 @@ export async function handleCreateOrder(request: Request, env: GatewayEnv, user?
       return jsonResponse({ error: "invalid_products" }, 400);
     }
 
-    const priceMap = new Map(products.map((p) => [p.id, p.price_cents]));
+    const productMap = new Map(products.map((p) => [p.id, p]));
     let totalCents = 0;
     const lineItems = items.map((item) => {
-      const unit = priceMap.get(item.productId) ?? 0;
+      const product = productMap.get(item.productId)!;
+      const unit = product.price_cents;
       const total = unit * item.quantity;
       totalCents += total;
-      return { ...item, unitCents: unit, totalCents: total };
+      return { ...item, productName: product.name, unitCents: unit, totalCents: total };
     });
 
     let order: { id: string; order_number: number; status: string; total_cents: number };
