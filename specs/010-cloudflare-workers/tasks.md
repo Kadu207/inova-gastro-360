@@ -11,8 +11,12 @@
 - [x] T007 CI deploy workflow + GitHub secrets
 - [x] T008 GET `/` informativo API + RT
 
-## Fase 2 (futuro)
+**Pendente fase 2 (go-live CF):**
 
 - [ ] T009 Workers Paid + Cloudflare Queues
 - [ ] T010 Rate limit WAF login
 - [ ] T011 Observability MCP em runbooks
+
+## Adiado — runtime VPS (spec 013)
+
+Deploy edge CF pausado; produção alvo = VPS até go-live comercial.

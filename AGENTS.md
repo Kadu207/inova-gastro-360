@@ -55,8 +55,10 @@ EMB-01 a EMB-15 — ver docs/architecture.md
 
 ## Feature ativa (Spec Kit)
 
+## Feature ativa (Spec Kit)
+
 <!-- speckit:active-feature:start -->
-- **Diretório:** `specs/012-cursor-tooling-sdd-tdd`
+- **Diretório:** `specs/013-vps-runtime`
 - **Spec:** `spec.md` | **Plan:** `plan.md` | **Tasks:** `tasks.md`
-- **Atualizado:** 2026-06-20T18:03:21Z
+- **Atualizado:** 2026-06-21T16:08:36Z
 <!-- speckit:active-feature:end -->
