@@ -35,6 +35,17 @@ const UpdateStatusSchema = z.object({
   ]),
 });
 
+const MAX_IDEMPOTENCY_KEY_LENGTH = 128;
+const DEFAULT_PAGE_LIMIT = 20;
+const MAX_PAGE_LIMIT = 50;
+
+type OrderSummary = {
+  id: string;
+  order_number: number;
+  status: string;
+  total_cents: number;
+};
+
 async function parseJsonBody(request: Request): Promise<unknown | null> {
   try {
     const text = await request.text();
@@ -45,7 +56,83 @@ async function parseJsonBody(request: Request): Promise<unknown | null> {
   }
 }
 
+export function parseIdempotencyKey(
+  request: Request,
+): { ok: true; key: string | null } | { ok: false; response: Response } {
+  const raw = request.headers.get("Idempotency-Key");
+  if (raw === null) return { ok: true, key: null };
+
+  const key = raw.trim();
+  if (!key) {
+    return { ok: false, response: jsonResponse({ error: "validation_error", message: "Idempotency-Key vazio" }, 400) };
+  }
+  if (key.length > MAX_IDEMPOTENCY_KEY_LENGTH) {
+    return {
+      ok: false,
+      response: jsonResponse({ error: "validation_error", message: "Idempotency-Key muito longo" }, 400),
+    };
+  }
+  return { ok: true, key };
+}
+
+export function parseListPagination(
+  url: URL,
+): { ok: true; limit: number; page: number; offset: number } | { ok: false; response: Response } {
+  const limitRaw = url.searchParams.get("limit");
+  const pageRaw = url.searchParams.get("page");
+
+  let limit = DEFAULT_PAGE_LIMIT;
+  let page = 1;
+
+  if (limitRaw !== null) {
+    const parsed = Number.parseInt(limitRaw, 10);
+    if (!Number.isFinite(parsed) || parsed < 1 || parsed > MAX_PAGE_LIMIT) {
+      return { ok: false, response: jsonResponse({ error: "invalid_limit" }, 400) };
+    }
+    limit = parsed;
+  }
+
+  if (pageRaw !== null) {
+    const parsed = Number.parseInt(pageRaw, 10);
+    if (!Number.isFinite(parsed) || parsed < 1) {
+      return { ok: false, response: jsonResponse({ error: "invalid_page" }, 400) };
+    }
+    page = parsed;
+  }
+
+  return { ok: true, limit, page, offset: (page - 1) * limit };
+}
+
+function orderCreatePayload(order: OrderSummary, idempotent = false) {
+  return {
+    order: {
+      id: order.id,
+      orderNumber: order.order_number,
+      status: order.status,
+      totalCents: order.total_cents,
+    },
+    ...(idempotent ? { idempotent: true } : {}),
+  };
+}
+
+async function findOrderByIdempotencyKey(
+  sql: ReturnType<typeof getSql>,
+  tenantId: string,
+  idempotencyKey: string,
+): Promise<OrderSummary | undefined> {
+  const rows = await sql<OrderSummary[]>`
+    SELECT id, order_number, status, total_cents
+    FROM orders
+    WHERE tenant_id = ${tenantId}::uuid AND idempotency_key = ${idempotencyKey}
+    LIMIT 1
+  `;
+  return rows[0];
+}
+
 export async function handleCreateOrder(request: Request, env: GatewayEnv, user?: JwtPayload): Promise<Response> {
+  const idempotency = parseIdempotencyKey(request);
+  if (!idempotency.ok) return idempotency.response;
+
   const raw = await parseJsonBody(request);
   const parsed = CreateOrderSchema.safeParse(raw);
   if (!parsed.success) {
@@ -59,6 +146,13 @@ export async function handleCreateOrder(request: Request, env: GatewayEnv, user?
   const sql = getSql(env);
 
   try {
+    if (idempotency.key) {
+      const existing = await findOrderByIdempotencyKey(sql, tenantId, idempotency.key);
+      if (existing) {
+        return jsonResponse(orderCreatePayload(existing, true), 200);
+      }
+    }
+
     const productIds = items.map((i) => i.productId);
     const products = await sql<
       { id: string; price_cents: number; name: string }[]
@@ -81,17 +175,33 @@ export async function handleCreateOrder(request: Request, env: GatewayEnv, user?
       return { ...item, unitCents: unit, totalCents: total };
     });
 
-    const [order] = await sql<{ id: string; order_number: number }[]>`
-      WITH next_num AS (
-        SELECT COALESCE(MAX(order_number), 1000) + 1 AS num
-        FROM orders WHERE branch_id = ${branchId}::uuid
-      )
-      INSERT INTO orders (id, tenant_id, branch_id, order_number, channel, status, customer_name, customer_phone, notes, total_cents, updated_at)
-      SELECT gen_random_uuid(), ${tenantId}::uuid, ${branchId}::uuid, next_num.num, ${channel}, 'pending',
-             ${customerName ?? null}, ${customerPhone ?? null}, ${notes ?? null}, ${totalCents}, NOW()
-      FROM next_num
-      RETURNING id, order_number
-    `;
+    let order: { id: string; order_number: number; status: string; total_cents: number };
+
+    try {
+      const [inserted] = await sql<{ id: string; order_number: number; status: string; total_cents: number }[]>`
+        WITH next_num AS (
+          SELECT COALESCE(MAX(order_number), 1000) + 1 AS num
+          FROM orders WHERE branch_id = ${branchId}::uuid
+        )
+        INSERT INTO orders (
+          id, tenant_id, branch_id, order_number, channel, status,
+          customer_name, customer_phone, notes, total_cents, idempotency_key, updated_at
+        )
+        SELECT gen_random_uuid(), ${tenantId}::uuid, ${branchId}::uuid, next_num.num, ${channel}, 'pending',
+               ${customerName ?? null}, ${customerPhone ?? null}, ${notes ?? null}, ${totalCents},
+               ${idempotency.key}, NOW()
+        FROM next_num
+        RETURNING id, order_number, status, total_cents
+      `;
+      order = inserted;
+    } catch (err) {
+      const pgCode = (err as { code?: string }).code;
+      if (pgCode === "23505" && idempotency.key) {
+        const existing = await findOrderByIdempotencyKey(sql, tenantId, idempotency.key);
+        if (existing) return jsonResponse(orderCreatePayload(existing, true), 200);
+      }
+      throw err;
+    }
 
     for (const item of lineItems) {
       await sql`
@@ -132,7 +242,7 @@ export async function handleCreateOrder(request: Request, env: GatewayEnv, user?
       `print-job-${order.id}-cozinha`,
     );
 
-    return jsonResponse({ order: { id: order.id, orderNumber: order.order_number, status: "pending", totalCents } }, 201);
+    return jsonResponse(orderCreatePayload(order), 201);
   } catch (err) {
     console.error("create_order_error", err);
     return jsonResponse({ error: "internal_error" }, 500);
@@ -148,22 +258,51 @@ export async function handleListOrders(request: Request, env: GatewayEnv, user: 
 
   if (!branchId) return jsonResponse({ error: "branch_id_required" }, 400);
 
+  const pagination = parseListPagination(url);
+  if (!pagination.ok) return pagination.response;
+
+  const { limit, page, offset } = pagination;
   const sql = getSql(env);
   try {
+    const [{ count }] = status
+      ? await sql<{ count: number }[]>`
+          SELECT COUNT(*)::int AS count FROM orders
+          WHERE tenant_id = ${user.tid}::uuid AND branch_id = ${branchId}::uuid AND status = ${status}
+        `
+      : await sql<{ count: number }[]>`
+          SELECT COUNT(*)::int AS count FROM orders
+          WHERE tenant_id = ${user.tid}::uuid AND branch_id = ${branchId}::uuid
+        `;
+
+    const total = count ?? 0;
+    const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+
     const orders = status
       ? await sql`
           SELECT id, order_number, channel, status, customer_name, customer_phone, total_cents, created_at
           FROM orders
           WHERE tenant_id = ${user.tid}::uuid AND branch_id = ${branchId}::uuid AND status = ${status}
-          ORDER BY created_at DESC LIMIT 50
+          ORDER BY created_at DESC
+          LIMIT ${limit} OFFSET ${offset}
         `
       : await sql`
           SELECT id, order_number, channel, status, customer_name, customer_phone, total_cents, created_at
           FROM orders
           WHERE tenant_id = ${user.tid}::uuid AND branch_id = ${branchId}::uuid
-          ORDER BY created_at DESC LIMIT 50
+          ORDER BY created_at DESC
+          LIMIT ${limit} OFFSET ${offset}
         `;
-    return jsonResponse({ orders });
+
+    return jsonResponse({
+      orders,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasMore: page < totalPages,
+      },
+    });
   } finally {
     await sql.end();
   }

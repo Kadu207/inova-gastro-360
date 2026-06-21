@@ -35,9 +35,17 @@ export async function bearerToken(payload: JwtPayload): Promise<string> {
   return signAccessToken(payload, TEST_JWT_SECRET);
 }
 
-export function authRequest(url: string, token: string, init: RequestInit = {}): Request {
+export function authRequest(
+  url: string,
+  token: string,
+  init: RequestInit = {},
+  extraHeaders?: Record<string, string>,
+): Request {
   const headers = new Headers(init.headers);
   headers.set("authorization", `Bearer ${token}`);
+  if (extraHeaders) {
+    for (const [k, v] of Object.entries(extraHeaders)) headers.set(k, v);
+  }
   if (init.body && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
   }

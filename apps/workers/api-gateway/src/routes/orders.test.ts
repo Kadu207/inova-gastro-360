@@ -4,6 +4,8 @@ import {
   handleListOrders,
   handleUpdateOrderStatus,
   handleGetOrder,
+  parseIdempotencyKey,
+  parseListPagination,
 } from "./orders";
 import { testEnv, DEMO_BRANCH_ID, DEMO_PRODUCT_ID } from "../test/helpers";
 
@@ -90,6 +92,44 @@ describe("orders handlers — validação (sem DB)", () => {
     await expect(
       handleGetOrder(new Request("http://test"), envNoDb, user, DEMO_BRANCH_ID),
     ).rejects.toThrow(/Banco não configurado/);
+  });
+
+  it("rejeita Idempotency-Key vazio", async () => {
+    const req = new Request("http://test/api/v1/orders", {
+      method: "POST",
+      headers: { "Idempotency-Key": "   ", "content-type": "application/json" },
+      body: JSON.stringify({
+        branchId: DEMO_BRANCH_ID,
+        items: [{ productId: DEMO_PRODUCT_ID, quantity: 1 }],
+      }),
+    });
+    const result = parseIdempotencyKey(req);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.response.status).toBe(400);
+  });
+
+  it("rejeita limit inválido na listagem", () => {
+    const url = new URL("http://test/api/v1/orders?branchId=x&limit=0");
+    const result = parseListPagination(url);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.response.status).toBe(400);
+  });
+
+  it("rejeita page inválida na listagem", () => {
+    const url = new URL("http://test/api/v1/orders?branchId=x&page=0");
+    const result = parseListPagination(url);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.response.status).toBe(400);
+  });
+
+  it("paginação padrão page=1 limit=20", () => {
+    const result = parseListPagination(new URL("http://test/api/v1/orders?branchId=x"));
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(20);
+      expect(result.offset).toBe(0);
+    }
   });
 });
 
