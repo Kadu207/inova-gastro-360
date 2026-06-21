@@ -9,8 +9,8 @@
 
 ## Pendente (print-agent)
 
-- [ ] T010 Scaffold `apps/print-agent` (Node/Electron ou serviço systemd)
-- [ ] T011 Poll GET print_jobs pending por branch + sector
+- [x] T010 Scaffold `apps/print-agent` (Node poll + log)
+- [x] T011 Poll GET print_jobs pending por branch + sector + PATCH printed
 - [ ] T012 Driver ESC/POS cozinha + balcão
 - [ ] T013 Driver A4 (comanda fiscal simplificada)
 - [ ] T014 PATCH status printed/failed + retry
