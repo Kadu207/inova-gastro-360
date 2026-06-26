@@ -82,6 +82,8 @@ services:
       MESSAGING_URL: http://messaging-bus:8789
       REALTIME_URL: http://realtime-hub:8790
       INTEGRATIONS_URL: http://integrations:8791
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ../../:/app
     command: sh -c "npm ci && npm run start -w @inova-gastro-360/api-gateway"

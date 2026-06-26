@@ -36,24 +36,24 @@ docker compose -f infra/hetzner/docker-compose.prod.yml up -d
 bash infra/hetzner/scripts/deploy-vps.sh
 ```
 
-Ou manualmente na raiz do repo:
-
-```bash
-npm ci
-npm run db:migrate
-npm run db:seed    # primeira vez
-docker compose -f infra/hetzner/docker-compose.app.yml --env-file infra/hetzner/.env.production up -d
-npm run smoke:health
-```
+O script funciona **sem npm no host** (usa `node:20-alpine` via Docker). Postgres já existente (`inova-gastro-360-postgres`) é detectado e não recriado.
 
 ## 5. Nginx + TLS + firewall
 
+**Ordem:** stack rodando → Nginx HTTP → certbot → (certbot adiciona HTTPS).
+
 ```bash
+sudo mkdir -p /var/www/certbot
 sudo cp infra/hetzner/nginx/inovagastro360.conf /etc/nginx/sites-available/
 sudo ln -sf /etc/nginx/sites-available/inovagastro360.conf /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl enable nginx
+sudo systemctl start nginx
 sudo certbot --nginx -d inovagastro360.inovatitech.com.br
 sudo bash infra/hetzner/scripts/setup-ufw.sh
 ```
+
+Se `nginx -t` falhar por certificado inexistente, use o `inovagastro360.conf` atualizado (só HTTP na porta 80) via `git pull`.
 
 ## 6. Cutover DNS
 
