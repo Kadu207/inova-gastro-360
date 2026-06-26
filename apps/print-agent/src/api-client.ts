@@ -65,15 +65,23 @@ export class PrintAgentApiClient {
   }
 
   async markPrinted(jobId: string): Promise<void> {
+    return this.updateJobStatus(jobId, "printed");
+  }
+
+  async markFailed(jobId: string): Promise<void> {
+    return this.updateJobStatus(jobId, "failed");
+  }
+
+  async updateJobStatus(jobId: string, status: "printed" | "failed"): Promise<void> {
     const res = await fetch(`${this.config.apiBase}/api/v1/print-jobs/${jobId}`, {
       method: "PATCH",
       headers: { ...this.authHeaders(), "content-type": "application/json" },
-      body: JSON.stringify({ status: "printed" }),
+      body: JSON.stringify({ status }),
     });
 
     if (!res.ok) {
       const err = (await res.json().catch(() => ({}))) as { error?: string };
-      throw new Error(`PATCH print_job falhou: ${err.error ?? res.status}`);
+      throw new Error(`PATCH print_job (${status}) falhou: ${err.error ?? res.status}`);
     }
   }
 }

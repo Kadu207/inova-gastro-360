@@ -12,7 +12,7 @@
 - [x] T010 Scaffold `apps/print-agent` (Node poll + log)
 - [x] T011 Poll GET print_jobs pending por branch + sector + PATCH printed
 - [x] T012 Driver ESC/POS cozinha + balcão (TCP :9100 / device file)
-- [ ] T013 Driver A4 (comanda fiscal simplificada)
-- [ ] T014 PATCH status printed/failed + retry
-- [ ] T015 UI config impressoras por filial
-- [ ] T016 Testes TDD fila + idempotência impressão
+- [x] T013 Driver A4 (comanda fiscal simplificada)
+- [x] T014 PATCH status printed/failed + retry
+- [x] T015 UI config impressoras por filial (reenfileirar jobs failed)
+- [x] T016 Testes TDD fila + idempotência impressão

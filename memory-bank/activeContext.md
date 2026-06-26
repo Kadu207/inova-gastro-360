@@ -1,47 +1,31 @@
 # Contexto ativo — Inova Gastro 360
 
-**Última atualização:** 2026-06-20
+**Última atualização:** 2026-06-26
 
-## Decisão de runtime (2026-06-20)
+## Runtime VPS (spec 013) — implementado em código
 
-**Produção até go-live comercial:** VPS Hetzner (spec **013-vps-runtime**)  
-**Cloudflare Workers:** adiados por custo — reativar quando produto 100% pronto para vender (spec **010** fase edge)  
-**Cloudflare Free (mantido):** DNS + proxy SSL + WAF — sem Workers Paid / Hyperdrive em runtime VPS
+- **Node produção:** `npm run start:stack` (libera portas + int → rt → msg → api → web)
+- **Dev Wrangler:** `npm run dev:stack` (parar antes de `start:stack` — ou usar `free-stack-ports.mjs`)
+- **Realtime VPS:** Redis pub/sub via `@inova-gastro-360/runtime-node` (`node-server.ts` sem top-level await)
+- **Health agregado:** `GET /health/stack` + `npm run smoke:health` (web checa `/login`)
+- **VPS deploy:** clonar repo primeiro — ver `infra/hetzner/README.md`
+- **Cutover:** `infra/hetzner/CUTOVER.md` (DNS manual pendente)
 
-## Status atual
-- **Ondas 0–3:** core entregue (auth, pedidos, realtime, messaging, print_jobs, integrações)
-- **Onda 4:** financeiro adiado (spec 005)
-- **Runtime alvo:** VPS `128.140.77.31` — Postgres `:5440`, Redis `:6390`
-- **Deploy CF histórico:** Workers em `inovagastro360.*` (2026-06-17) — referência, cutover para VPS pendente (013 fase D)
-- **Feature Spec Kit ativa:** `specs/013-vps-runtime`
-- **Próximo código:** spec **006** print-agent (poll API; VPS como alvo)
+## Comandos
 
-## Portas (dev local)
-| Serviço | Porta |
-|---------|-------|
-| Web | 3102 |
-| API gateway | **8792** |
-| messaging-bus | 8789 |
-| realtime-hub | 8790 |
-| integrations | 8791 |
-| Postgres | 5440 |
-| Redis | 6390 |
-
-## Comandos dev
 ```bash
 docker compose up -d
 npm run db:seed
-npm run dev:stack   # web + 4 serviços (Wrangler dev — local)
-npm run speckit:context
+npm run dev:stack          # desenvolvimento (Wrangler)
+npm run start:stack        # produção Node (VPS)
+npm run smoke:health
+npm run outbox:flush
+npm run print-agent:dev
 ```
 
-**Demo:** `admin@inovagastro360.local` / `InovaGastro360!` (tenant `demo-burger`)
+**Demo:** `admin@inovagastro360.local` / `InovaGastro360!`
 
-## E2E validado
-Login → catálogo → pedido → status → outbox → print_job criado
+## Próximo (operação / Fase F)
 
-## Referências
-- `specs/013-vps-runtime/` — VPS runtime (decisão + plano)
-- `specs/010-cloudflare-workers/` — edge futuro
-- `specs/006-impressao-local/` — print-agent
-- `infra/hetzner/PRODUCTION.md`
+- Cutover DNS real na VPS (`CUTOVER.md`)
+- Workers Paid + Queues quando go-live comercial (T050–T051)

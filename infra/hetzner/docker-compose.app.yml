@@ -1,0 +1,114 @@
+# Inova Gastro 360 — stack aplicação na VPS (spec 013)
+# Runtime Node — `npm run start` por serviço (sem Wrangler em produção)
+
+name: inova-gastro-360-app
+
+networks:
+  inova_internal:
+    driver: bridge
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: inova-gastro-360-redis-app
+    restart: unless-stopped
+    networks: [inova_internal]
+    volumes:
+      - inova_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  integrations:
+    image: node:20-alpine
+    container_name: inova-gastro-360-integrations
+    restart: unless-stopped
+    working_dir: /app
+    env_file: .env.production
+    environment:
+      PORT: "8791"
+    volumes:
+      - ../../:/app
+    command: sh -c "npm ci && npm run start -w @inova-gastro-360/integrations"
+    networks: [inova_internal]
+
+  realtime-hub:
+    image: node:20-alpine
+    container_name: inova-gastro-360-realtime
+    restart: unless-stopped
+    working_dir: /app
+    env_file: .env.production
+    environment:
+      PORT: "8790"
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - ../../:/app
+    command: sh -c "npm ci && npm run start -w @inova-gastro-360/realtime-hub"
+    networks: [inova_internal]
+    ports:
+      - "127.0.0.1:8790:8790"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  messaging-bus:
+    image: node:20-alpine
+    container_name: inova-gastro-360-messaging
+    restart: unless-stopped
+    working_dir: /app
+    env_file: .env.production
+    environment:
+      PORT: "8789"
+      REALTIME_URL: http://realtime-hub:8790
+      INTEGRATIONS_URL: http://integrations:8791
+    volumes:
+      - ../../:/app
+    command: sh -c "npm ci && npm run start -w @inova-gastro-360/messaging-bus"
+    networks: [inova_internal]
+    depends_on:
+      - integrations
+      - realtime-hub
+
+  api-gateway:
+    image: node:20-alpine
+    container_name: inova-gastro-360-api
+    restart: unless-stopped
+    working_dir: /app
+    env_file: .env.production
+    environment:
+      PORT: "8792"
+      MESSAGING_URL: http://messaging-bus:8789
+      REALTIME_URL: http://realtime-hub:8790
+      INTEGRATIONS_URL: http://integrations:8791
+    volumes:
+      - ../../:/app
+    command: sh -c "npm ci && npm run start -w @inova-gastro-360/api-gateway"
+    networks: [inova_internal]
+    ports:
+      - "127.0.0.1:8792:8792"
+    depends_on:
+      - messaging-bus
+
+  web:
+    image: node:20-alpine
+    container_name: inova-gastro-360-web
+    restart: unless-stopped
+    working_dir: /app
+    env_file: .env.production
+    environment:
+      PORT: "3102"
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:8792
+      NEXT_PUBLIC_REALTIME_URL: http://127.0.0.1:8790
+    volumes:
+      - ../../:/app
+    command: sh -c "npm ci && npm run build -w @inova-gastro-360/web && npm run start -w @inova-gastro-360/web"
+    networks: [inova_internal]
+    ports:
+      - "127.0.0.1:3102:3102"
+    depends_on:
+      - api-gateway
+
+volumes:
+  inova_redis_data:

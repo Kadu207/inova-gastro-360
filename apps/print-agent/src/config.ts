@@ -16,6 +16,7 @@ export interface PrintAgentConfig {
   branchId: string
   sector: string
   pollIntervalMs: number
+  maxRetries: number
   dryRun: boolean
   printer: PrinterConfig
 }
@@ -52,10 +53,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PrintAgentConf
   const branchId = env.PRINT_AGENT_BRANCH_ID ?? "00000000-0000-4000-8000-000000000002"
   const sector = env.PRINT_AGENT_SECTOR ?? "cozinha"
   const pollIntervalMs = Number.parseInt(env.PRINT_AGENT_POLL_MS ?? "5000", 10)
+  const maxRetries = Number.parseInt(env.PRINT_AGENT_MAX_RETRIES ?? "3", 10)
   const dryRun = env.PRINT_AGENT_DRY_RUN === "1" || env.PRINT_AGENT_DRY_RUN === "true"
 
   if (!Number.isFinite(pollIntervalMs) || pollIntervalMs < 1000) {
     throw new Error("PRINT_AGENT_POLL_MS inválido (mínimo 1000)")
+  }
+  if (!Number.isFinite(maxRetries) || maxRetries < 1) {
+    throw new Error("PRINT_AGENT_MAX_RETRIES inválido (mínimo 1)")
   }
 
   return {
@@ -66,6 +71,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PrintAgentConf
     branchId,
     sector,
     pollIntervalMs,
+    maxRetries,
     dryRun,
     printer: loadPrinterConfig(env),
   }

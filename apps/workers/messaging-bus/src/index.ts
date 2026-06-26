@@ -5,12 +5,25 @@ export interface Env {
   ORDERS_QUEUE?: Queue;
   REALTIME_SERVICE?: Fetcher;
   INTEGRATIONS_SERVICE?: Fetcher;
+  REALTIME_URL?: string;
+  INTEGRATIONS_URL?: string;
 }
 
 async function forwardToRealtime(env: Env, body: { type: string; payload: unknown }): Promise<void> {
-  if (!env.REALTIME_SERVICE) return;
   const payload = body.payload as Record<string, unknown> | undefined;
   const branchId = typeof payload?.branchId === "string" ? payload.branchId : "default";
+
+  if (env.REALTIME_URL) {
+    const base = env.REALTIME_URL.replace(/\/$/, "");
+    await fetch(`${base}/broadcast?branchId=${encodeURIComponent(branchId)}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    return;
+  }
+
+  if (!env.REALTIME_SERVICE) return;
   await env.REALTIME_SERVICE.fetch(`http://internal/broadcast?branchId=${branchId}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -19,6 +32,16 @@ async function forwardToRealtime(env: Env, body: { type: string; payload: unknow
 }
 
 async function forwardToIntegrations(env: Env, body: { type: string; payload: unknown }): Promise<void> {
+  if (env.INTEGRATIONS_URL) {
+    const base = env.INTEGRATIONS_URL.replace(/\/$/, "");
+    await fetch(`${base}/internal/notify`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    return;
+  }
+
   if (!env.INTEGRATIONS_SERVICE) return;
   await env.INTEGRATIONS_SERVICE.fetch("http://internal/internal/notify", {
     method: "POST",

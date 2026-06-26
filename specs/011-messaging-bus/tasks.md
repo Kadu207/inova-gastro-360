@@ -10,11 +10,12 @@
 - [x] T006 Handler `queue()` preparado para ORDERS_QUEUE (Paid)
 - [x] T007 Deploy prod worker messaging-bus
 - [x] T008 Documentação Queues adiadas (QUEUES-DEFERRED.md)
+- [x] T009 Outbox replay EMB-15 — `flushPendingOutbox`, cron 1min, `POST /internal/outbox/flush`, `npm run outbox:flush`
 
 ## Fase 2 (Workers Paid)
 
 - [ ] T010 Criar ORDERS_QUEUE + binding wrangler
 - [ ] T011 Consumer assíncrono com retry exponential
 - [ ] T012 Dead letter queue + alerta (DLQ spec US2)
-- [ ] T013 Outbox poller cron (backup se publish falhar)
+- [ ] T013 Outbox poller cron (backup se publish falhar) — parcial: cron api-gateway ✅; Queues Paid pendente
 - [ ] T014 Testes integração queue → forward

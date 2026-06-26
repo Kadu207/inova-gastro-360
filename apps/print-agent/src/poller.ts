@@ -2,6 +2,7 @@ import type { PrintAgentConfig } from "./config"
 import { PrintAgentApiClient, type PrintJobRow } from "./api-client"
 import { createPrintSink, type PrintSink } from "./escpos/printer"
 import { buildKitchenTicket, parsePrintPayload } from "./escpos/ticket"
+import { buildA4Receipt } from "./a4/receipt"
 
 export function formatJobLog(job: PrintJobRow): string {
   const payload = job.payload ?? {}
@@ -22,8 +23,11 @@ export async function printJobTicket(
     return true
   }
 
-  const ticket = buildKitchenTicket(payload, job.sector)
-  log(`[escpos] enviando ${ticket.length} bytes → ${config.printer.type} (${sink.mode})`)
+  const ticket =
+    job.sector.toLowerCase() === "a4"
+      ? buildA4Receipt(payload, job.sector)
+      : buildKitchenTicket(payload, job.sector)
+  log(`[print] enviando ${ticket.length} bytes → ${config.printer.type} (${sink.mode})`)
 
   try {
     await sink.print(ticket)
@@ -39,6 +43,7 @@ export async function processPendingJobs(
   client: PrintAgentApiClient,
   config: PrintAgentConfig,
   sink: PrintSink,
+  failureCounts: Map<string, number>,
   log: (msg: string) => void = console.log,
 ): Promise<number> {
   const jobs = await client.fetchPendingJobs()
@@ -53,10 +58,23 @@ export async function processPendingJobs(
     }
 
     const printed = await printJobTicket(job, config, sink, log)
-    if (!printed) continue
+    if (printed) {
+      failureCounts.delete(job.id)
+      await client.markPrinted(job.id)
+      log(`[ok] marcado printed job=${job.id}`)
+      continue
+    }
 
-    await client.markPrinted(job.id)
-    log(`[ok] marcado printed job=${job.id}`)
+    const attempt = (failureCounts.get(job.id) ?? 0) + 1
+    failureCounts.set(job.id, attempt)
+
+    if (attempt >= config.maxRetries) {
+      await client.markFailed(job.id)
+      failureCounts.delete(job.id)
+      log(`[failed] job=${job.id} após ${attempt} tentativa(s)`)
+    } else {
+      log(`[retry] job=${job.id} tentativa ${attempt}/${config.maxRetries} — permanece pending`)
+    }
   }
 
   return jobs.length
@@ -68,6 +86,7 @@ export async function runPollLoop(
   log: (msg: string) => void = console.log,
 ): Promise<never> {
   const sink = createPrintSink(config.printer)
+  const failureCounts = new Map<string, number>()
   const printerInfo =
     config.printer.type === "none"
       ? "modo=log (sem impressora)"
@@ -81,7 +100,7 @@ export async function runPollLoop(
 
   for (;;) {
     try {
-      const n = await processPendingJobs(client, config, sink, log)
+      const n = await processPendingJobs(client, config, sink, failureCounts, log)
       if (n > 0) log(`Processados ${n} job(s)`)
     } catch (err) {
       log(`[erro] ${err instanceof Error ? err.message : String(err)}`)

@@ -13,9 +13,9 @@ export function normalizeDatabaseUrl(url: string): string {
   }
 }
 
-/** Hyperdrive em produção; DATABASE_URL em dev local (.dev.vars) */
+/** Dev local (.dev.vars) tem prioridade; produção usa Hyperdrive binding. */
 export function getDatabaseUrl(env: GatewayEnv): string | undefined {
-  return env.HYPERDRIVE?.connectionString ?? env.DATABASE_URL;
+  return env.DATABASE_URL ?? env.HYPERDRIVE?.connectionString;
 }
 
 export function hasDatabase(env: GatewayEnv): boolean {

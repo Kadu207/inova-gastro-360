@@ -8,7 +8,7 @@
     "build:pages": "next build",
     "deploy:pages": "wrangler pages deploy out --project-name=inova-gastro-360-web",
     "deploy:web": "wrangler deploy",
-    "start": "next start --port 3102 --hostname 127.0.0.1",
+    "start": "serve out -l tcp://127.0.0.1:3102 --no-clipboard",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
@@ -17,7 +17,8 @@
     "@inova-gastro-360/config": "*",
     "next": "15.3.3",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "serve": "^14.2.4"
   },
   "devDependencies": {
     "@types/node": "22.15.29",

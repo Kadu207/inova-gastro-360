@@ -9,6 +9,9 @@ import {
 } from "./routes/orders";
 import { handleListPrintJobs, handleUpdatePrintJobStatus } from "./routes/print-jobs";
 import { requireAuth } from "./middleware/auth";
+import { isOutboxFlushAuthorized } from "./lib/outbox-dispatch";
+import { flushPendingOutbox } from "./lib/outbox-replay";
+import { checkStackHealth } from "./routes/health-stack";
 
 import type { GatewayEnv } from "./types/env";
 
@@ -37,6 +40,11 @@ export default {
 
     if (path === "/health" || path === "/api/health") {
       return withCors(healthHandler("api-gateway"));
+    }
+
+    if (path === "/health/stack" && request.method === "GET") {
+      const stack = await checkStackHealth(env);
+      return withCors(jsonResponse(stack, stack.status === "ok" ? 200 : 503));
     }
 
     if (path === "/" && request.method === "GET") {
@@ -117,6 +125,18 @@ export default {
       return withCors(await handleUpdatePrintJobStatus(request, env, auth.user, printJobMatch[1]));
     }
 
+    if (path === "/internal/outbox/flush" && request.method === "POST") {
+      if (!isOutboxFlushAuthorized(request, env)) {
+        return withCors(jsonResponse({ error: "forbidden" }, 403));
+      }
+      const result = await flushPendingOutbox(env);
+      return withCors(jsonResponse({ ok: true, ...result }));
+    }
+
     return withCors(jsonResponse({ error: "not_found", path }, 404));
+  },
+
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(flushPendingOutbox(env));
   },
 };

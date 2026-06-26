@@ -33,6 +33,14 @@
     "speckit:context": "bash .specify/scripts/bash/update-agent-context.sh",
     "print-agent:dev": "npm run dev -w @inova-gastro-360/print-agent",
     "print-agent:start": "npm run start -w @inova-gastro-360/print-agent",
+    "outbox:flush": "node scripts/flush-outbox.mjs",
+    "smoke:health": "node scripts/smoke-health.mjs",
+    "start:integrations": "npm run start -w @inova-gastro-360/integrations",
+    "start:rt": "npm run start -w @inova-gastro-360/realtime-hub",
+    "start:msg": "npm run start -w @inova-gastro-360/messaging-bus",
+    "start:api": "npm run start -w @inova-gastro-360/api-gateway",
+    "start:web:prod": "npm run build -w @inova-gastro-360/web && npm run start -w @inova-gastro-360/web",
+    "start:stack": "node scripts/free-stack-ports.mjs && concurrently -n int,rt,msg,api,web -c cyan,magenta,yellow,green,blue \"npm run start:integrations\" \"npm run start:rt\" \"npm run start:msg\" \"npm run start:api\" \"npm run start:web:prod\"",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\""
   },
   "devDependencies": {

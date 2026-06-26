@@ -13,6 +13,7 @@ const TITLES: Record<string, string> = {
   "/painel/delivery": "Delivery",
   "/painel/cozinha": "Cozinha / KDS",
   "/painel/balcao": "Balcão",
+  "/dashboard/impressao": "Impressão",
 };
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {

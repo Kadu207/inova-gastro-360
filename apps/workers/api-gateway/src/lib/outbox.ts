@@ -2,6 +2,7 @@ import type { JSONValue } from "postgres";
 import { EVENT_TYPES } from "@inova-gastro-360/contracts";
 import type { GatewayEnv } from "../types/env";
 import { getSql, hasDatabase } from "./db";
+import { dispatchOutboxEvent, markOutboxPublished } from "./outbox-dispatch";
 
 export async function publishOutboxEvent(
   env: GatewayEnv,
@@ -14,17 +15,23 @@ export async function publishOutboxEvent(
 
   const sql = getSql(env);
   try {
-    await sql`
+    const [inserted] = await sql<
+      { id: string; tenant_id: string; event_type: string; payload: Record<string, unknown> }[]
+    >`
       INSERT INTO outbox_events (id, tenant_id, event_type, payload, idempotency_key)
-      VALUES (gen_random_uuid(), ${tenantId}::uuid, ${eventType}, ${sql.json(payload as JSONValue)}, ${idempotencyKey ?? null})
+      VALUES (
+        gen_random_uuid(),
+        ${tenantId}::uuid,
+        ${eventType},
+        ${sql.json(payload as JSONValue)},
+        ${idempotencyKey ?? null}
+      )
+      RETURNING id, tenant_id, event_type, payload
     `;
 
-    if (env.MESSAGING_SERVICE) {
-      await env.MESSAGING_SERVICE.fetch("http://internal/internal/publish", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ type: eventType, payload }),
-      });
+    const dispatched = await dispatchOutboxEvent(env, inserted);
+    if (dispatched) {
+      await markOutboxPublished(sql, inserted.id);
     }
   } finally {
     await sql.end();

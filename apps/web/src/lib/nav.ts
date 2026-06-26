@@ -11,6 +11,7 @@ export const MAIN_NAV: NavItem[] = [
   { href: "/painel/balcao", label: "Balcão", icon: "▣" },
   { href: "/cardapio", label: "Cardápio", icon: "☰" },
   { href: "/painel/cozinha", label: "Cozinha (KDS)", icon: "◫" },
+  { href: "/dashboard/impressao", label: "Impressão", icon: "⎙" },
   { href: "/painel/delivery", label: "Delivery", icon: "➤" },
   { href: "#", label: "Clientes", icon: "◌", disabled: true },
   { href: "#", label: "Financeiro", icon: "◈", disabled: true },

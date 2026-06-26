@@ -20,6 +20,9 @@
   "vars": {
     "ENVIRONMENT": "production"
   },
+  "triggers": {
+    "crons": ["*/1 * * * *"]
+  },
   "routes": [
     {
       "pattern": "inovagastro360-api.inovatitech.com.br",
