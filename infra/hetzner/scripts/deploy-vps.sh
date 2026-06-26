@@ -18,9 +18,14 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
+# Carrega só linhas KEY=VALUE (ignora comentários e linhas decorativas)
 set -a
-# shellcheck disable=SC1090
-source "$ENV_FILE"
+while IFS= read -r line || [[ -n "$line" ]]; do
+  line="${line#"${line%%[![:space:]]*}"}"
+  [[ -z "$line" || "$line" =~ ^# ]] && continue
+  [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] || continue
+  export "$line"
+done < "$ENV_FILE"
 set +a
 
 # Migrate no host: 127.0.0.1 (Postgres já provisionado em /opt ou local :5440)
