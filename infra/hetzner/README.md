@@ -32,28 +32,29 @@ docker compose -f infra/hetzner/docker-compose.prod.yml up -d
 
 ## 4. Deploy do stack app (Node)
 
+**Importante:** nunca rode `npm ci` dentro de vários containers ao mesmo tempo — corrompe `node_modules`.
+
 ```bash
+bash infra/hetzner/scripts/install-stack-deps.sh   # uma vez (ou após git pull grande)
 bash infra/hetzner/scripts/deploy-vps.sh
 ```
 
-O script funciona **sem npm no host** (usa `node:20-alpine` via Docker). Postgres já existente (`inova-gastro-360-postgres`) é detectado e não recriado.
-
 ## 5. Nginx + TLS + firewall
 
-**Ordem:** stack rodando → Nginx HTTP → certbot → (certbot adiciona HTTPS).
+**VPS compartilhada:** porta 80 já usada por outro Docker (`excellence_dental_prod-nginx`). O `systemctl nginx` **não sobe** se algum site em `sites-enabled` escutar :80 (ex.: `casadapaz`).
 
-```bash
-sudo mkdir -p /var/www/certbot
-sudo cp infra/hetzner/nginx/inovagastro360.conf /etc/nginx/sites-available/
-sudo ln -sf /etc/nginx/sites-available/inovagastro360.conf /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl enable nginx
-sudo systemctl start nginx
-sudo certbot --nginx -d inovagastro360.inovatitech.com.br
-sudo bash infra/hetzner/scripts/setup-ufw.sh
+**Alternativa recomendada — Cloudflare Tunnel** (sem nginx no host):
+
+```yaml
+  - hostname: inovagastro360.inovatitech.com.br
+    service: http://127.0.0.1:3102
+  - hostname: inovagastro360-api.inovatitech.com.br
+    service: http://127.0.0.1:8792
 ```
 
-Se `nginx -t` falhar por certificado inexistente, use o `inovagastro360.conf` atualizado (só HTTP na porta 80) via `git pull`.
+No `.env.production`: `NEXT_PUBLIC_API_URL=https://inovagastro360-api.inovatitech.com.br`
+
+Se quiser nginx local na **9088** (proxy /api + web), desabilite sites que usam :80 ou use container nginx — ver `NGINX-SHARED-VPS.md`.
 
 ## 6. Cutover DNS
 

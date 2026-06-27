@@ -1,5 +1,5 @@
 # Inova Gastro 360 — stack aplicação na VPS (spec 013)
-# Runtime Node — `npm run start` por serviço (sem Wrangler em produção)
+# Dependências: rodar UMA vez via infra/hetzner/scripts/install-stack-deps.sh (nunca npm ci por container)
 
 name: inova-gastro-360-app
 
@@ -31,7 +31,7 @@ services:
       PORT: "8791"
     volumes:
       - ../../:/app
-    command: sh -c "npm ci && npm run start -w @inova-gastro-360/integrations"
+    command: npm run start -w @inova-gastro-360/integrations
     networks: [inova_internal]
 
   realtime-hub:
@@ -45,7 +45,7 @@ services:
       REDIS_URL: redis://redis:6379
     volumes:
       - ../../:/app
-    command: sh -c "npm ci && npm run start -w @inova-gastro-360/realtime-hub"
+    command: npm run start -w @inova-gastro-360/realtime-hub
     networks: [inova_internal]
     ports:
       - "127.0.0.1:8790:8790"
@@ -65,7 +65,7 @@ services:
       INTEGRATIONS_URL: http://integrations:8791
     volumes:
       - ../../:/app
-    command: sh -c "npm ci && npm run start -w @inova-gastro-360/messaging-bus"
+    command: npm run start -w @inova-gastro-360/messaging-bus
     networks: [inova_internal]
     depends_on:
       - integrations
@@ -86,7 +86,7 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - ../../:/app
-    command: sh -c "npm ci && npm run start -w @inova-gastro-360/api-gateway"
+    command: npm run start -w @inova-gastro-360/api-gateway
     networks: [inova_internal]
     ports:
       - "127.0.0.1:8792:8792"
@@ -101,11 +101,9 @@ services:
     env_file: .env.production
     environment:
       PORT: "3102"
-      NEXT_PUBLIC_API_URL: http://127.0.0.1:8792
-      NEXT_PUBLIC_REALTIME_URL: http://127.0.0.1:8790
     volumes:
       - ../../:/app
-    command: sh -c "npm ci && npm run build -w @inova-gastro-360/web && npm run start -w @inova-gastro-360/web"
+    command: npm run start -w @inova-gastro-360/web
     networks: [inova_internal]
     ports:
       - "127.0.0.1:3102:3102"
