@@ -1,6 +1,7 @@
 import http from "node:http";
 import { createClient, type RedisClientType } from "redis";
 import { WebSocketServer, type WebSocket } from "ws";
+import { resolveBindHost } from "./bind-host.js";
 
 export interface RedisRealtimeServer {
   readonly httpServer: http.Server;
@@ -100,9 +101,10 @@ export async function createRedisRealtimeServer(options: {
     });
   });
 
+  const bindHost = resolveBindHost();
   await new Promise<void>((resolve) => {
-    httpServer.listen(port, "127.0.0.1", () => {
-      console.log(`[${serviceName}] Redis WS http://127.0.0.1:${port}`);
+    httpServer.listen(port, bindHost, () => {
+      console.log(`[${serviceName}] Redis WS http://${bindHost}:${port}`);
       resolve();
     });
   });

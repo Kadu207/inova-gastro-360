@@ -11,9 +11,18 @@ cd "$ROOT"
 echo "==> Parando stack app (se rodando)..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" down 2>/dev/null || true
 
-echo "==> Limpando node_modules corrompidos..."
-rm -rf node_modules apps/web/node_modules apps/web/.next apps/web/out
-find apps/workers packages -name node_modules -type d -prune -exec rm -rf {} + 2>/dev/null || true
+echo "==> Limpando node_modules (via container root — evita Permission denied)..."
+docker run --rm -v "$ROOT:/app" -w /app alpine:3.20 sh -c "
+  rm -rf node_modules apps/web/node_modules apps/web/.next apps/web/out
+  find apps/workers packages -name node_modules -type d -prune -exec rm -rf {} + 2>/dev/null || true
+"
+
+# Devolve ownership ao usuário do deploy (opcional)
+if [[ -n "${SUDO_USER:-}" ]]; then
+  chown -R "$SUDO_USER:$SUDO_USER" "$ROOT/node_modules" 2>/dev/null || true
+elif id -u gestaoti &>/dev/null; then
+  chown -R gestaoti:gestaoti "$ROOT" 2>/dev/null || true
+fi
 
 if [[ -f "$ENV_FILE" ]]; then
   set -a
@@ -41,5 +50,13 @@ docker run --rm -v "$ROOT:/app" -w /app --network host \
     npm run db:seed &&
     npm run build -w @inova-gastro-360/web
   "
+
+# npm ci no container cria arquivos como root — devolve ao usuário do deploy
+DEPLOY_USER="${SUDO_USER:-${USER:-gestaoti}}"
+if id -u "$DEPLOY_USER" &>/dev/null; then
+  echo "==> Ajustando permissões para $DEPLOY_USER..."
+  chown -R "$DEPLOY_USER:$DEPLOY_USER" "$ROOT" 2>/dev/null || \
+    sudo chown -R "$DEPLOY_USER:$DEPLOY_USER" "$ROOT"
+fi
 
 echo "==> Dependências instaladas. Suba o stack: bash infra/hetzner/scripts/deploy-vps.sh"

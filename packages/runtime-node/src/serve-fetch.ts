@@ -1,5 +1,6 @@
 import http from "node:http";
 import type { IncomingMessage } from "node:http";
+import { resolveBindHost } from "./bind-host.js";
 
 export interface FetchWorkerModule {
   fetch(request: Request, env: unknown, ctx?: ExecutionContext): Promise<Response>;
@@ -58,8 +59,9 @@ export function serveFetchWorker(
     }
   });
 
-  server.listen(port, "127.0.0.1", () => {
-    console.log(`[${serviceName}] Node runtime http://127.0.0.1:${port}`);
+  const bindHost = resolveBindHost();
+  server.listen(port, bindHost, () => {
+    console.log(`[${serviceName}] Node runtime http://${bindHost}:${port}`);
   });
 
   return server;

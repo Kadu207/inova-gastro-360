@@ -28,6 +28,7 @@ services:
     working_dir: /app
     env_file: .env.production
     environment:
+      HOST: "0.0.0.0"
       PORT: "8791"
     volumes:
       - ../../:/app
@@ -41,6 +42,7 @@ services:
     working_dir: /app
     env_file: .env.production
     environment:
+      HOST: "0.0.0.0"
       PORT: "8790"
       REDIS_URL: redis://redis:6379
     volumes:
@@ -60,6 +62,7 @@ services:
     working_dir: /app
     env_file: .env.production
     environment:
+      HOST: "0.0.0.0"
       PORT: "8789"
       REALTIME_URL: http://realtime-hub:8790
       INTEGRATIONS_URL: http://integrations:8791
@@ -78,10 +81,12 @@ services:
     working_dir: /app
     env_file: .env.production
     environment:
+      HOST: "0.0.0.0"
       PORT: "8792"
       MESSAGING_URL: http://messaging-bus:8789
       REALTIME_URL: http://realtime-hub:8790
       INTEGRATIONS_URL: http://integrations:8791
+      WEB_HEALTH_URL: http://web:3102/login
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -103,7 +108,7 @@ services:
       PORT: "3102"
     volumes:
       - ../../:/app
-    command: npm run start -w @inova-gastro-360/web
+    command: sh -c "cd apps/web && npx serve out -l tcp://0.0.0.0:3102 --no-clipboard"
     networks: [inova_internal]
     ports:
       - "127.0.0.1:3102:3102"
