@@ -17,15 +17,28 @@ Web usa `/api` no mesmo host — preferir um único hostname com Nginx local em 
 
 ## Opção B — Nginx em porta 9088 (sem conflito com :80)
 
+**Preferido na VPS compartilhada:** nginx no Docker Compose (não usa `systemctl nginx`):
+
 ```bash
-# Na VPS — proxy local na 9088
-sudo cp infra/hetzner/nginx/inovagastro360.local.conf /etc/nginx/sites-available/inovagastro360-local.conf
-sudo ln -sf /etc/nginx/sites-available/inovagastro360-local.conf /etc/nginx/sites-enabled/
-# Edite listen 9088 se necessário
-sudo nginx -t && sudo systemctl restart nginx
+cd ~/inova-gastro-360
+docker compose -f infra/hetzner/docker-compose.app.yml --env-file infra/hetzner/.env.production up -d nginx-proxy
+curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:9088/login
 ```
 
 Cloudflare Tunnel aponta `inovagastro360.inovatitech.com.br` → `http://127.0.0.1:9088`.
+
+### Alternativa — nginx do host (só se :80 estiver livre)
+
+```bash
+sudo cp infra/hetzner/nginx/inovagastro360.local.conf /etc/nginx/sites-available/inovagastro360-local.conf
+sudo rm -f /etc/nginx/sites-enabled/inovagastro360.local.conf
+sudo ln -sf /etc/nginx/sites-available/inovagastro360-local.conf /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl restart nginx
+```
+
+**Erro comum:** `duplicate upstream "inova_web"` — dois arquivos Inova em `sites-enabled`.
+
+**Erro comum:** `bind() to 0.0.0.0:80 failed` — outro serviço (Docker) usa :80; use **Opção B (Docker)** acima.
 
 ## Opção C — Vhost no Nginx Docker existente (:80)
 

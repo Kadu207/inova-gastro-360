@@ -7,8 +7,9 @@
 - [x] `@inova-gastro-360/runtime-node` + `npm run start:stack`
 - [x] Realtime Redis pub/sub (sem DO em Node)
 - [x] `/health/stack` + `npm run smoke:health`
-- [x] Nginx, UFW scripts, CUTOVER + ROLLBACK docs
-- [ ] Cutover DNS real na VPS (operação manual)
+- [x] Nginx Docker `:9088` + Tunnel Cloudflare (VPS compartilhada, spec 013)
+- [x] Login API via proxy confirmado na VPS
+- [ ] Validar acesso HTTPS público no browser (smoke final)
 
 ## Spec 006 print-agent ✅
 

@@ -115,5 +115,20 @@ services:
     depends_on:
       - api-gateway
 
+  # Proxy :9088 para Tunnel — não depende do nginx do host (:80 ocupado)
+  nginx-proxy:
+    image: nginx:1.27-alpine
+    container_name: inova-gastro-360-nginx
+    restart: unless-stopped
+    networks: [inova_internal]
+    volumes:
+      - ./nginx/inovagastro360.docker.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "127.0.0.1:9088:9088"
+    depends_on:
+      - web
+      - api-gateway
+      - realtime-hub
+
 volumes:
   inova_redis_data:
