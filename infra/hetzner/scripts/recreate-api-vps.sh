@@ -5,6 +5,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 ENV_FILE="$ROOT/infra/hetzner/.env.production"
 COMPOSE_FILE="$ROOT/infra/hetzner/docker-compose.app.yml"
+# shellcheck source=lib/minio-vps.sh
+source "$ROOT/infra/hetzner/scripts/lib/minio-vps.sh"
 
 cd "$ROOT"
 
@@ -17,6 +19,14 @@ echo "==> Recriando api-gateway (env atualizado)..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate api-gateway
 
 sleep 4
+
+# MinIO em rede interna (sem porta no host) — reconectar após recreate
+if grep -q '^MINIO_CONTAINER=' "$ENV_FILE" 2>/dev/null; then
+  MINIO_CONTAINER="$(grep '^MINIO_CONTAINER=' "$ENV_FILE" | cut -d= -f2-)"
+  if [[ -n "$MINIO_CONTAINER" && -z "$(minio_vps_published_port "$MINIO_CONTAINER")" ]]; then
+    bash "$ROOT/infra/hetzner/scripts/connect-minio-network-vps.sh" "$MINIO_CONTAINER" || true
+  fi
+fi
 
 echo "==> DATABASE_URL no container:"
 docker exec inova-gastro-360-api printenv DATABASE_URL | sed 's/:\/\/inova_gastro:[^@]*@/:\/\/inova_gastro:***@/'

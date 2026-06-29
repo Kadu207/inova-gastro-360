@@ -5,6 +5,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 ENV_FILE="$ROOT/infra/hetzner/.env.production"
 BUCKET="${S3_BUCKET:-inova-gastro-360}"
+# shellcheck source=lib/minio-vps.sh
+source "$ROOT/infra/hetzner/scripts/lib/minio-vps.sh"
 
 if [[ -f "$ENV_FILE" ]]; then
   set -a
@@ -13,46 +15,66 @@ if [[ -f "$ENV_FILE" ]]; then
   set +a
 fi
 
-MINIO_ENDPOINT="${MINIO_HOST_ENDPOINT:-${S3_ENDPOINT:-http://127.0.0.1:9000}}"
+MINIO_CONTAINER="${MINIO_CONTAINER:-$(minio_vps_default_container)}"
 MINIO_USER="${S3_ACCESS_KEY:-${MINIO_ROOT_USER:-}}"
 MINIO_PASS="${S3_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-}}"
 
 if [[ "$MINIO_USER" == "CHANGE_ME" || "$MINIO_PASS" == "CHANGE_ME" || -z "$MINIO_USER" || -z "$MINIO_PASS" ]]; then
   echo "Erro: credenciais MinIO inválidas em $ENV_FILE"
-  echo "  Defina S3_ACCESS_KEY e S3_SECRET_KEY com as credenciais reais do MinIO da VPS."
-  echo "  Ou exporte MINIO_ROOT_USER / MINIO_ROOT_PASSWORD antes de rodar o script."
-  echo ""
-  echo "Descobrir MinIO na VPS:"
-  echo "  docker ps --format '{{.Names}}' | grep -i minio"
-  echo "  ss -tlnp | grep 9000"
+  echo "  Rode: bash infra/hetzner/scripts/configure-s3-env-vps.sh"
   exit 1
 fi
 
-if ! command -v mc >/dev/null 2>&1; then
-  echo "Instale MinIO Client (mc): https://min.io/docs/minio/linux/reference/minio-mc.html"
+if [[ -z "$MINIO_CONTAINER" ]]; then
+  echo "Erro: container MinIO não encontrado"
   exit 1
 fi
 
-# Host Docker: minio:9000 → localhost se script roda no host
-LOCAL_ENDPOINT="$MINIO_ENDPOINT"
+PUBLISHED_PORT="$(minio_vps_published_port "$MINIO_CONTAINER")"
+USE_DOCKER_MC=0
+LOCAL_ENDPOINT="${MINIO_HOST_ENDPOINT:-}"
+
+if [[ -z "$LOCAL_ENDPOINT" || "$LOCAL_ENDPOINT" == docker-network://* ]]; then
+  if [[ -n "$PUBLISHED_PORT" ]]; then
+    LOCAL_ENDPOINT="http://127.0.0.1:${PUBLISHED_PORT}"
+  else
+    USE_DOCKER_MC=1
+    LOCAL_ENDPOINT="http://127.0.0.1:9000"
+    echo "==> MinIO só na rede Docker ($MINIO_CONTAINER) — mc via container"
+  fi
+fi
+
 LOCAL_ENDPOINT="${LOCAL_ENDPOINT/minio:9000/127.0.0.1:9000}"
+LOCAL_ENDPOINT="${LOCAL_ENDPOINT/host.docker.internal/127.0.0.1}"
+
+mc_cmd() {
+  if [[ "$USE_DOCKER_MC" == 1 ]]; then
+    minio_vps_mc_run "$MINIO_CONTAINER" "$@"
+  elif command -v mc >/dev/null 2>&1; then
+    mc "$@"
+  else
+    echo "Instale mc ou use MinIO na rede Docker (configure-s3-env-vps.sh detecta automaticamente)"
+    exit 1
+  fi
+}
 
 echo "==> Alias MinIO ($LOCAL_ENDPOINT)"
-mc alias set inova-catalog "$LOCAL_ENDPOINT" "$MINIO_USER" "$MINIO_PASS"
+mc_cmd alias set inova-catalog "$LOCAL_ENDPOINT" "$MINIO_USER" "$MINIO_PASS"
 
 echo "==> Testar conexão"
-if ! mc ls inova-catalog >/dev/null 2>&1; then
+if ! mc_cmd ls inova-catalog >/dev/null 2>&1; then
   echo "Erro: não foi possível listar buckets em $LOCAL_ENDPOINT"
-  echo "  Verifique se MinIO está rodando e se a porta/host estão corretos."
-  echo "  Ex.: MINIO_HOST_ENDPOINT=http://127.0.0.1:9001 bash $0"
+  echo "  Container: $MINIO_CONTAINER"
+  echo "  docker port $MINIO_CONTAINER 9000"
+  echo "  bash infra/hetzner/scripts/discover-minio-vps.sh"
   exit 1
 fi
 
 echo "==> Bucket $BUCKET"
-mc mb "inova-catalog/$BUCKET" --ignore-existing
+mc_cmd mb "inova-catalog/$BUCKET" --ignore-existing
 
 echo "==> Leitura pública prefixo tenants/"
-mc anonymous set download "inova-catalog/$BUCKET/tenants" || true
+mc_cmd anonymous set download "inova-catalog/$BUCKET/tenants" || true
 
 echo "==> CORS (presign browser)"
 CORS_FILE="$(mktemp)"
@@ -67,9 +89,17 @@ cat >"$CORS_FILE" <<'JSON'
   }
 ]
 JSON
-mc cors set "inova-catalog/$BUCKET" "$CORS_FILE" 2>/dev/null || echo "Aviso: mc cors set falhou — use fallback multipart (T017)"
+if [[ "$USE_DOCKER_MC" == 1 ]]; then
+  docker run --rm --network "container:${MINIO_CONTAINER}" \
+    -v "$CORS_FILE:/tmp/cors.json:ro" minio/mc \
+    cors set "inova-catalog/$BUCKET" /tmp/cors.json 2>/dev/null \
+    || echo "Aviso: mc cors set falhou — use fallback multipart (T017)"
+else
+  mc_cmd cors set "inova-catalog/$BUCKET" "$CORS_FILE" 2>/dev/null \
+    || echo "Aviso: mc cors set falhou — use fallback multipart (T017)"
+fi
 rm -f "$CORS_FILE"
 
 echo "==> OK — bucket $BUCKET pronto"
-echo "    api-gateway: S3_ENDPOINT=http://host.docker.internal:${HOST_PORT:-9000}"
-echo "    S3_PUBLIC_BASE_URL deve apontar para CDN/nginx do prefixo tenants/"
+grep '^S3_ENDPOINT=' "$ENV_FILE" 2>/dev/null || true
+echo "    Upload multipart (T017) funciona se api-gateway alcançar o mesmo endpoint."

@@ -1,31 +1,43 @@
-#!/usr/bin/env bash
-# Descobre MinIO na VPS compartilhada (containers + portas + credenciais).
-set -euo pipefail
-
-echo "==> Containers MinIO"
-docker ps --format 'table {{.Names}}\t{{.Ports}}\t{{.Status}}' | grep -i minio || echo "    (nenhum)"
-
-echo ""
-echo "==> Portas 9000-9001 no host"
-ss -tlnp 2>/dev/null | grep -E ':900[0-9]' || true
-
-echo ""
-for name in $(docker ps --format '{{.Names}}' | grep -i minio || true); do
-  echo "==> Env $name"
-  docker exec "$name" printenv MINIO_ROOT_USER 2>/dev/null | sed 's/^/  MINIO_ROOT_USER=/' || true
-  docker exec "$name" printenv MINIO_ROOT_PASSWORD 2>/dev/null | sed 's/^/  MINIO_ROOT_PASSWORD=***/' || true
-  docker exec "$name" printenv MINIO_ACCESS_KEY 2>/dev/null | sed 's/^/  MINIO_ACCESS_KEY=/' || true
-  echo ""
-done
-
-FIRST="$(docker ps --format '{{.Names}}' | grep -i minio | head -1 || true)"
-HOST_PORT="$(ss -tlnp 2>/dev/null | grep -oE ':900[0-9]' | head -1 | tr -d ':' || echo 9000)"
-
-echo "Para api-gateway (Docker), use S3_ENDPOINT=http://host.docker.internal:${HOST_PORT}"
-echo ""
-if [[ -n "$FIRST" ]]; then
-  echo "Próximo passo (copie e cole):"
-  echo "  bash infra/hetzner/scripts/configure-s3-env-vps.sh ${FIRST} ${HOST_PORT}"
-else
-  echo "Nenhum MinIO encontrado — suba o stack inova-platform-core ou ajuste manualmente S3_* no .env.production"
-fi
+#!/usr/bin/env bash
+# Descobre MinIO na VPS compartilhada (containers + portas + credenciais).
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+# shellcheck source=lib/minio-vps.sh
+source "$ROOT/infra/hetzner/scripts/lib/minio-vps.sh"
+
+echo "==> Containers MinIO"
+docker ps --format 'table {{.Names}}\t{{.Ports}}\t{{.Status}}' | grep -i minio || echo "    (nenhum)"
+
+echo ""
+FIRST="$(minio_vps_default_container)"
+
+if [[ -n "$FIRST" ]]; then
+  echo "==> Port mapping $FIRST (API S3)"
+  docker port "$FIRST" 9000 2>/dev/null || echo "    (9000 NÃO publicada no host — usar rede Docker interna)"
+
+  echo ""
+  echo "==> Rede Docker"
+  docker inspect "$FIRST" --format '{{range $k, $v := .NetworkSettings.Networks}}  {{$k}}{{end}}' 2>/dev/null || true
+
+  echo ""
+  echo "==> Env $FIRST"
+  docker exec "$FIRST" printenv MINIO_ROOT_USER 2>/dev/null | sed 's/^/  MINIO_ROOT_USER=/' || true
+  docker exec "$FIRST" printenv MINIO_ROOT_PASSWORD 2>/dev/null | sed 's/^/  MINIO_ROOT_PASSWORD=***/' || true
+
+  PUBLISHED="$(minio_vps_published_port "$FIRST")"
+  echo ""
+  if [[ -n "$PUBLISHED" ]]; then
+    echo "Modo: host publicado → S3_ENDPOINT=http://host.docker.internal:${PUBLISHED}"
+  else
+    echo "Modo: rede interna → S3_ENDPOINT=http://${FIRST}:9000"
+    echo "       (api-gateway será conectado à rede do MinIO automaticamente)"
+  fi
+
+  echo ""
+  echo "Próximo passo (copie e cole):"
+  echo "  bash infra/hetzner/scripts/configure-s3-env-vps.sh ${FIRST}"
+else
+  echo ""
+  echo "Nenhum MinIO encontrado — suba inova-platform-core ou configure S3_* manualmente."
+fi

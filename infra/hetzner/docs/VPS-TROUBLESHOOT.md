@@ -111,24 +111,24 @@ Se aparecer `CHANGE_ME` ou `change-me-min-32-chars-production`, restaure os valo
    docker logs inova-gastro-360-api --tail 50
    ```
 
-## MinIO — bucket não cria
-
-Erro `Unable to make bucket` com alias OK → credenciais erradas ou MinIO não escuta em `127.0.0.1:9000`.
+Erro `Unable to make bucket` ou `mc ls` falha em `127.0.0.1:9000` → MinIO **não** está nessa porta no host.
 
 ```bash
-docker ps --format '{{.Names}}\t{{.Ports}}' | grep -i minio
-ss -tlnp | grep 9000
-grep '^S3_' infra/hetzner/.env.production
+bash infra/hetzner/scripts/discover-minio-vps.sh
+docker port inova-platform-core-minio-1 9000   # vazio = só rede interna
 ```
 
-- **No host:** use credenciais reais (não `CHANGE_ME`) e endpoint correto:
-  ```bash
-  MINIO_HOST_ENDPOINT=http://127.0.0.1:PORTA_REAL \
-  S3_ACCESS_KEY=usuario_real S3_SECRET_KEY=senha_real \
-  bash infra/hetzner/scripts/setup-minio-catalog.sh
-  ```
+**Solução (automática):**
 
-- **No api-gateway (Docker):** `S3_ENDPOINT=http://minio:9000` — hostname `minio` deve existir na mesma rede Docker ou usar IP do container MinIO.
+```bash
+bash infra/hetzner/scripts/configure-s3-env-vps.sh inova-platform-core-minio-1
+bash infra/hetzner/scripts/setup-minio-catalog.sh
+bash infra/hetzner/scripts/connect-minio-network-vps.sh inova-platform-core-minio-1
+bash infra/hetzner/scripts/recreate-api-vps.sh
+```
+
+- **api-gateway:** `S3_ENDPOINT=http://inova-platform-core-minio-1:9000` (mesma rede Docker)
+- **mc no host:** usa `docker run --network container:... minio/mc` quando porta não está publicada
 
 Upload funciona **sem presign browser** via multipart API (T017) se `S3_*` estiver correto no `.env.production`.
 

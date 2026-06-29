@@ -9,11 +9,16 @@ Bucket S3-compatible para fotos de produtos do **Inova Gastro 360**, reutilizand
 
 ## Criar bucket (VPS)
 
-Script automatizado (requer `mc` instalado):
+MinIO do stack `inova-platform-core` **não publica** porta 9000 no host. Scripts detectam e usam rede Docker interna.
 
 ```bash
+bash infra/hetzner/scripts/discover-minio-vps.sh
+bash infra/hetzner/scripts/configure-s3-env-vps.sh inova-platform-core-minio-1
 bash infra/hetzner/scripts/setup-minio-catalog.sh
+bash infra/hetzner/scripts/recreate-api-vps.sh
 ```
+
+`configure-s3-env-vps.sh` define `S3_ENDPOINT=http://inova-platform-core-minio-1:9000` e conecta `inova-gastro-360-api` à rede do MinIO.
 
 Manual:
 
