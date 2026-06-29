@@ -11,7 +11,8 @@ const PUBLIC_PATHS = ["/cardapio"];
 
 const TITLES: Record<string, string> = {
   "/dashboard": "Dashboard Geral",
-  "/cardapio": "Cardápio",
+  "/dashboard/catalogo": "Gestão do cardápio",
+  "/cardapio": "Cardápio público",
   "/painel/delivery": "Delivery",
   "/painel/cozinha": "Cozinha / KDS",
   "/painel/balcao": "Balcão",

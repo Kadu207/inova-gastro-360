@@ -1,0 +1,71 @@
+# MinIO — imagens do catálogo (spec 014)
+
+Bucket S3-compatible para fotos de produtos do **Inova Gastro 360**, reutilizando MinIO da infra Inovati na VPS.
+
+## Bucket
+
+- **Nome:** `inova-gastro-360`
+- **Path:** `tenants/{tenant_id}/branches/{branch_id}/products/{product_id}/{uuid}.{ext}`
+
+## Criar bucket (VPS)
+
+```bash
+# Ajuste alias mc conforme seu ambiente MinIO
+mc alias set local http://127.0.0.1:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
+mc mb local/inova-gastro-360 --ignore-existing
+mc anonymous set download local/inova-gastro-360/tenants
+```
+
+Leitura pública apenas no prefixo `tenants/` (URLs servidas via CDN/nginx).
+
+## Variáveis (`.env.production`)
+
+Ver `infra/hetzner/.env.production.example` — seção `STORAGE_*`.
+
+Dentro do Docker Compose (rede interna):
+
+```bash
+S3_ENDPOINT=http://minio:9000
+S3_PUBLIC_BASE_URL=https://cdn.inovatitech.com.br/inova-gastro-360
+```
+
+## CORS (upload presign do browser)
+
+Se usar presigned PUT direto do browser, configure CORS no bucket:
+
+```json
+[
+  {
+    "AllowedOrigin": ["https://inovagastro360.inovatitech.com.br"],
+    "AllowedMethod": ["PUT", "GET", "HEAD"],
+    "AllowedHeader": ["Content-Type", "Authorization"],
+    "ExposeHeader": ["ETag"],
+    "MaxAgeSeconds": 3600
+  }
+]
+```
+
+Se CORS falhar, use fallback multipart via API (T017).
+
+## Migração Cloudflare R2
+
+1. Criar bucket R2 + custom domain
+2. Alterar env:
+
+```bash
+STORAGE_PROVIDER=r2
+S3_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
+S3_PUBLIC_BASE_URL=https://media.inovagastro360.inovatitech.com.br
+```
+
+Handlers usam `@aws-sdk/client-s3` — sem mudança de código.
+
+## Smoke
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" \
+  -H "Authorization: Bearer $TOKEN" \
+  "https://inovagastro360.inovatitech.com.br/api/v1/branches/$BRANCH_ID/catalog/admin/categories?includeInactive=1"
+```
+
+Esperado: **200** com lista JSON.

@@ -30,3 +30,10 @@ Adiado (spec 005)
 - [x] Filtros canal + busca API/UI
 - [x] Painéis refinados (balcão/cozinha/delivery)
 - [ ] Deploy VPS pós-merge
+
+## Spec 014 catalog-admin — T001–T017 ✅ (código local)
+- [x] CRUD categorias + produtos (API + UI `/dashboard/catalogo`)
+- [x] Storage factory MinIO/R2 + presign + multipart fallback
+- [x] ImageUploader + preview thumb
+- [ ] T018–T020 nav/hardening
+- [ ] T021–T022 MinIO bucket VPS + deploy S3_*

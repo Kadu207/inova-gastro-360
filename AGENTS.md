@@ -58,7 +58,7 @@ EMB-01 a EMB-15 — ver docs/architecture.md
 ## Feature ativa (Spec Kit)
 
 <!-- speckit:active-feature:start -->
-- **Diretório:** `specs/003-pedidos-core`
+- **Diretório:** `specs/014-catalog-admin`
 - **Spec:** `spec.md` | **Plan:** `plan.md` | **Tasks:** `tasks.md`
 - **Atualizado:** 2026-06-29
 <!-- speckit:active-feature:end -->

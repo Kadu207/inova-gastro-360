@@ -1,5 +1,19 @@
 import { z } from "zod";
 
+export {
+  CategoryInputSchema,
+  CategoryPatchSchema,
+  ProductInputSchema,
+  ProductPatchSchema,
+  PresignInputSchema,
+  ALLOWED_IMAGE_CONTENT_TYPES,
+  type CategoryInput,
+  type CategoryPatch,
+  type ProductInput,
+  type ProductPatch,
+  type PresignInput,
+} from "./catalog";
+
 export const TenantContextSchema = z.object({
   tenantId: z.string().uuid(),
   companyId: z.string().uuid().optional(),

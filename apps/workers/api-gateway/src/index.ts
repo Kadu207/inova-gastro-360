@@ -2,6 +2,20 @@ import { healthHandler, jsonResponse } from "./lib";
 import { handleLogin, handleMe } from "./routes/auth";
 import { handleCatalogCategories, handleCatalogProducts } from "./routes/catalog";
 import {
+  handleAdminCreateCategory,
+  handleAdminCreateProduct,
+  handleAdminDeleteCategory,
+  handleAdminDeleteProduct,
+  handleAdminListCategories,
+  handleAdminListProducts,
+  handleAdminUpdateCategory,
+  handleAdminUpdateProduct,
+} from "./routes/catalog-admin";
+import {
+  handleAdminPresignProductImage,
+  handleAdminUploadProductImage,
+} from "./routes/catalog-upload";
+import {
   handleCreateOrder,
   handleListOrders,
   handleUpdateOrderStatus,
@@ -19,8 +33,8 @@ export interface Env extends GatewayEnv {}
 
 const CORS_HEADERS = {
   "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET, POST, PATCH, OPTIONS",
-  "access-control-allow-headers": "Content-Type, Authorization, Idempotency-Key",
+  "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT, OPTIONS",
+  "access-control-allow-headers": "Content-Type, Authorization, Idempotency-Key, X-Requested-With",
 };
 
 function withCors(response: Response): Response {
@@ -84,6 +98,84 @@ export default {
       const type = branchMatch[2];
       if (type === "categories") return withCors(await handleCatalogCategories(request, env, branchId));
       return withCors(await handleCatalogProducts(request, env, branchId));
+    }
+
+    const adminCategoriesMatch = path.match(/^\/api\/v1\/branches\/([^/]+)\/catalog\/admin\/categories(?:\/([^/]+))?$/);
+    if (adminCategoriesMatch) {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      const branchId = adminCategoriesMatch[1];
+      const categoryId = adminCategoriesMatch[2];
+
+      if (!categoryId && request.method === "GET") {
+        return withCors(await handleAdminListCategories(request, env, auth.user, branchId));
+      }
+      if (!categoryId && request.method === "POST") {
+        return withCors(await handleAdminCreateCategory(request, env, auth.user, branchId));
+      }
+      if (categoryId && request.method === "PATCH") {
+        return withCors(await handleAdminUpdateCategory(request, env, auth.user, branchId, categoryId));
+      }
+      if (categoryId && request.method === "DELETE") {
+        return withCors(await handleAdminDeleteCategory(env, auth.user, branchId, categoryId));
+      }
+    }
+
+    const adminPresignMatch = path.match(
+      /^\/api\/v1\/branches\/([^/]+)\/catalog\/admin\/products\/([^/]+)\/image\/presign$/,
+    );
+    if (adminPresignMatch && request.method === "POST") {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      return withCors(
+        await handleAdminPresignProductImage(
+          request,
+          env,
+          auth.user,
+          adminPresignMatch[1],
+          adminPresignMatch[2],
+        ),
+      );
+    }
+
+    const adminImageMatch = path.match(
+      /^\/api\/v1\/branches\/([^/]+)\/catalog\/admin\/products\/([^/]+)\/image$/,
+    );
+    if (adminImageMatch && request.method === "POST") {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      return withCors(
+        await handleAdminUploadProductImage(
+          request,
+          env,
+          auth.user,
+          adminImageMatch[1],
+          adminImageMatch[2],
+        ),
+      );
+    }
+
+    const adminProductsMatch = path.match(
+      /^\/api\/v1\/branches\/([^/]+)\/catalog\/admin\/products(?:\/([^/]+))?$/,
+    );
+    if (adminProductsMatch) {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      const branchId = adminProductsMatch[1];
+      const productId = adminProductsMatch[2];
+
+      if (!productId && request.method === "GET") {
+        return withCors(await handleAdminListProducts(request, env, auth.user, branchId));
+      }
+      if (!productId && request.method === "POST") {
+        return withCors(await handleAdminCreateProduct(request, env, auth.user, branchId));
+      }
+      if (productId && request.method === "PATCH") {
+        return withCors(await handleAdminUpdateProduct(request, env, auth.user, branchId, productId));
+      }
+      if (productId && request.method === "DELETE") {
+        return withCors(await handleAdminDeleteProduct(env, auth.user, branchId, productId));
+      }
     }
 
     if (path === "/api/v1/orders" && request.method === "GET") {

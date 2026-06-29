@@ -2,26 +2,31 @@
 
 **Última atualização:** 2026-06-29
 
-## Feature ativa: spec 003-pedidos-core (refinamentos entregues)
+## Feature ativa: spec 014-catalog-admin — T001–T017 ✅
 
-Roadmap: **002 ✅** → **003 ✅ refinado** → **005 financeiro (Onda 4, adiado)**
+**Objetivo:** Backoffice multitenant — categorias + produtos + fotos.
 
-### Entregue nesta sessão
+### Entregue
 
-**002 T009 — Imagens cardápio**
-- Seed demo com `imageUrl` (Unsplash) + upsert atualiza imagens
-- `CatalogProductThumb`: lazy load, shimmer, fallback inicial, validação http(s)
-- Helpers `productDisplayImage`, `isValidProductImageUrl`
+- **T001–T008:** validação, storage factory, CRUD categorias API + UI
+- **T009–T012:** CRUD produtos admin + UI com `CatalogProductThumb`
+- **T013–T017:** presign + multipart upload + `ImageUploader.tsx`
 
-**003 Fase 3 — Painéis**
-- API: `channel`, `q` (nome/telefone/nº pedido) em GET `/orders`
-- `PainelPage`: busca debounced, filtros canal/status PT-BR, badges, telefone/data
-- Defaults: balcão→`balcao`, cozinha→`preparing`, delivery→`delivery`+pending
+### Pendente
 
-### Produção VPS
+- **T018–T020:** nav polish (parcial — nav já existe), hardening GET público
+- **T021–T022:** bucket MinIO VPS + deploy com S3_*
+- **T023–T024:** audit_logs opcional, progress.md final
 
-Deploy: `git pull` → `db:seed` (imagens) → `build-web-vps.sh` → restart api-gateway
+### Deploy VPS
+
+Código ainda **não está no remoto** `feat/006-escpos` — após push:
+
+```bash
+git pull && bash infra/hetzner/scripts/build-web-vps.sh
+# + configurar S3_* conforme infra/hetzner/docs/MINIO-CATALOG.md para upload
+```
 
 ### Demo
 
-`admin@inovagastro360.local` / `InovaGastro360!` / tenant `demo-burger`
+Login → **Gestão cardápio** → aba Produtos → criar/editar → upload foto na edição

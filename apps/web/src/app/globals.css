@@ -1147,6 +1147,180 @@ h1 {
   font-size: 0.9rem;
 }
 
+/* ── Gestão cardápio (spec 014) ── */
+.catalog-admin-page h2 {
+  margin: 0 0 0.25rem;
+}
+
+.catalog-admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.catalog-admin-form {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.catalog-admin-form h3,
+.catalog-admin-list h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.catalog-admin-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.catalog-admin-form-row label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  gap: 0.25rem;
+  min-width: 140px;
+}
+
+.catalog-admin-form-row input[type="text"],
+.catalog-admin-form-row input[type="number"] {
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: inherit;
+}
+
+.catalog-admin-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.catalog-admin-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.catalog-admin-meta {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: normal;
+}
+
+.catalog-admin-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.catalog-admin-actions button,
+.catalog-admin-form-row button {
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.catalog-admin-check {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.35rem !important;
+}
+
+.catalog-admin-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.catalog-admin-tabs button {
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.catalog-admin-tabs button.is-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
+}
+
+.catalog-admin-form-row select,
+.catalog-admin-full textarea {
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+}
+
+.catalog-admin-full {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.catalog-admin-products {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.catalog-admin-product-item {
+  flex-direction: column;
+  align-items: stretch !important;
+  gap: 0.65rem;
+}
+
+.catalog-admin-product-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.catalog-admin-product-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+.catalog-admin-product-preview .catalog-product-thumb {
+  width: 4rem;
+  height: 4rem;
+}
+
+.catalog-image-uploader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.catalog-image-uploader input[type="file"] {
+  max-width: 100%;
+}
+
 @media (max-width: 900px) {
   .catalog-layout {
     grid-template-columns: 1fr;

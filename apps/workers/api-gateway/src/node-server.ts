@@ -11,6 +11,13 @@ function buildEnv(): Env {
     JWT_SECRET: process.env.JWT_SECRET,
     OUTBOX_FLUSH_SECRET: process.env.OUTBOX_FLUSH_SECRET,
     MESSAGING_SERVICE: createServiceFetcher(messagingUrl),
+    STORAGE_PROVIDER: process.env.STORAGE_PROVIDER as Env["STORAGE_PROVIDER"],
+    S3_ENDPOINT: process.env.S3_ENDPOINT,
+    S3_REGION: process.env.S3_REGION,
+    S3_BUCKET: process.env.S3_BUCKET,
+    S3_ACCESS_KEY: process.env.S3_ACCESS_KEY,
+    S3_SECRET_KEY: process.env.S3_SECRET_KEY,
+    S3_PUBLIC_BASE_URL: process.env.S3_PUBLIC_BASE_URL,
   };
 }
 
