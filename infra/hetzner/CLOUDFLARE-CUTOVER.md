@@ -165,4 +165,5 @@ Login demo: `admin@inovagastro360.local` / `InovaGastro360!` / tenant `demo-burg
 | **1033** sem linha no `docker logs` | DNS não aponta ao tunnel / hostname ausente no Zero Trust | CNAME → `76fd5075….cfargotunnel.com` + Public Hostname |
 | **530** com ERR `lookup inova-gastro-360-nginx` | `network connect` perdido após restart | `tunnel-connect-inova.sh` ou URL `128.140.77.31:9088` |
 | `nginx: 200` no teste mas HTTPS **530** | URL errada no dashboard ou DNS | Confirmar v31+ e CNAME |
+| HTTPS **502** logo após `restart` | web/serve ainda subindo ou tunnel desconectado | Aguardar 10s; testar `curl http://127.0.0.1:9088/cardapio`; `tunnel-connect-inova.sh` |
 | `network_public not manually attachable` | Rede Swarm overlay | Usar IP host `128.140.77.31:9088` (como casadapaz) |

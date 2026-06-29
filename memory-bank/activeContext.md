@@ -19,6 +19,8 @@ Roadmap: **002 (refino)** → **003 (entregue)** → **005 financeiro (Onda 4, a
 
 - HTTPS: `https://inovagastro360.inovatitech.com.br`
 - Tunnel: `http://inova-gastro-360-nginx:9088` + cron `tunnel-connect-inova.sh`
+- Deploy web: `bash infra/hetzner/scripts/build-web-vps.sh` (npm via Docker, sem npm no host)
+- Cardápio spec 002 deployado em `7f8ade9` — validar `catalog-page` em `/cardapio`
 
 ## Próximo deploy VPS
 

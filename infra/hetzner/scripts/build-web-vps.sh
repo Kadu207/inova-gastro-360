@@ -37,13 +37,27 @@ DEPLOY_USER="${SUDO_USER:-${USER:-gestaoti}}"
 if id -u "$DEPLOY_USER" &>/dev/null; then
   chown -R "$DEPLOY_USER:$DEPLOY_USER" "$ROOT/apps/web/out" "$ROOT/apps/web/.next" 2>/dev/null || \
     sudo chown -R "$DEPLOY_USER:$DEPLOY_USER" "$ROOT/apps/web/out" "$ROOT/apps/web/.next" 2>/dev/null || true
+  # npm ci/build via Docker cria arquivos como root — evita crash dos containers Node
+  chown -R "$DEPLOY_USER:$DEPLOY_USER" "$ROOT/node_modules" 2>/dev/null || \
+    sudo chown -R "$DEPLOY_USER:$DEPLOY_USER" "$ROOT/node_modules" 2>/dev/null || true
 fi
 
 echo "==> Reiniciando web + api-gateway..."
-docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" restart web api-gateway
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d web api-gateway nginx-proxy
+
+echo "==> Aguardando web (serve)..."
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  if curl -sf -o /dev/null "http://127.0.0.1:9088/cardapio" 2>/dev/null; then
+    break
+  fi
+  sleep 2
+done
+
+/usr/local/bin/tunnel-connect-inova.sh 2>/dev/null || bash "$ROOT/infra/hetzner/scripts/tunnel-connect-inova.sh" 2>/dev/null || true
 
 echo "==> Smoke local..."
 grep -q 'catalog-page' "$ROOT/apps/web/out/cardapio.html" 2>/dev/null && echo "    out/cardapio.html: catalog-page OK" || echo "Aviso: catalog-page não encontrado em out/"
-curl -sf -o /dev/null -w "    cardapio HTTPS: %{http_code}\n" "https://inovagastro360.inovatitech.com.br/cardapio" || true
+curl -sf -o /dev/null -w "    local :9088: %{http_code}\n" "http://127.0.0.1:9088/cardapio" || echo "Aviso: local :9088 indisponível"
+curl -sf -o /dev/null -w "    cardapio HTTPS: %{http_code}\n" "https://inovagastro360.inovatitech.com.br/cardapio" || echo "Aviso: HTTPS indisponível — rode tunnel-connect-inova.sh"
 
 echo "Build web concluído."
