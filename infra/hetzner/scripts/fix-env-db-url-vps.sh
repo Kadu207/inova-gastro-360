@@ -43,9 +43,9 @@ fi
 
 if [[ -n "${JWT_SECRET_NEW:-}" ]]; then
   if grep -q '^JWT_SECRET=' "$ENV_FILE"; then
-    sed -i "s|^JWT_SECRET=.*|JWT_SECRET=${JWT_SECRET_NEW}|" "$ENV_FILE"
+    sed -i "s|^JWT_SECRET=.*|JWT_SECRET=\"${JWT_SECRET_NEW}\"|" "$ENV_FILE"
   else
-    echo "JWT_SECRET=${JWT_SECRET_NEW}" >>"$ENV_FILE"
+    echo "JWT_SECRET=\"${JWT_SECRET_NEW}\"" >>"$ENV_FILE"
   fi
   echo "JWT_SECRET atualizado."
 elif grep -qE '^JWT_SECRET=(change-me|CHANGE_ME)' "$ENV_FILE" 2>/dev/null; then
@@ -57,5 +57,5 @@ echo "==> OK — $ENV_FILE"
 grep -E '^(DATABASE_URL|JWT_SECRET|POSTGRES_PASSWORD)=' "$ENV_FILE" | sed 's/=.*/=***/'
 echo ""
 echo "Próximo:"
-echo "  docker compose -f infra/hetzner/docker-compose.app.yml --env-file infra/hetzner/.env.production restart api-gateway"
+echo "  bash infra/hetzner/scripts/recreate-api-vps.sh"
 echo "  bash infra/hetzner/scripts/smoke-db-vps.sh"

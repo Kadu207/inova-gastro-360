@@ -17,7 +17,7 @@ O api-gateway crasha porque `node_modules` na VPS está **desatualizado** (pull 
 cd ~/inova-gastro-360
 bash infra/hetzner/scripts/npm-ci-vps.sh
 docker compose -f infra/hetzner/docker-compose.app.yml \
-  --env-file infra/hetzner/.env.production restart api-gateway
+  --env-file infra/hetzner/.env.production up -d --force-recreate api-gateway
 curl -s http://127.0.0.1:8792/health
 ```
 
@@ -67,7 +67,7 @@ docker logs inova-gastro-360-api --tail 30
 Reinicie api após corrigir `.env`:
 ```bash
 docker compose -f infra/hetzner/docker-compose.app.yml \
-  --env-file infra/hetzner/.env.production restart api-gateway
+  --env-file infra/hetzner/.env.production up -d --force-recreate api-gateway
 ```
 
 ## Login falhou no smoke
