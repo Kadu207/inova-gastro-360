@@ -12,12 +12,23 @@ function getConnectionString(databaseUrl?: string): string {
   );
 }
 
+function stripSslModeFromUrl(connectionString: string): string {
+  try {
+    const url = new URL(connectionString);
+    url.searchParams.delete("sslmode");
+    url.searchParams.delete("uselibpqcompat");
+    return url.toString();
+  } catch {
+    return connectionString.replace(/[?&]sslmode=[^&]*/g, "").replace(/\?$/, "");
+  }
+}
+
 function createPgPool(connectionString: string): pg.Pool {
   const insecureSsl =
     process.env.DATABASE_SSL_INSECURE === "1" || process.env.DATABASE_SSL_INSECURE === "true";
   if (insecureSsl) {
     return new pg.Pool({
-      connectionString,
+      connectionString: stripSslModeFromUrl(connectionString),
       ssl: { rejectUnauthorized: false },
     });
   }

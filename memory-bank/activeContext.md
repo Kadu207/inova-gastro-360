@@ -2,30 +2,22 @@
 
 **Última atualização:** 2026-06-29
 
-## Feature ativa: spec 014-catalog-admin — T001–T022 ✅
+## Feature ativa: spec 014-catalog-admin — produção VPS ✅
 
-### Entregue
+### Produção (smoke verde)
 
-- CRUD categorias + produtos + upload (presign/multipart)
-- Hardening GET público catalog (join branches + tenant_id)
-- Scripts VPS: `sync-git-vps.sh`, `setup-minio-catalog.sh`, `smoke-catalog-admin.sh`
+- Login API + admin categories/products + vitrine pública
+- `/dashboard/catalogo` deployado @ `feat/006-escpos`
+- Scripts VPS: sync-git, npm-ci, fix-env, recreate-api, smoke-catalog-admin
 
-### VPS — ação imediata
+### Pendente operacional
 
-1. Restaurar `.env.production` (sumiu após reset — gitignored):
-   ```bash
-   cp infra/hetzner/.env.production.example infra/hetzner/.env.production
-   nano infra/hetzner/.env.production  # DATABASE_URL, JWT_SECRET, senhas reais
-   ```
-2. Sync + rebuild:
-   ```bash
-   bash infra/hetzner/scripts/sync-git-vps.sh feat/006-escpos
-   bash infra/hetzner/scripts/build-web-vps.sh
-   bash infra/hetzner/scripts/smoke-catalog-admin.sh
-   ```
-3. MinIO (upload fotos): `bash infra/hetzner/scripts/setup-minio-catalog.sh`
-
-### Pendente
-
+- **S3_* / MinIO** — upload de fotos (CRUD produtos funciona sem foto)
+- Rotação senha Postgres (exposta em troubleshooting)
 - T023 audit_logs (opcional)
-- T024 progress final
+
+### Demo produção
+
+`https://inovagastro360.inovatitech.com.br` → login → **Gestão cardápio**
+
+`admin@inovagastro360.local` / `InovaGastro360!`
