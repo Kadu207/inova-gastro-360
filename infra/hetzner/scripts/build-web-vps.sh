@@ -45,6 +45,7 @@ fi
 echo "==> Reiniciando web + api-gateway + nginx (re-resolve DNS)..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate web
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d api-gateway
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" restart api-gateway
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate nginx-proxy
 
 echo "==> Aguardando web (serve)..."

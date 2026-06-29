@@ -20,6 +20,26 @@ export interface CartItem {
   quantity: number;
 }
 
+/** Aceita apenas URLs http(s) — evita javascript: em image_url do catálogo. */
+export function isValidProductImageUrl(url: string | null | undefined): boolean {
+  if (!url?.trim()) return false;
+  try {
+    const parsed = new URL(url.trim());
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+export function productDisplayImage(url: string | null | undefined): string | null {
+  return isValidProductImageUrl(url) ? url!.trim() : null;
+}
+
+export function productInitial(name: string): string {
+  const trimmed = name.trim();
+  return trimmed ? trimmed.charAt(0).toUpperCase() : "?";
+}
+
 export function filterProducts(
   products: CatalogProduct[],
   categoryId: string | null,

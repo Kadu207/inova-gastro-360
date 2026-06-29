@@ -6,6 +6,7 @@ import {
   handleGetOrder,
   parseIdempotencyKey,
   parseListPagination,
+  parseListOrderFilters,
 } from "./orders";
 import { testEnv, DEMO_BRANCH_ID, DEMO_PRODUCT_ID } from "../test/helpers";
 
@@ -129,6 +130,27 @@ describe("orders handlers — validação (sem DB)", () => {
       expect(result.page).toBe(1);
       expect(result.limit).toBe(20);
       expect(result.offset).toBe(0);
+    }
+  });
+
+  it("rejeita channel inválido na listagem", () => {
+    const result = parseListOrderFilters(new URL("http://test/api/v1/orders?channel=invalid"));
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.response.status).toBe(400);
+  });
+
+  it("rejeita busca muito longa", () => {
+    const q = "a".repeat(101);
+    const result = parseListOrderFilters(new URL(`http://test/api/v1/orders?q=${q}`));
+    expect(result.ok).toBe(false);
+  });
+
+  it("parseListOrderFilters extrai orderNumber numérico", () => {
+    const result = parseListOrderFilters(new URL("http://test/api/v1/orders?q=42&channel=delivery"));
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.channel).toBe("delivery");
+      expect(result.orderNumber).toBe(42);
     }
   });
 });

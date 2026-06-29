@@ -3,6 +3,9 @@ import {
   addToCartItem,
   cartTotalCents,
   filterProducts,
+  isValidProductImageUrl,
+  productDisplayImage,
+  productInitial,
   updateCartQuantity,
   validateGuestCheckout,
   type CatalogProduct,
@@ -16,6 +19,7 @@ const products: CatalogProduct[] = [
     price_cents: 2990,
     category_id: "c1",
     category_name: "Burgers",
+    image_url: "https://example.com/burger.jpg",
   },
   {
     id: "2",
@@ -51,5 +55,21 @@ describe("cardapio helpers", () => {
   it("valida checkout guest", () => {
     expect(validateGuestCheckout("", "11999999999")).toBeTruthy();
     expect(validateGuestCheckout("João", "11999999999")).toBeNull();
+  });
+
+  it("aceita apenas image_url http(s)", () => {
+    expect(isValidProductImageUrl("https://cdn.example/img.jpg")).toBe(true);
+    expect(isValidProductImageUrl("javascript:alert(1)")).toBe(false);
+    expect(isValidProductImageUrl(null)).toBe(false);
+  });
+
+  it("productDisplayImage retorna URL válida ou null", () => {
+    expect(productDisplayImage(products[0].image_url)).toBe("https://example.com/burger.jpg");
+    expect(productDisplayImage("javascript:x")).toBeNull();
+  });
+
+  it("productInitial usa primeira letra", () => {
+    expect(productInitial("Smash Burger")).toBe("S");
+    expect(productInitial("")).toBe("?");
   });
 });

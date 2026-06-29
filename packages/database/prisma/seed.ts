@@ -90,16 +90,45 @@ async function main() {
   });
 
   const catalog = [
-    { id: "00000000-0000-4000-8000-000000000020", categoryId: burgers.id, name: "Smash Burger", priceCents: 2990 },
-    { id: "00000000-0000-4000-8000-000000000021", categoryId: burgers.id, name: "Duplo Bacon", priceCents: 3490 },
-    { id: "00000000-0000-4000-8000-000000000022", categoryId: bebidas.id, name: "Coca-Cola 350ml", priceCents: 890 },
-    { id: "00000000-0000-4000-8000-000000000023", categoryId: bebidas.id, name: "Suco Natural", priceCents: 1290 },
+    {
+      id: "00000000-0000-4000-8000-000000000020",
+      categoryId: burgers.id,
+      name: "Smash Burger",
+      priceCents: 2990,
+      imageUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=400&fit=crop",
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000021",
+      categoryId: burgers.id,
+      name: "Duplo Bacon",
+      priceCents: 3490,
+      imageUrl: "https://images.unsplash.com/photo-1553979459-222fbba03181?w=400&h=400&fit=crop",
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000022",
+      categoryId: bebidas.id,
+      name: "Coca-Cola 350ml",
+      priceCents: 890,
+      imageUrl: "https://images.unsplash.com/photo-1554866585-cd94860890b7?w=400&h=400&fit=crop",
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000023",
+      categoryId: bebidas.id,
+      name: "Suco Natural",
+      priceCents: 1290,
+      imageUrl: "https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400&h=400&fit=crop",
+    },
   ];
 
   for (const p of catalog) {
     await prisma.product.upsert({
       where: { id: p.id },
-      update: {},
+      update: {
+        name: p.name,
+        priceCents: p.priceCents,
+        description: `Delicioso ${p.name}`,
+        imageUrl: p.imageUrl,
+      },
       create: {
         id: p.id,
         tenantId: tenant.id,
@@ -108,6 +137,7 @@ async function main() {
         name: p.name,
         priceCents: p.priceCents,
         description: `Delicioso ${p.name}`,
+        imageUrl: p.imageUrl,
       },
     });
   }

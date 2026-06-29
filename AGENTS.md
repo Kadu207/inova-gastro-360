@@ -58,7 +58,7 @@ EMB-01 a EMB-15 — ver docs/architecture.md
 ## Feature ativa (Spec Kit)
 
 <!-- speckit:active-feature:start -->
-- **Diretório:** `specs/002-cardapio-online`
+- **Diretório:** `specs/003-pedidos-core`
 - **Spec:** `spec.md` | **Plan:** `plan.md` | **Tasks:** `tasks.md`
-- **Atualizado:** 2026-06-26
+- **Atualizado:** 2026-06-29
 <!-- speckit:active-feature:end -->

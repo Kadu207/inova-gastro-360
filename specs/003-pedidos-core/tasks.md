@@ -16,4 +16,8 @@
 - [x] T009 [P] Testes vitest create/list/update status em `api-gateway`
 - [x] T010 Teste cross-tenant — tenant A não lê pedidos tenant B
 - [x] T011 Idempotência checkout (client retry)
-- [x] T012 Paginação e filtros avançados nos painéis
+## Fase 3 (refinamentos painéis)
+
+- [x] T013 Filtro por canal (`channel`) na API + UI
+- [x] T014 Busca por nº pedido, nome ou telefone (`q`)
+- [x] T015 Labels PT-BR, badges, defaults por painel (balcão/cozinha/delivery)

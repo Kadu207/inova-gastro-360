@@ -259,6 +259,106 @@ h1 {
   cursor: pointer;
 }
 
+.filters button.active,
+.panel-channel-filters button.active {
+  background: var(--accent-soft);
+  color: #052e16;
+  font-weight: 600;
+}
+
+.panel-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.panel-search {
+  flex: 1;
+  min-width: 220px;
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: inherit;
+}
+
+.panel-channel-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.panel-channel-filters button {
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.panel-empty {
+  color: var(--muted);
+  margin-bottom: 1rem;
+}
+
+.order-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.order-card-header h3 {
+  margin: 0;
+}
+
+.order-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.order-badge--status.order-badge--pending {
+  border-color: #fbbf24;
+  color: #fbbf24;
+}
+
+.order-badge--status.order-badge--preparing {
+  border-color: #60a5fa;
+  color: #60a5fa;
+}
+
+.order-badge--status.order-badge--ready {
+  border-color: var(--accent-soft);
+  color: var(--accent-soft);
+}
+
+.order-customer {
+  font-weight: 600;
+  margin: 0.35rem 0 0.15rem;
+}
+
+.order-phone,
+.order-meta {
+  margin: 0.15rem 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.order-total {
+  font-weight: 600;
+  margin: 0.5rem 0 0;
+  color: var(--accent-soft);
+}
+
 .orders-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -910,6 +1010,33 @@ h1 {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.catalog-product-thumb img.is-loaded {
+  opacity: 1;
+}
+
+.catalog-product-thumb.is-loading {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: catalog-shimmer 1.2s infinite;
+}
+
+.catalog-product-initial {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent-soft);
+}
+
+@keyframes catalog-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .catalog-product-cat {

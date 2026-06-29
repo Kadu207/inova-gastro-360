@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import CatalogProductThumb from "@/components/catalog/CatalogProductThumb";
 import { API_BASE, DEMO_BRANCH_ID, formatBRL, getToken } from "@/lib/api";
 import {
   addToCartItem,
@@ -167,14 +168,7 @@ export default function CardapioPage() {
           {filtered.length === 0 && <p className="catalog-empty">Nenhum produto encontrado.</p>}
           {filtered.map((p) => (
             <article key={p.id} className="catalog-product">
-              <div className="catalog-product-thumb" aria-hidden>
-                {p.image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.image_url} alt="" loading="lazy" />
-                ) : (
-                  <span>{p.name.charAt(0)}</span>
-                )}
-              </div>
+              <CatalogProductThumb name={p.name} imageUrl={p.image_url} />
               <div className="catalog-product-body">
                 <p className="catalog-product-cat">{p.category_name}</p>
                 <strong>{p.name}</strong>
