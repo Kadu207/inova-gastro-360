@@ -18,5 +18,14 @@ for name in $(docker ps --format '{{.Names}}' | grep -i minio || true); do
   echo ""
 done
 
-echo "Para api-gateway (Docker), use S3_ENDPOINT=http://host.docker.internal:PORTA"
-echo "Ex.: bash infra/hetzner/scripts/configure-s3-env-vps.sh NOME_CONTAINER MINIO_PORT"
+FIRST="$(docker ps --format '{{.Names}}' | grep -i minio | head -1 || true)"
+HOST_PORT="$(ss -tlnp 2>/dev/null | grep -oE ':900[0-9]' | head -1 | tr -d ':' || echo 9000)"
+
+echo "Para api-gateway (Docker), use S3_ENDPOINT=http://host.docker.internal:${HOST_PORT}"
+echo ""
+if [[ -n "$FIRST" ]]; then
+  echo "Próximo passo (copie e cole):"
+  echo "  bash infra/hetzner/scripts/configure-s3-env-vps.sh ${FIRST} ${HOST_PORT}"
+else
+  echo "Nenhum MinIO encontrado — suba o stack inova-platform-core ou ajuste manualmente S3_* no .env.production"
+fi

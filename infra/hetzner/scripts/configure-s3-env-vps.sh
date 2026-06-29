@@ -16,12 +16,27 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
+MINIO_CONTAINERS="$(docker ps --format '{{.Names}}' | grep -i minio || true)"
+
 if [[ -z "$CONTAINER" ]]; then
-  CONTAINER="$(docker ps --format '{{.Names}}' | grep -i minio | head -1 || true)"
+  CONTAINER="$(echo "$MINIO_CONTAINERS" | head -1 || true)"
+  [[ -n "$CONTAINER" ]] && echo "==> Auto-detectado container MinIO: $CONTAINER"
 fi
 
 if [[ -z "$CONTAINER" ]]; then
   echo "Erro: nenhum container MinIO. Rode: bash infra/hetzner/scripts/discover-minio-vps.sh"
+  exit 1
+fi
+
+if ! docker inspect "$CONTAINER" >/dev/null 2>&1; then
+  echo "Erro: container '$CONTAINER' não existe ou não está rodando."
+  echo ""
+  echo "Containers MinIO disponíveis:"
+  echo "$MINIO_CONTAINERS" | sed 's/^/  /'
+  echo ""
+  echo "Use o nome exato (não o placeholder da documentação). Ex.:"
+  FIRST="$(echo "$MINIO_CONTAINERS" | head -1)"
+  echo "  bash infra/hetzner/scripts/configure-s3-env-vps.sh ${FIRST:-inova-platform-core-minio-1} ${HOST_PORT}"
   exit 1
 fi
 
@@ -30,6 +45,7 @@ SECRET="$(docker exec "$CONTAINER" printenv MINIO_ROOT_PASSWORD 2>/dev/null || d
 
 if [[ -z "$ACCESS" || -z "$SECRET" ]]; then
   echo "Erro: não foi possível ler credenciais de $CONTAINER"
+  echo "  docker exec $CONTAINER printenv MINIO_ROOT_USER"
   exit 1
 fi
 
