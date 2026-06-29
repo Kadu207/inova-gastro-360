@@ -8,6 +8,7 @@ function buildEnv(): Env {
   return {
     ENVIRONMENT: process.env.ENVIRONMENT ?? "production",
     DATABASE_URL: process.env.DATABASE_URL,
+    DATABASE_SSL_INSECURE: process.env.DATABASE_SSL_INSECURE,
     JWT_SECRET: process.env.JWT_SECRET,
     OUTBOX_FLUSH_SECRET: process.env.OUTBOX_FLUSH_SECRET,
     MESSAGING_SERVICE: createServiceFetcher(messagingUrl),

@@ -1,6 +1,8 @@
 export interface GatewayEnv {
   ENVIRONMENT?: string;
   DATABASE_URL?: string;
+  /** VPS Postgres com cert autoassinado — ssl rejectUnauthorized: false */
+  DATABASE_SSL_INSECURE?: string;
   JWT_SECRET?: string;
   OUTBOX_FLUSH_SECRET?: string;
   MESSAGING_SERVICE?: Fetcher;

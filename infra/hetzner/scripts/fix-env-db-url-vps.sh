@@ -41,6 +41,12 @@ else
   echo "POSTGRES_PASSWORD=${PW}" >>"$ENV_FILE"
 fi
 
+if grep -q '^DATABASE_SSL_INSECURE=' "$ENV_FILE"; then
+  sed -i "s|^DATABASE_SSL_INSECURE=.*|DATABASE_SSL_INSECURE=1|" "$ENV_FILE"
+else
+  echo "DATABASE_SSL_INSECURE=1" >>"$ENV_FILE"
+fi
+
 if [[ -n "${JWT_SECRET_NEW:-}" ]]; then
   if grep -q '^JWT_SECRET=' "$ENV_FILE"; then
     sed -i "s|^JWT_SECRET=.*|JWT_SECRET=\"${JWT_SECRET_NEW}\"|" "$ENV_FILE"

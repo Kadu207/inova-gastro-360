@@ -25,5 +25,9 @@ export function hasDatabase(env: GatewayEnv): boolean {
 export function getSql(env: GatewayEnv) {
   const url = getDatabaseUrl(env);
   if (!url) throw new Error("Banco não configurado (HYPERDRIVE ou DATABASE_URL)");
-  return postgres(normalizeDatabaseUrl(url), { max: 1, prepare: false });
+  const options: Parameters<typeof postgres>[1] = { max: 1, prepare: false };
+  if (env.DATABASE_SSL_INSECURE === "1" || env.DATABASE_SSL_INSECURE === "true") {
+    options.ssl = { rejectUnauthorized: false };
+  }
+  return postgres(normalizeDatabaseUrl(url), options);
 }
