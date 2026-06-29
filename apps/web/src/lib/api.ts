@@ -31,3 +31,15 @@ export function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("accessToken");
 }
+
+/** Remove tokens da sessão local (logout). */
+export function clearSession(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+}
+
+export function logout(): void {
+  clearSession();
+  window.location.href = "/login";
+}

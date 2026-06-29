@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { logout } from "@/lib/api";
 import { MAIN_NAV } from "@/lib/nav";
 
 export default function Sidebar() {
@@ -47,9 +48,14 @@ export default function Sidebar() {
         )}
       </nav>
 
-      <div className="os-sidebar-cta">
-        <p className="os-cta-title">Saiba mais</p>
-        <p className="os-cta-text">Plataforma completa para hamburgueria e delivery.</p>
+      <div className="os-sidebar-footer">
+        <button type="button" className="os-logout-btn os-logout-sidebar" onClick={logout}>
+          Sair da conta
+        </button>
+        <div className="os-sidebar-cta">
+          <p className="os-cta-title">Saiba mais</p>
+          <p className="os-cta-text">Plataforma completa para hamburgueria e delivery.</p>
+        </div>
       </div>
     </aside>
   );
