@@ -65,6 +65,7 @@ echo "==> Reiniciando web + api-gateway + nginx (re-resolve DNS)..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate web
 bash "$ROOT/infra/hetzner/scripts/recreate-api-vps.sh"
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate nginx-proxy
+bash "$ROOT/infra/hetzner/scripts/connect-minio-network-vps.sh" 2>/dev/null || true
 
 echo "==> Aguardando web (serve)..."
 for i in 1 2 3 4 5 6 7 8 9 10; do

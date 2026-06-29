@@ -60,6 +60,24 @@ minio_vps_connect_media_stack() {
   minio_vps_connect_container "$container" "$network" "inova-gastro-360-nginx"
 }
 
+minio_vps_docker_network_name() {
+  minio_vps_primary_network "${1:?container}"
+}
+
+minio_vps_ensure_compose_network_env() {
+  local container="${1:?container}"
+  local env_file="${2:?env_file}"
+  local network
+  network="$(minio_vps_docker_network_name "$container")"
+  [[ -n "$network" ]] || return 1
+  if grep -q '^MINIO_DOCKER_NETWORK=' "$env_file" 2>/dev/null; then
+    sed -i "s|^MINIO_DOCKER_NETWORK=.*|MINIO_DOCKER_NETWORK=${network}|" "$env_file"
+  else
+    echo "MINIO_DOCKER_NETWORK=${network}" >>"$env_file"
+  fi
+  echo "$network"
+}
+
 minio_vps_public_base_url() {
   local app_base="${1:-https://inovagastro360.inovatitech.com.br}"
   local bucket="${2:-inova-gastro-360}"

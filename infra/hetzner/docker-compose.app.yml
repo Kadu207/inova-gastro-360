@@ -6,6 +6,10 @@ name: inova-gastro-360-app
 networks:
   inova_internal:
     driver: bridge
+  # Rede externa do stack inova-platform-core (MinIO). Persiste após force-recreate.
+  minio_platform:
+    external: true
+    name: ${MINIO_DOCKER_NETWORK:-inova-platform-core_inova-platform}
 
 services:
   redis:
@@ -92,7 +96,9 @@ services:
     volumes:
       - ../../:/app
     command: npm run start -w @inova-gastro-360/api-gateway
-    networks: [inova_internal]
+    networks:
+      - inova_internal
+      - minio_platform
     ports:
       - "127.0.0.1:8792:8792"
     depends_on:
@@ -121,7 +127,9 @@ services:
     image: nginx:1.27-alpine
     container_name: inova-gastro-360-nginx
     restart: unless-stopped
-    networks: [inova_internal]
+    networks:
+      - inova_internal
+      - minio_platform
     volumes:
       - ./nginx/inovagastro360.docker.conf:/etc/nginx/conf.d/default.conf:ro
     ports:

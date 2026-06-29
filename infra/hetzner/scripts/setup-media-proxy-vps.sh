@@ -25,14 +25,20 @@ if [[ -f "$ENV_FILE" ]]; then
   else
     echo "S3_PUBLIC_BASE_URL=${NEW_PUBLIC}" >>"$ENV_FILE"
   fi
+  NET="$(minio_vps_ensure_compose_network_env "$MINIO_CONTAINER" "$ENV_FILE")"
+  echo "    MINIO_DOCKER_NETWORK=${NET}"
 fi
 
-echo "==> Rede MinIO (api + nginx)"
-bash "$ROOT/infra/hetzner/scripts/connect-minio-network-vps.sh" "$MINIO_CONTAINER"
+echo "==> Recriar nginx + api (rede MinIO persistente no compose)"
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate nginx-proxy api-gateway
 
-echo "==> Recriar nginx + api-gateway"
-docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate nginx-proxy
-bash "$ROOT/infra/hetzner/scripts/recreate-api-vps.sh"
+sleep 3
+
+echo "==> Fallback: connect manual (compose external network)"
+bash "$ROOT/infra/hetzner/scripts/connect-minio-network-vps.sh" "$MINIO_CONTAINER" || true
+
+echo "==> Política download tenants/ (vitrine pública)"
+bash "$ROOT/infra/hetzner/scripts/setup-minio-catalog.sh" || true
 
 echo "==> Migrar image_url no Postgres (cdn → /media/)"
 docker exec "$PG_CONTAINER" psql -U inova_gastro -d inova_gastro_360 -c \
@@ -45,9 +51,9 @@ sample_url="$(docker exec "$PG_CONTAINER" psql -U inova_gastro -d inova_gastro_3
 if [[ -n "$sample_url" ]]; then
   path="${sample_url#https://inovagastro360.inovatitech.com.br}"
   path="${path#http://inovagastro360.inovatitech.com.br}"
-  code=$(curl -sf -o /dev/null -w "%{http_code}" "http://127.0.0.1:9088${path}" 2>/dev/null || echo "000")
-  echo "    GET :9088${path} → $code"
-  [[ "$code" == "200" ]] && echo "==> OK — fotos devem aparecer no cardápio" || echo "Aviso: verifique nginx + rede MinIO"
+  code=$(curl -sS -o /dev/null -w "%{http_code}" "http://127.0.0.1:9088${path}" 2>/dev/null || echo "000")
+  echo "    GET :9088${path} → HTTP ${code}"
+  [[ "$code" == "200" ]] && echo "==> OK — fotos devem aparecer no cardápio" || echo "Aviso: HTTP ${code} — docker exec inova-gastro-360-nginx wget -qO- http://inova-platform-core-minio-1:9000/inova-gastro-360/tenants/.keep"
 else
   echo "    (nenhuma foto no banco ainda)"
 fi

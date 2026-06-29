@@ -76,6 +76,11 @@ set_or_replace() {
   fi
 }
 
+set_or_replace MINIO_CONTAINER "$CONTAINER"
+
+NET="$(minio_vps_ensure_compose_network_env "$CONTAINER" "$ENV_FILE")"
+echo "    MINIO_DOCKER_NETWORK=${NET}"
+
 set_or_replace STORAGE_PROVIDER minio
 set_or_replace S3_ENDPOINT "$S3_ENDPOINT"
 set_or_replace S3_REGION auto
@@ -83,7 +88,6 @@ set_or_replace S3_BUCKET "$BUCKET"
 set_or_replace S3_ACCESS_KEY "$ACCESS"
 set_or_replace S3_SECRET_KEY "$SECRET"
 set_or_replace S3_PUBLIC_BASE_URL "$PUBLIC_URL"
-set_or_replace MINIO_CONTAINER "$CONTAINER"
 
 echo "==> S3 configurado em $ENV_FILE (container $CONTAINER, modo $MINIO_MODE)"
 grep -E '^S3_' "$ENV_FILE" | sed 's/SECRET_KEY=.*/SECRET_KEY=***/'

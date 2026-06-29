@@ -79,8 +79,8 @@ if [[ -n "$PUBLIC_URL" ]]; then
   if [[ "$media_path" != /* ]]; then
     media_path="/media/inova-gastro-360${media_path#*/inova-gastro-360}"
   fi
-  img_code=$(curl -sf -o /dev/null -w "%{http_code}" "http://127.0.0.1:9088${media_path}" 2>/dev/null || echo "000")
-  echo "    GET :9088${media_path}: $img_code"
+  img_code=$(curl -sS -o /dev/null -w "%{http_code}" "http://127.0.0.1:9088${media_path}" 2>/dev/null || echo "000")
+  echo "    GET :9088${media_path} → HTTP ${img_code}"
   [[ "$img_code" == "200" ]] || echo "    Aviso: proxy /media/ — rode setup-media-proxy-vps.sh"
 fi
 
