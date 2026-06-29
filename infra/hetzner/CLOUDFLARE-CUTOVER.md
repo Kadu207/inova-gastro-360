@@ -166,4 +166,5 @@ Login demo: `admin@inovagastro360.local` / `InovaGastro360!` / tenant `demo-burg
 | **530** com ERR `lookup inova-gastro-360-nginx` | `network connect` perdido após restart | `tunnel-connect-inova.sh` ou URL `128.140.77.31:9088` |
 | `nginx: 200` no teste mas HTTPS **530** | URL errada no dashboard ou DNS | Confirmar v31+ e CNAME |
 | HTTPS **502** logo após `restart` | web/serve ainda subindo ou tunnel desconectado | Aguardar 10s; testar `curl http://127.0.0.1:9088/cardapio`; `tunnel-connect-inova.sh` |
+| **502** persistente (`Connection refused` upstream `:3102`) | nginx cacheou IP antigo do container `web` | `docker compose restart nginx-proxy` ou config com `resolver 127.0.0.11` + `proxy_pass` variável |
 | `network_public not manually attachable` | Rede Swarm overlay | Usar IP host `128.140.77.31:9088` (como casadapaz) |

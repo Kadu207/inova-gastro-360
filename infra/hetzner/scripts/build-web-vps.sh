@@ -42,8 +42,10 @@ if id -u "$DEPLOY_USER" &>/dev/null; then
     sudo chown -R "$DEPLOY_USER:$DEPLOY_USER" "$ROOT/node_modules" 2>/dev/null || true
 fi
 
-echo "==> Reiniciando web + api-gateway..."
-docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d web api-gateway nginx-proxy
+echo "==> Reiniciando web + api-gateway + nginx (re-resolve DNS)..."
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate web
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d api-gateway
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate nginx-proxy
 
 echo "==> Aguardando web (serve)..."
 for i in 1 2 3 4 5 6 7 8 9 10; do
