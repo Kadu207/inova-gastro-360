@@ -106,8 +106,12 @@ export async function handleAdminUploadProductImage(
     return jsonResponse({ error: "invalid_multipart" }, 400);
   }
 
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
+  const entry = formData.get("file");
+  if (entry == null || typeof entry === "string") {
+    return jsonResponse({ error: "invalid_image", message: "Arquivo obrigatório" }, 400);
+  }
+  const file = entry as Blob;
+  if (file.size === 0) {
     return jsonResponse({ error: "invalid_image", message: "Arquivo obrigatório" }, 400);
   }
 
@@ -115,7 +119,7 @@ export async function handleAdminUploadProductImage(
     return jsonResponse({ error: "invalid_image", message: "Arquivo acima de 5MB" }, 400);
   }
 
-  const contentType = file.type || "application/octet-stream";
+  const contentType = (file as File).type || "application/octet-stream";
   if (!isAllowedImageContentType(contentType)) {
     return jsonResponse({ error: "invalid_image", message: "MIME não permitido" }, 400);
   }
