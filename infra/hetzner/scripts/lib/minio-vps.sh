@@ -67,5 +67,16 @@ minio_vps_host_endpoint() {
 minio_vps_mc_run() {
   local container="${1:?container}"
   shift
-  docker run --rm --network "container:${container}" minio/mc "$@"
+  local config_vol="${MINIO_MC_CONFIG_VOL:-}"
+  if [[ -z "$config_vol" ]]; then
+    docker run --rm --network "container:${container}" minio/mc "$@"
+  else
+    docker run --rm --network "container:${container}" \
+      -v "${config_vol}:/root/.mc" minio/mc "$@"
+  fi
+}
+
+minio_vps_mc_init_config_vol() {
+  MINIO_MC_CONFIG_VOL="$(docker volume create inova-gastro-minio-mc-config 2>/dev/null || echo inova-gastro-minio-mc-config)"
+  export MINIO_MC_CONFIG_VOL
 }

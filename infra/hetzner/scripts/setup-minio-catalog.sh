@@ -40,6 +40,7 @@ if [[ -z "$LOCAL_ENDPOINT" || "$LOCAL_ENDPOINT" == docker-network://* ]]; then
   else
     USE_DOCKER_MC=1
     LOCAL_ENDPOINT="http://127.0.0.1:9000"
+    minio_vps_mc_init_config_vol
     echo "==> MinIO só na rede Docker ($MINIO_CONTAINER) — mc via container"
   fi
 fi
@@ -65,7 +66,6 @@ echo "==> Testar conexão"
 if ! mc_cmd ls inova-catalog >/dev/null 2>&1; then
   echo "Erro: não foi possível listar buckets em $LOCAL_ENDPOINT"
   echo "  Container: $MINIO_CONTAINER"
-  echo "  docker port $MINIO_CONTAINER 9000"
   echo "  bash infra/hetzner/scripts/discover-minio-vps.sh"
   exit 1
 fi
@@ -73,8 +73,13 @@ fi
 echo "==> Bucket $BUCKET"
 mc_cmd mb "inova-catalog/$BUCKET" --ignore-existing
 
-echo "==> Leitura pública prefixo tenants/"
-mc_cmd anonymous set download "inova-catalog/$BUCKET/tenants" || true
+echo "==> Prefixo tenants/ (leitura pública na vitrine)"
+printf '' | mc_cmd pipe "inova-catalog/$BUCKET/tenants/.keep" 2>/dev/null || true
+if mc_cmd anonymous set download "inova-catalog/$BUCKET/tenants" 2>/dev/null; then
+  echo "    Política download em tenants/ OK"
+else
+  echo "    Aviso: anonymous download em tenants/ falhou — vitrine pode precisar CDN/nginx"
+fi
 
 echo "==> CORS (presign browser)"
 CORS_FILE="$(mktemp)"
@@ -91,15 +96,18 @@ cat >"$CORS_FILE" <<'JSON'
 JSON
 if [[ "$USE_DOCKER_MC" == 1 ]]; then
   docker run --rm --network "container:${MINIO_CONTAINER}" \
+    -v "${MINIO_MC_CONFIG_VOL}:/root/.mc" \
     -v "$CORS_FILE:/tmp/cors.json:ro" minio/mc \
     cors set "inova-catalog/$BUCKET" /tmp/cors.json 2>/dev/null \
-    || echo "Aviso: mc cors set falhou — use fallback multipart (T017)"
+    && echo "    CORS OK" \
+    || echo "    Aviso: CORS falhou — upload multipart via API (T017) continua funcionando"
 else
   mc_cmd cors set "inova-catalog/$BUCKET" "$CORS_FILE" 2>/dev/null \
-    || echo "Aviso: mc cors set falhou — use fallback multipart (T017)"
+    && echo "    CORS OK" \
+    || echo "    Aviso: CORS falhou — upload multipart via API (T017) continua funcionando"
 fi
 rm -f "$CORS_FILE"
 
 echo "==> OK — bucket $BUCKET pronto"
 grep '^S3_ENDPOINT=' "$ENV_FILE" 2>/dev/null || true
-echo "    Upload multipart (T017) funciona se api-gateway alcançar o mesmo endpoint."
+echo "    Teste upload em /dashboard/catalogo (multipart T017)."

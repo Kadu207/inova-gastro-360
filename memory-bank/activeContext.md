@@ -10,12 +10,12 @@
 - `/dashboard/catalogo` deployado @ `feat/006-escpos`
 - Scripts VPS: sync-git, npm-ci, fix-env, recreate-api, smoke-catalog-admin
 
-### Pendente operacional (commit `7781fc5`)
+### MinIO/S3 ✅ (rede Docker interna)
 
-- **MinIO/S3** — scripts `discover-minio-vps.sh`, `configure-s3-env-vps.sh`, `setup-minio-catalog.sh`
-- **Rotação Postgres** — `rotate-postgres-password-vps.sh` (senha exposta em chat anterior)
-- Seed VPS opcional (demo já existe; fix SSL em `packages/database`)
-- T023 audit_logs (opcional)
+- Bucket `inova-gastro-360` criado
+- `S3_ENDPOINT=http://inova-platform-core-minio-1:9000`
+- API conectada à rede `inova-platform-core_inova-platform`
+- Pendente: teste upload foto + CDN vitrine; rotação senha Postgres
 
 ### Demo produção
 
