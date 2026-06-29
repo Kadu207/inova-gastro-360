@@ -68,6 +68,14 @@ describe("cardapio helpers", () => {
     expect(productDisplayImage("javascript:x")).toBeNull();
   });
 
+  it("reescreve CDN legado para /media/ no app", () => {
+    const legacy =
+      "https://cdn.inovatitech.com.br/inova-gastro-360/tenants/t1/branches/b1/products/p1/x.png";
+    const resolved = productDisplayImage(legacy);
+    expect(resolved).toContain("/media/inova-gastro-360/tenants/t1/");
+    expect(resolved).not.toContain("cdn.inovatitech.com.br");
+  });
+
   it("productInitial usa primeira letra", () => {
     expect(productInitial("Smash Burger")).toBe("S");
     expect(productInitial("")).toBe("?");

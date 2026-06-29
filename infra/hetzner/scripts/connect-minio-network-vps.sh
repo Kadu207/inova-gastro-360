@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Conecta api-gateway à rede Docker do MinIO (quando porta 9000 não está publicada no host).
+# Conecta api-gateway + nginx à rede Docker do MinIO (mídia /media/*).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
@@ -7,13 +7,13 @@ ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 source "$ROOT/infra/hetzner/scripts/lib/minio-vps.sh"
 
 CONTAINER="${1:-$(minio_vps_default_container)}"
-API="${2:-inova-gastro-360-api}"
 
 if [[ -z "$CONTAINER" ]]; then
   echo "Erro: container MinIO não encontrado"
   exit 1
 fi
 
-minio_vps_connect_api "$CONTAINER" "$API"
+minio_vps_connect_media_stack "$CONTAINER"
 
-echo "S3_ENDPOINT recomendado: $(minio_vps_s3_endpoint "$CONTAINER")"
+echo "S3_ENDPOINT: $(minio_vps_s3_endpoint "$CONTAINER")"
+echo "S3_PUBLIC_BASE_URL sugerido: $(minio_vps_public_base_url)"

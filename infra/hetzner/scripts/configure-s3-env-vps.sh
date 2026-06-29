@@ -63,7 +63,7 @@ else
   MINIO_MODE="docker-network"
 fi
 
-PUBLIC_URL="${S3_PUBLIC_BASE_URL:-https://cdn.inovatitech.com.br/inova-gastro-360}"
+PUBLIC_URL="${S3_PUBLIC_BASE_URL:-$(minio_vps_public_base_url "https://inovagastro360.inovatitech.com.br" "$BUCKET")}"
 BUCKET="${S3_BUCKET:-inova-gastro-360}"
 
 set_or_replace() {

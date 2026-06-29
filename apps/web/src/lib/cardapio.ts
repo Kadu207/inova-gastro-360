@@ -31,8 +31,28 @@ export function isValidProductImageUrl(url: string | null | undefined): boolean 
   }
 }
 
+/** CDN legado (não servido na VPS) → proxy /media/ no domínio do app. */
+const LEGACY_CDN_PREFIX = "https://cdn.inovatitech.com.br/inova-gastro-360";
+
+function mediaBaseFromApp(): string {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return `${window.location.origin}/media/inova-gastro-360`;
+  }
+  const api = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+  return api ? `${api}/media/inova-gastro-360` : "/media/inova-gastro-360";
+}
+
+export function resolveProductImageUrl(url: string | null | undefined): string | null {
+  if (!isValidProductImageUrl(url)) return null;
+  let u = url!.trim();
+  if (u.startsWith(LEGACY_CDN_PREFIX)) {
+    u = `${mediaBaseFromApp()}${u.slice(LEGACY_CDN_PREFIX.length)}`;
+  }
+  return u;
+}
+
 export function productDisplayImage(url: string | null | undefined): string | null {
-  return isValidProductImageUrl(url) ? url!.trim() : null;
+  return resolveProductImageUrl(url);
 }
 
 export function productInitial(name: string): string {

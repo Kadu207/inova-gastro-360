@@ -22,24 +22,48 @@ minio_vps_published_port() {
   echo ""
 }
 
+minio_vps_connect_container() {
+  local container="${1:?container}"
+  local network="${2:?network}"
+  local target="${3:?target}"
+  if docker network connect "$network" "$target" 2>/dev/null; then
+    echo "==> $target conectado à rede $network (MinIO interno)"
+  elif docker inspect "$target" --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}}' | grep -qw "$network"; then
+    echo "==> $target já na rede $network"
+  else
+    echo "Aviso: não foi possível conectar $target à rede $network" >&2
+    return 1
+  fi
+}
+
 minio_vps_connect_api() {
   local container="${1:?container}"
-  local network api="${2:-inova-gastro-360-api}"
+  local api="${2:-inova-gastro-360-api}"
+  local network
   network="$(minio_vps_primary_network "$container")"
   if [[ -z "$network" ]]; then
     echo "Erro: rede Docker não encontrada para $container" >&2
     return 1
   fi
-  if docker network connect "$network" "$api" 2>/dev/null; then
-    echo "==> API conectada à rede $network (MinIO interno)"
-  else
-    if docker inspect "$api" --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}}' | grep -qw "$network"; then
-      echo "==> API já na rede $network"
-    else
-      echo "Aviso: não foi possível conectar $api à rede $network" >&2
-      return 1
-    fi
+  minio_vps_connect_container "$container" "$network" "$api"
+}
+
+minio_vps_connect_media_stack() {
+  local container="${1:?container}"
+  local network
+  network="$(minio_vps_primary_network "$container")"
+  if [[ -z "$network" ]]; then
+    echo "Erro: rede Docker não encontrada para $container" >&2
+    return 1
   fi
+  minio_vps_connect_container "$container" "$network" "inova-gastro-360-api"
+  minio_vps_connect_container "$container" "$network" "inova-gastro-360-nginx"
+}
+
+minio_vps_public_base_url() {
+  local app_base="${1:-https://inovagastro360.inovatitech.com.br}"
+  local bucket="${2:-inova-gastro-360}"
+  echo "${app_base%/}/media/${bucket}"
 }
 
 minio_vps_s3_endpoint() {
