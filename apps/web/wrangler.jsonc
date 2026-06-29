@@ -6,11 +6,8 @@
     "directory": "./out",
     "html_handling": "drop-trailing-slash",
     "not_found_handling": "404-page"
-  },
-  "routes": [
-    {
-      "pattern": "inovagastro360.inovatitech.com.br",
-      "custom_domain": true
-    }
-  ]
+  }
+  // Produção VPS: Tunnel → nginx :9088. NÃO registrar custom_domain aqui —
+  // conflita com cloudflared e mantém deploy antigo no edge (POST /api → 405).
+  // Ver infra/hetzner/CLOUDFLARE-CUTOVER.md
 }

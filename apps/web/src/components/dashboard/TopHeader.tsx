@@ -1,5 +1,7 @@
 "use client";
 
+import { logout } from "@/lib/api";
+
 interface TopHeaderProps {
   title: string;
 }
@@ -26,6 +28,9 @@ export default function TopHeader({ title }: TopHeaderProps) {
             <span>Administrador</span>
           </div>
         </div>
+        <button type="button" className="os-logout-btn" onClick={logout} title="Encerrar sessão">
+          Sair
+        </button>
       </div>
     </header>
   );

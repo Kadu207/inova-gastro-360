@@ -1,22 +1,77 @@
 # Hetzner VPS — Inova Gastro 360
 
-## Portas reservadas (ver PORT_REGISTRY.md)
+**IP:** `128.140.77.31` | Postgres `:5440` | Redis `:6390`
 
-- PostgreSQL: `127.0.0.1:5440` (não expor publicamente)
-- Redis: `127.0.0.1:6390`
-- n8n: `127.0.0.1:5680` (evitar conflito com 5678)
+## 1. Clonar o repositório na VPS (obrigatório)
 
-## Serviços na VPS
+Os comandos abaixo **não funcionam** no `~` sem o código. Primeiro:
 
 ```bash
-docker compose -f docker-compose.yml up -d
-# Adicionar n8n, Chatwoot, MinIO em compose extendido na Onda 3
+cd ~
+git clone <URL_DO_SEU_REPOSITORIO_GIT> inova-gastro-360
+cd inova-gastro-360
 ```
 
-## Hyperdrive
+Substitua `<URL_DO_SEU_REPOSITORIO_GIT>` pela URL real (GitLab/GitHub).
 
-Configurar binding Cloudflare Hyperdrive apontando para Postgres interno da VPS.
+Se o código ainda não foi enviado (`git push`) da sua máquina de desenvolvimento, faça o push antes de clonar na VPS.
 
-## Intervenção do usuário
+## 2. Configurar ambiente
 
-Provisionar VPS, firewall, e apontar Hyperdrive — autorizado após Onda 0.
+```bash
+cp infra/hetzner/.env.production.example infra/hetzner/.env.production
+nano infra/hetzner/.env.production   # DATABASE_URL, JWT_SECRET, senhas
+```
+
+## 3. Postgres + Redis (se ainda não rodando)
+
+```bash
+docker compose -f infra/hetzner/docker-compose.prod.yml up -d
+# ou docker compose up -d na raiz (dev local)
+```
+
+## 4. Deploy do stack app (Node)
+
+**Importante:** nunca rode `npm ci` dentro de vários containers ao mesmo tempo — corrompe `node_modules`.
+
+```bash
+# Sincronizar código (se git pull falhar com "divergent branches"):
+bash infra/hetzner/scripts/sync-git-vps.sh feat/006-escpos
+
+# Após pull com deps novas (ex. spec 014 @aws-sdk):
+bash infra/hetzner/scripts/npm-ci-vps.sh
+
+bash infra/hetzner/scripts/install-stack-deps.sh   # uma vez (ou após git pull grande)
+bash infra/hetzner/scripts/build-web-vps.sh        # rebuild web + restart api-gateway
+bash infra/hetzner/scripts/deploy-vps.sh           # stack completo (primeira vez)
+```
+
+## 5. Nginx + TLS + firewall
+
+**VPS compartilhada:** porta 80 já usada por outro Docker (`excellence_dental_prod-nginx`). O `systemctl nginx` **não sobe** se algum site em `sites-enabled` escutar :80 (ex.: `casadapaz`).
+
+**Alternativa recomendada — Cloudflare Tunnel** (sem nginx no host):
+
+```yaml
+  - hostname: inovagastro360.inovatitech.com.br
+    service: http://127.0.0.1:3102
+  - hostname: inovagastro360-api.inovatitech.com.br
+    service: http://127.0.0.1:8792
+```
+
+No `.env.production`: `NEXT_PUBLIC_API_URL=https://inovagastro360-api.inovatitech.com.br`
+
+Se quiser nginx local na **9088** (proxy /api + web), desabilite sites que usam :80 ou use container nginx — ver `NGINX-SHARED-VPS.md`.
+
+## 6. Cutover DNS
+
+Ver `infra/hetzner/CUTOVER.md` e `ROLLBACK.md`.
+
+## Portas (ver PORT_REGISTRY.md)
+
+| Serviço | Porta VPS |
+|---------|-----------|
+| PostgreSQL | 5440 (localhost) |
+| Redis | 6390 |
+| API Node | 8792 |
+| Web | 3102 |

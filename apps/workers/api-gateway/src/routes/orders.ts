@@ -38,6 +38,8 @@ const UpdateStatusSchema = z.object({
 const MAX_IDEMPOTENCY_KEY_LENGTH = 128;
 const DEFAULT_PAGE_LIMIT = 20;
 const MAX_PAGE_LIMIT = 50;
+const ORDER_CHANNELS = ["web", "balcao", "delivery"] as const;
+const MAX_SEARCH_LENGTH = 100;
 
 type OrderSummary = {
   id: string;
@@ -103,6 +105,33 @@ export function parseListPagination(
   return { ok: true, limit, page, offset: (page - 1) * limit };
 }
 
+export function parseListOrderFilters(
+  url: URL,
+):
+  | { ok: true; status: string | null; channel: string | null; q: string | null; orderNumber: number | null }
+  | { ok: false; response: Response } {
+  const status = url.searchParams.get("status");
+  const channel = url.searchParams.get("channel");
+  const qRaw = url.searchParams.get("q");
+
+  if (channel && !(ORDER_CHANNELS as readonly string[]).includes(channel)) {
+    return { ok: false, response: jsonResponse({ error: "invalid_channel" }, 400) };
+  }
+
+  let q: string | null = null;
+  if (qRaw !== null) {
+    const trimmed = qRaw.trim();
+    if (trimmed.length > MAX_SEARCH_LENGTH) {
+      return { ok: false, response: jsonResponse({ error: "invalid_search" }, 400) };
+    }
+    if (trimmed) q = trimmed;
+  }
+
+  const orderNumber = q && /^\d+$/.test(q) ? Number.parseInt(q, 10) : null;
+
+  return { ok: true, status, channel, q, orderNumber };
+}
+
 function orderCreatePayload(order: OrderSummary, idempotent = false) {
   return {
     order: {
@@ -140,12 +169,25 @@ export async function handleCreateOrder(request: Request, env: GatewayEnv, user?
   }
 
   const { branchId, channel, customerName, customerPhone, notes, items } = parsed.data;
-  const tenantId = user?.tid;
-  if (!tenantId) return jsonResponse({ error: "tenant_required" }, 400);
-
   const sql = getSql(env);
 
   try {
+    let tenantId = user?.tid;
+    if (!tenantId) {
+      if (!customerName?.trim() || !customerPhone?.trim()) {
+        return jsonResponse(
+          { error: "guest_contact_required", message: "Nome e telefone são obrigatórios para pedido sem login" },
+          400,
+        );
+      }
+      const [branch] = await sql<{ tenant_id: string }[]>`
+        SELECT tenant_id FROM branches
+        WHERE id = ${branchId}::uuid AND is_active = true
+        LIMIT 1
+      `;
+      if (!branch) return jsonResponse({ error: "branch_not_found" }, 404);
+      tenantId = branch.tenant_id;
+    }
     if (idempotency.key) {
       const existing = await findOrderByIdempotencyKey(sql, tenantId, idempotency.key);
       if (existing) {
@@ -166,13 +208,14 @@ export async function handleCreateOrder(request: Request, env: GatewayEnv, user?
       return jsonResponse({ error: "invalid_products" }, 400);
     }
 
-    const priceMap = new Map(products.map((p) => [p.id, p.price_cents]));
+    const productMap = new Map(products.map((p) => [p.id, p]));
     let totalCents = 0;
     const lineItems = items.map((item) => {
-      const unit = priceMap.get(item.productId) ?? 0;
+      const product = productMap.get(item.productId)!;
+      const unit = product.price_cents;
       const total = unit * item.quantity;
       totalCents += total;
-      return { ...item, unitCents: unit, totalCents: total };
+      return { ...item, productName: product.name, unitCents: unit, totalCents: total };
     });
 
     let order: { id: string; order_number: number; status: string; total_cents: number };
@@ -254,44 +297,54 @@ export async function handleCreateOrder(request: Request, env: GatewayEnv, user?
 export async function handleListOrders(request: Request, env: GatewayEnv, user: JwtPayload): Promise<Response> {
   const url = new URL(request.url);
   const branchId = url.searchParams.get("branchId");
-  const status = url.searchParams.get("status");
 
   if (!branchId) return jsonResponse({ error: "branch_id_required" }, 400);
 
   const pagination = parseListPagination(url);
   if (!pagination.ok) return pagination.response;
 
+  const listFilters = parseListOrderFilters(url);
+  if (!listFilters.ok) return listFilters.response;
+
   const { limit, page, offset } = pagination;
+  const { status, channel, q, orderNumber } = listFilters;
+  const searchPattern = q ? `%${q}%` : null;
+
   const sql = getSql(env);
   try {
-    const [{ count }] = status
-      ? await sql<{ count: number }[]>`
-          SELECT COUNT(*)::int AS count FROM orders
-          WHERE tenant_id = ${user.tid}::uuid AND branch_id = ${branchId}::uuid AND status = ${status}
-        `
-      : await sql<{ count: number }[]>`
-          SELECT COUNT(*)::int AS count FROM orders
-          WHERE tenant_id = ${user.tid}::uuid AND branch_id = ${branchId}::uuid
-        `;
+    const [{ count }] = await sql<{ count: number }[]>`
+      SELECT COUNT(*)::int AS count FROM orders
+      WHERE tenant_id = ${user.tid}::uuid AND branch_id = ${branchId}::uuid
+        ${status ? sql`AND status = ${status}` : sql``}
+        ${channel ? sql`AND channel = ${channel}` : sql``}
+        ${q
+          ? sql`AND (
+              customer_name ILIKE ${searchPattern}
+              OR customer_phone ILIKE ${searchPattern}
+              ${orderNumber !== null ? sql`OR order_number = ${orderNumber}` : sql``}
+            )`
+          : sql``}
+    `;
 
     const total = count ?? 0;
     const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
 
-    const orders = status
-      ? await sql`
-          SELECT id, order_number, channel, status, customer_name, customer_phone, total_cents, created_at
-          FROM orders
-          WHERE tenant_id = ${user.tid}::uuid AND branch_id = ${branchId}::uuid AND status = ${status}
-          ORDER BY created_at DESC
-          LIMIT ${limit} OFFSET ${offset}
-        `
-      : await sql`
-          SELECT id, order_number, channel, status, customer_name, customer_phone, total_cents, created_at
-          FROM orders
-          WHERE tenant_id = ${user.tid}::uuid AND branch_id = ${branchId}::uuid
-          ORDER BY created_at DESC
-          LIMIT ${limit} OFFSET ${offset}
-        `;
+    const orders = await sql`
+      SELECT id, order_number, channel, status, customer_name, customer_phone, total_cents, created_at
+      FROM orders
+      WHERE tenant_id = ${user.tid}::uuid AND branch_id = ${branchId}::uuid
+        ${status ? sql`AND status = ${status}` : sql``}
+        ${channel ? sql`AND channel = ${channel}` : sql``}
+        ${q
+          ? sql`AND (
+              customer_name ILIKE ${searchPattern}
+              OR customer_phone ILIKE ${searchPattern}
+              ${orderNumber !== null ? sql`OR order_number = ${orderNumber}` : sql``}
+            )`
+          : sql``}
+      ORDER BY created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
 
     return jsonResponse({
       orders,

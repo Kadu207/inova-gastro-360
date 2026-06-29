@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# Rebuild static export (apps/web/out) na VPS — npm não está no host; usa container Node.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+ENV_FILE="$ROOT/infra/hetzner/.env.production"
+COMPOSE_FILE="$ROOT/infra/hetzner/docker-compose.app.yml"
+
+cd "$ROOT"
+
+if [[ -f "$ENV_FILE" ]]; then
+  set -a
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line#"${line%%[![:space:]]*}"}"
+    [[ -z "$line" || "$line" =~ ^# ]] && continue
+    [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] || continue
+    export "$line"
+  done < "$ENV_FILE"
+  set +a
+fi
+
+API_URL="${NEXT_PUBLIC_API_URL:-https://inovagastro360.inovatitech.com.br}"
+RT_URL="${NEXT_PUBLIC_REALTIME_URL:-https://inovagastro360.inovatitech.com.br}"
+
+need_npm_ci=false
+if [[ ! -d node_modules ]] || [[ ! -x node_modules/.bin/next ]]; then
+  need_npm_ci=true
+fi
+if [[ ! -d node_modules/@aws-sdk/client-s3 ]]; then
+  echo "    @aws-sdk/client-s3 ausente — npm ci necessário (spec 014)"
+  need_npm_ci=true
+fi
+
+if [[ "$need_npm_ci" == true ]]; then
+  echo "==> npm ci (Docker)..."
+  docker run --rm -v "$ROOT:/app" -w /app node:20-alpine sh -c "npm ci"
+fi
+
+echo "==> Build web (Docker)..."
+docker run --rm -v "$ROOT:/app" -w /app \
+  -e NEXT_PUBLIC_API_URL="$API_URL" \
+  -e NEXT_PUBLIC_REALTIME_URL="$RT_URL" \
+  node:20-alpine sh -c "npm run build -w @inova-gastro-360/web"
+
+DEPLOY_USER="${SUDO_USER:-${USER:-gestaoti}}"
+if id -u "$DEPLOY_USER" &>/dev/null; then
+  chown -R "$DEPLOY_USER:$DEPLOY_USER" "$ROOT/apps/web/out" "$ROOT/apps/web/.next" 2>/dev/null || \
+    sudo chown -R "$DEPLOY_USER:$DEPLOY_USER" "$ROOT/apps/web/out" "$ROOT/apps/web/.next" 2>/dev/null || true
+  # npm ci/build via Docker cria arquivos como root — evita crash dos containers Node
+  chown -R "$DEPLOY_USER:$DEPLOY_USER" "$ROOT/node_modules" 2>/dev/null || \
+    sudo chown -R "$DEPLOY_USER:$DEPLOY_USER" "$ROOT/node_modules" 2>/dev/null || true
+fi
+
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo ""
+  echo "Erro: $ENV_FILE não encontrado — containers NÃO serão reiniciados."
+  echo "  cp infra/hetzner/.env.production.example infra/hetzner/.env.production"
+  echo "  nano infra/hetzner/.env.production   # DATABASE_URL, JWT_SECRET, S3_*"
+  echo ""
+  echo "Build estático concluído em apps/web/out — rode novamente após criar o .env."
+  exit 1
+fi
+
+echo "==> Reiniciando web + api-gateway + nginx (re-resolve DNS)..."
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate web
+bash "$ROOT/infra/hetzner/scripts/recreate-api-vps.sh"
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate nginx-proxy
+bash "$ROOT/infra/hetzner/scripts/connect-minio-network-vps.sh" 2>/dev/null || true
+
+echo "==> Aguardando web (serve)..."
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  if curl -sf -o /dev/null "http://127.0.0.1:9088/cardapio" 2>/dev/null; then
+    break
+  fi
+  sleep 2
+done
+
+/usr/local/bin/tunnel-connect-inova.sh 2>/dev/null || bash "$ROOT/infra/hetzner/scripts/tunnel-connect-inova.sh" 2>/dev/null || true
+
+echo "==> Smoke local..."
+grep -q 'catalog-page' "$ROOT/apps/web/out/cardapio.html" 2>/dev/null && echo "    out/cardapio.html: catalog-page OK" || echo "Aviso: catalog-page não encontrado em out/"
+if [[ -f "$ROOT/apps/web/out/dashboard/catalogo.html" ]]; then
+  echo "    out/dashboard/catalogo.html: OK (spec 014 admin)"
+else
+  echo "Aviso: out/dashboard/catalogo.html ausente — git pull falhou? Rode:"
+  echo "    bash infra/hetzner/scripts/sync-git-vps.sh"
+fi
+curl -sf -o /dev/null -w "    local :9088: %{http_code}\n" "http://127.0.0.1:9088/cardapio" || echo "Aviso: local :9088 indisponível"
+curl -sf -o /dev/null -w "    cardapio HTTPS: %{http_code}\n" "https://inovagastro360.inovatitech.com.br/cardapio" || echo "Aviso: HTTPS indisponível — rode tunnel-connect-inova.sh"
+
+code_api=$(curl -sf -o /dev/null -w "%{http_code}" "http://127.0.0.1:8792/health" 2>/dev/null || echo "000")
+echo "    api-gateway :8792/health: $code_api"
+if [[ "$code_api" != "200" ]]; then
+  echo "Aviso: api-gateway down — docker logs inova-gastro-360-api"
+  echo "    Se MODULE_NOT_FOUND @aws-sdk: bash infra/hetzner/scripts/npm-ci-vps.sh && restart api-gateway"
+fi
+
+echo "Build web concluído."

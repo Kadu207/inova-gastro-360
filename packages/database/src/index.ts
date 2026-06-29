@@ -1,5 +1,6 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import pg from "pg";
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
@@ -11,8 +12,28 @@ function getConnectionString(databaseUrl?: string): string {
   );
 }
 
+function normalizePgConnectionString(connectionString: string): string {
+  return connectionString
+    .replace(/([?&])sslmode=[^&]*/g, "")
+    .replace(/([?&])uselibpqcompat=[^&]*/g, "")
+    .replace(/([?&])schema=[^&]*/g, "")
+    .replace(/\?&/, "?")
+    .replace(/\?$/, "");
+}
+
 export function createPrismaClient(databaseUrl?: string): PrismaClient {
-  const adapter = new PrismaPg({ connectionString: getConnectionString(databaseUrl) });
+  const connectionString = normalizePgConnectionString(getConnectionString(databaseUrl));
+  const insecureSsl =
+    process.env.DATABASE_SSL_INSECURE === "1" || process.env.DATABASE_SSL_INSECURE === "true";
+
+  const adapter = insecureSsl
+    ? new PrismaPg(
+        new pg.Pool({
+          connectionString,
+          ssl: { rejectUnauthorized: false },
+        }),
+      )
+    : new PrismaPg({ connectionString });
   return new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],

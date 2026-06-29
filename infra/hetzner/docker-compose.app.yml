@@ -1,0 +1,143 @@
+# Inova Gastro 360 — stack aplicação na VPS (spec 013)
+# Dependências: rodar UMA vez via infra/hetzner/scripts/install-stack-deps.sh (nunca npm ci por container)
+
+name: inova-gastro-360-app
+
+networks:
+  inova_internal:
+    driver: bridge
+  # Rede externa do stack inova-platform-core (MinIO). Persiste após force-recreate.
+  minio_platform:
+    external: true
+    name: ${MINIO_DOCKER_NETWORK:-inova-platform-core_inova-platform}
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: inova-gastro-360-redis-app
+    restart: unless-stopped
+    networks: [inova_internal]
+    volumes:
+      - inova_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  integrations:
+    image: node:20-alpine
+    container_name: inova-gastro-360-integrations
+    restart: unless-stopped
+    working_dir: /app
+    env_file: .env.production
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8791"
+    volumes:
+      - ../../:/app
+    command: npm run start -w @inova-gastro-360/integrations
+    networks: [inova_internal]
+
+  realtime-hub:
+    image: node:20-alpine
+    container_name: inova-gastro-360-realtime
+    restart: unless-stopped
+    working_dir: /app
+    env_file: .env.production
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8790"
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - ../../:/app
+    command: npm run start -w @inova-gastro-360/realtime-hub
+    networks: [inova_internal]
+    ports:
+      - "127.0.0.1:8790:8790"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  messaging-bus:
+    image: node:20-alpine
+    container_name: inova-gastro-360-messaging
+    restart: unless-stopped
+    working_dir: /app
+    env_file: .env.production
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8789"
+      REALTIME_URL: http://realtime-hub:8790
+      INTEGRATIONS_URL: http://integrations:8791
+    volumes:
+      - ../../:/app
+    command: npm run start -w @inova-gastro-360/messaging-bus
+    networks: [inova_internal]
+    depends_on:
+      - integrations
+      - realtime-hub
+
+  api-gateway:
+    image: node:20-alpine
+    container_name: inova-gastro-360-api
+    restart: unless-stopped
+    working_dir: /app
+    env_file: .env.production
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8792"
+      MESSAGING_URL: http://messaging-bus:8789
+      REALTIME_URL: http://realtime-hub:8790
+      INTEGRATIONS_URL: http://integrations:8791
+      WEB_HEALTH_URL: http://web:3102/login
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../../:/app
+    command: npm run start -w @inova-gastro-360/api-gateway
+    networks:
+      - inova_internal
+      - minio_platform
+    ports:
+      - "127.0.0.1:8792:8792"
+    depends_on:
+      - messaging-bus
+
+  web:
+    image: node:20-alpine
+    container_name: inova-gastro-360-web
+    restart: unless-stopped
+    working_dir: /app
+    env_file: .env.production
+    environment:
+      PORT: "3102"
+    volumes:
+      - ../../:/app
+    command: sh -c "cd apps/web && npx serve out -l tcp://0.0.0.0:3102 --no-clipboard"
+    networks: [inova_internal]
+    ports:
+      - "127.0.0.1:3102:3102"
+    depends_on:
+      - api-gateway
+
+  # Proxy :9088 para Tunnel — não depende do nginx do host (:80 ocupado)
+  # ports 9088:9088 → cloudflared Docker alcança via 172.17.0.1:9088 ou inova-gastro-360-nginx:9088
+  nginx-proxy:
+    image: nginx:1.27-alpine
+    container_name: inova-gastro-360-nginx
+    restart: unless-stopped
+    networks:
+      - inova_internal
+      - minio_platform
+    volumes:
+      - ./nginx/inovagastro360.docker.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "9088:9088"
+    depends_on:
+      - web
+      - api-gateway
+      - realtime-hub
+
+volumes:
+  inova_redis_data:

@@ -6,6 +6,7 @@ import {
   handleGetOrder,
   parseIdempotencyKey,
   parseListPagination,
+  parseListOrderFilters,
 } from "./orders";
 import { testEnv, DEMO_BRANCH_ID, DEMO_PRODUCT_ID } from "../test/helpers";
 
@@ -31,7 +32,7 @@ describe("orders handlers — validação (sem DB)", () => {
     expect(body.error).toBe("validation_error");
   });
 
-  it("create order exige tenant_id no JWT", async () => {
+  it("create order sem JWT exige nome e telefone (guest)", async () => {
     const req = new Request("http://test/api/v1/orders", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -43,7 +44,7 @@ describe("orders handlers — validação (sem DB)", () => {
     const res = await handleCreateOrder(req, env, undefined);
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error: string };
-    expect(body.error).toBe("tenant_required");
+    expect(body.error).toBe("guest_contact_required");
   });
 
   it("list orders exige branchId", async () => {
@@ -131,6 +132,27 @@ describe("orders handlers — validação (sem DB)", () => {
       expect(result.offset).toBe(0);
     }
   });
+
+  it("rejeita channel inválido na listagem", () => {
+    const result = parseListOrderFilters(new URL("http://test/api/v1/orders?channel=invalid"));
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.response.status).toBe(400);
+  });
+
+  it("rejeita busca muito longa", () => {
+    const q = "a".repeat(101);
+    const result = parseListOrderFilters(new URL(`http://test/api/v1/orders?q=${q}`));
+    expect(result.ok).toBe(false);
+  });
+
+  it("parseListOrderFilters extrai orderNumber numérico", () => {
+    const result = parseListOrderFilters(new URL("http://test/api/v1/orders?q=42&channel=delivery"));
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.channel).toBe("delivery");
+      expect(result.orderNumber).toBe(42);
+    }
+  });
 });
 
 describe("orders — auth via worker", () => {
@@ -140,7 +162,7 @@ describe("orders — auth via worker", () => {
     expect(res.status).toBe(401);
   });
 
-  it("POST /api/v1/orders sem token retorna tenant_required após validação", async () => {
+  it("POST /api/v1/orders sem token exige contato guest", async () => {
     const worker = (await import("../index")).default;
     const res = await worker.fetch(
       new Request("https://api.test/api/v1/orders", {
@@ -155,7 +177,7 @@ describe("orders — auth via worker", () => {
     );
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error: string };
-    expect(body.error).toBe("tenant_required");
+    expect(body.error).toBe("guest_contact_required");
   });
 
   it("GET /api/v1/orders com token inválido retorna 401", async () => {

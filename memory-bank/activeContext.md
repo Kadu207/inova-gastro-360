@@ -1,47 +1,34 @@
 # Contexto ativo — Inova Gastro 360
 
-**Última atualização:** 2026-06-20
+**Última atualização:** 2026-06-29
 
-## Decisão de runtime (2026-06-20)
+## Feature ativa: spec 014-catalog-admin — concluída ✅ (T001–T024)
 
-**Produção até go-live comercial:** VPS Hetzner (spec **013-vps-runtime**)  
-**Cloudflare Workers:** adiados por custo — reativar quando produto 100% pronto para vender (spec **010** fase edge)  
-**Cloudflare Free (mantido):** DNS + proxy SSL + WAF — sem Workers Paid / Hyperdrive em runtime VPS
+### Merge pendente
 
-## Status atual
-- **Ondas 0–3:** core entregue (auth, pedidos, realtime, messaging, print_jobs, integrações)
-- **Onda 4:** financeiro adiado (spec 005)
-- **Runtime alvo:** VPS `128.140.77.31` — Postgres `:5440`, Redis `:6390`
-- **Deploy CF histórico:** Workers em `inovagastro360.*` (2026-06-17) — referência, cutover para VPS pendente (013 fase D)
-- **Feature Spec Kit ativa:** `specs/013-vps-runtime`
-- **Próximo código:** spec **006** print-agent (poll API; VPS como alvo)
+- Branch: `feat/006-escpos` → `master`
+- Após merge: `recreate-api-vps.sh` na VPS (audit_logs + media)
 
-## Portas (dev local)
-| Serviço | Porta |
-|---------|-------|
-| Web | 3102 |
-| API gateway | **8792** |
-| messaging-bus | 8789 |
-| realtime-hub | 8790 |
-| integrations | 8791 |
-| Postgres | 5440 |
-| Redis | 6390 |
+### Produção (smoke verde + fotos)
 
-## Comandos dev
-```bash
-docker compose up -d
-npm run db:seed
-npm run dev:stack   # web + 4 serviços (Wrangler dev — local)
-npm run speckit:context
-```
+- CRUD categorias/produtos + upload multipart (T017)
+- Fotos visíveis em `/dashboard/catalogo` e `/cardapio`
+- `GET /media/inova-gastro-360/...` → api-gateway → MinIO (HTTP 200)
+- Branch `feat/006-escpos` @ `b725cd2`
 
-**Demo:** `admin@inovagastro360.local` / `InovaGastro360!` (tenant `demo-burger`)
+### MinIO/S3 ✅
 
-## E2E validado
-Login → catálogo → pedido → status → outbox → print_job criado
+- Bucket `inova-gastro-360`, rede `inova-platform-core_inova-platform` no compose
+- `S3_ENDPOINT=http://inova-platform-core-minio-1:9000`
+- `S3_PUBLIC_BASE_URL=https://inovagastro360.inovatitech.com.br/media/inova-gastro-360`
+- Scripts: `setup-media-proxy-vps.sh`, `smoke-catalog-upload.sh`, `connect-minio-network-vps.sh`
 
-## Referências
-- `specs/013-vps-runtime/` — VPS runtime (decisão + plano)
-- `specs/010-cloudflare-workers/` — edge futuro
-- `specs/006-impressao-local/` — print-agent
-- `infra/hetzner/PRODUCTION.md`
+### Segurança Postgres ✅
+
+- Senha rotacionada; pendente alinhar `POSTGRES_PASSWORD` no compose Postgres antes de recreate
+
+### Demo produção
+
+`https://inovagastro360.inovatitech.com.br` → login → **Gestão cardápio**
+
+`admin@inovagastro360.local` / `InovaGastro360!`
