@@ -22,12 +22,21 @@ fi
 API_URL="${NEXT_PUBLIC_API_URL:-https://inovagastro360.inovatitech.com.br}"
 RT_URL="${NEXT_PUBLIC_REALTIME_URL:-https://inovagastro360.inovatitech.com.br}"
 
-echo "==> Build web (Docker)..."
+need_npm_ci=false
 if [[ ! -d node_modules ]] || [[ ! -x node_modules/.bin/next ]]; then
-  echo "    node_modules ausente — npm ci primeiro (pode demorar)..."
+  need_npm_ci=true
+fi
+if [[ ! -d node_modules/@aws-sdk/client-s3 ]]; then
+  echo "    @aws-sdk/client-s3 ausente — npm ci necessário (spec 014)"
+  need_npm_ci=true
+fi
+
+if [[ "$need_npm_ci" == true ]]; then
+  echo "==> npm ci (Docker)..."
   docker run --rm -v "$ROOT:/app" -w /app node:20-alpine sh -c "npm ci"
 fi
 
+echo "==> Build web (Docker)..."
 docker run --rm -v "$ROOT:/app" -w /app \
   -e NEXT_PUBLIC_API_URL="$API_URL" \
   -e NEXT_PUBLIC_REALTIME_URL="$RT_URL" \
@@ -78,5 +87,12 @@ else
 fi
 curl -sf -o /dev/null -w "    local :9088: %{http_code}\n" "http://127.0.0.1:9088/cardapio" || echo "Aviso: local :9088 indisponível"
 curl -sf -o /dev/null -w "    cardapio HTTPS: %{http_code}\n" "https://inovagastro360.inovatitech.com.br/cardapio" || echo "Aviso: HTTPS indisponível — rode tunnel-connect-inova.sh"
+
+code_api=$(curl -sf -o /dev/null -w "%{http_code}" "http://127.0.0.1:8792/health" 2>/dev/null || echo "000")
+echo "    api-gateway :8792/health: $code_api"
+if [[ "$code_api" != "200" ]]; then
+  echo "Aviso: api-gateway down — docker logs inova-gastro-360-api"
+  echo "    Se MODULE_NOT_FOUND @aws-sdk: bash infra/hetzner/scripts/npm-ci-vps.sh && restart api-gateway"
+fi
 
 echo "Build web concluído."

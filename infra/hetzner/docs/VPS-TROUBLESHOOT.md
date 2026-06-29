@@ -9,6 +9,22 @@
 | API login | ver seção Login abaixo |
 | Upload fotos | S3_* real + MinIO rodando + bucket criado |
 
+## API 502 — Cannot find module '@aws-sdk/client-s3'
+
+O api-gateway crasha porque `node_modules` na VPS está **desatualizado** (pull spec 014 sem `npm ci`).
+
+```bash
+cd ~/inova-gastro-360
+bash infra/hetzner/scripts/npm-ci-vps.sh
+docker compose -f infra/hetzner/docker-compose.app.yml \
+  --env-file infra/hetzner/.env.production restart api-gateway
+curl -s http://127.0.0.1:8792/health
+```
+
+Ou rebuild completo: `bash infra/hetzner/scripts/build-web-vps.sh` (já roda npm ci se @aws-sdk faltar).
+
+**Sempre rode comandos dentro de `~/inova-gastro-360`**, não em `~`.
+
 ## Login falhou no smoke
 
 Quase sempre o `.env.production` foi recriado a partir do **example** com placeholders.
