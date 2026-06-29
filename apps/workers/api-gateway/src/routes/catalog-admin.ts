@@ -6,6 +6,7 @@ import {
   ProductPatchSchema,
 } from "@inova-gastro-360/validation";
 import { jsonResponse } from "../lib";
+import { writeCatalogAuditLog } from "../lib/audit-log";
 import { assertCatalogBranchAccess } from "../lib/catalog-access";
 import { getSql } from "../lib/db";
 import type { GatewayEnv } from "../types/env";
@@ -93,7 +94,15 @@ export async function handleAdminCreateCategory(
       )
       RETURNING id, name, sort_order, is_active
     `;
-    return jsonResponse({ category: rows[0] }, 201);
+    const category = rows[0];
+    await writeCatalogAuditLog(env, {
+      tenantId: access.tenantId,
+      userId: user.sub,
+      action: "catalog.category.create",
+      resource: `product_category:${category.id}`,
+      metadata: { branchId, name: category.name },
+    });
+    return jsonResponse({ category }, 201);
   } finally {
     await sql.end();
   }
@@ -135,7 +144,15 @@ export async function handleAdminUpdateCategory(
       WHERE id = ${categoryId}::uuid AND tenant_id = ${access.tenantId}::uuid
       RETURNING id, name, sort_order, is_active
     `;
-    return jsonResponse({ category: rows[0] });
+    const category = rows[0];
+    await writeCatalogAuditLog(env, {
+      tenantId: access.tenantId,
+      userId: user.sub,
+      action: "catalog.category.update",
+      resource: `product_category:${categoryId}`,
+      metadata: { branchId },
+    });
+    return jsonResponse({ category });
   } finally {
     await sql.end();
   }
@@ -166,6 +183,13 @@ export async function handleAdminDeleteCategory(
       RETURNING id
     `;
     if (!deleted[0]) return jsonResponse({ error: "not_found" }, 404);
+    await writeCatalogAuditLog(env, {
+      tenantId: access.tenantId,
+      userId: user.sub,
+      action: "catalog.category.delete",
+      resource: `product_category:${categoryId}`,
+      metadata: { branchId },
+    });
     return jsonResponse({ ok: true });
   } finally {
     await sql.end();
@@ -286,12 +310,15 @@ export async function handleAdminCreateProduct(
     const [category] = await sql<{ name: string }[]>`
       SELECT name FROM product_categories WHERE id = ${created.category_id}::uuid LIMIT 1
     `;
-    return jsonResponse(
-      {
-        product: { ...created, category_name: category?.name ?? "" },
-      },
-      201,
-    );
+    const product = { ...created, category_name: category?.name ?? "" };
+    await writeCatalogAuditLog(env, {
+      tenantId: access.tenantId,
+      userId: user.sub,
+      action: "catalog.product.create",
+      resource: `product:${created.id}`,
+      metadata: { branchId, name: created.name },
+    });
+    return jsonResponse({ product }, 201);
   } finally {
     await sql.end();
   }
@@ -355,9 +382,18 @@ export async function handleAdminUpdateProduct(
     const [category] = await sql<{ name: string }[]>`
       SELECT name FROM product_categories WHERE id = ${updated.category_id}::uuid LIMIT 1
     `;
-    return jsonResponse({
-      product: { ...updated, category_name: category?.name ?? "" },
+    const product = { ...updated, category_name: category?.name ?? "" };
+    await writeCatalogAuditLog(env, {
+      tenantId: access.tenantId,
+      userId: user.sub,
+      action: "catalog.product.update",
+      resource: `product:${productId}`,
+      metadata: {
+        branchId,
+        ...(imageUrl === null ? { imageRemoved: true } : {}),
+      },
     });
+    return jsonResponse({ product });
   } finally {
     await sql.end();
   }
@@ -389,6 +425,13 @@ export async function handleAdminDeleteProduct(
       DELETE FROM products
       WHERE id = ${productId}::uuid AND tenant_id = ${access.tenantId}::uuid AND branch_id = ${branchId}::uuid
     `;
+    await writeCatalogAuditLog(env, {
+      tenantId: access.tenantId,
+      userId: user.sub,
+      action: "catalog.product.delete",
+      resource: `product:${productId}`,
+      metadata: { branchId, name: existing.name },
+    });
     return jsonResponse({ ok: true });
   } finally {
     await sql.end();

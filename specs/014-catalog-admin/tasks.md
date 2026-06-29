@@ -49,8 +49,8 @@
 
 - [x] T021 Criar bucket MinIO `inova-gastro-360` na VPS + policy leitura CDN (`setup-minio-catalog.sh`)
 - [x] T022 Deploy VPS: env S3_* + rebuild api-gateway + web + smoke admin→público (`smoke-catalog-admin.sh`)
-- [ ] T023 (opcional) `audit_logs` em write produto/categoria
-- [ ] T024 Atualizar `memory-bank/progress.md` + marcar tasks entregues
+- [x] T023 (opcional) `audit_logs` em write produto/categoria
+- [x] T024 Atualizar `memory-bank/progress.md` + marcar tasks entregues
 
 ## Fora do escopo (backlog)
 

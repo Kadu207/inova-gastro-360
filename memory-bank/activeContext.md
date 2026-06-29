@@ -2,31 +2,30 @@
 
 **Última atualização:** 2026-06-29
 
-## Feature ativa: spec 014-catalog-admin — produção VPS ✅
+## Feature ativa: spec 014-catalog-admin — concluída ✅ (T001–T024)
 
-### Produção (smoke verde)
+### Merge pendente
 
-- Login API + admin categories/products + vitrine pública
-- `/dashboard/catalogo` deployado @ `feat/006-escpos`
-- Scripts VPS: sync-git, npm-ci, fix-env, recreate-api, smoke-catalog-admin
+- Branch: `feat/006-escpos` → `master`
+- Após merge: `recreate-api-vps.sh` na VPS (audit_logs + media)
 
-### MinIO/S3 ✅ (rede Docker interna)
+### Produção (smoke verde + fotos)
 
-- Bucket `inova-gastro-360` + prefixo `tenants/` com download público
+- CRUD categorias/produtos + upload multipart (T017)
+- Fotos visíveis em `/dashboard/catalogo` e `/cardapio`
+- `GET /media/inova-gastro-360/...` → api-gateway → MinIO (HTTP 200)
+- Branch `feat/006-escpos` @ `b725cd2`
+
+### MinIO/S3 ✅
+
+- Bucket `inova-gastro-360`, rede `inova-platform-core_inova-platform` no compose
 - `S3_ENDPOINT=http://inova-platform-core-minio-1:9000`
-- API na rede `inova-platform-core_inova-platform`
-- CORS presign: opcional (multipart T017 OK)
+- `S3_PUBLIC_BASE_URL=https://inovagastro360.inovatitech.com.br/media/inova-gastro-360`
+- Scripts: `setup-media-proxy-vps.sh`, `smoke-catalog-upload.sh`, `connect-minio-network-vps.sh`
 
 ### Segurança Postgres ✅
 
-- Senha `inova_gastro` rotacionada via `rotate-postgres-password-vps.sh`
-- `.env.production` + api-gateway atualizados
-- Pendente janela manutenção: alinhar `POSTGRES_PASSWORD` no `docker-compose.prod.yml` antes de recriar container Postgres
-
-### Pendente operacional
-
-- Teste upload foto em `/dashboard/catalogo`
-- CDN/nginx para `S3_PUBLIC_BASE_URL` (vitrine exibir imagens)
+- Senha rotacionada; pendente alinhar `POSTGRES_PASSWORD` no compose Postgres antes de recreate
 
 ### Demo produção
 

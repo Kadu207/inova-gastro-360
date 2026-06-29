@@ -69,6 +69,16 @@ describe.skipIf(!canRun)("catalog-admin integration", () => {
     const created = (await createRes.json()) as { category: { id: string; name: string } };
     expect(created.category.name).toBe("Porções Teste");
 
+    const auditSql = postgres(normalizeDatabaseUrl(testDatabaseUrl()), { max: 1, prepare: false });
+    const audits = await auditSql<{ action: string }[]>`
+      SELECT action FROM audit_logs
+      WHERE tenant_id = ${demoTenantId}::uuid
+        AND user_id = ${demoUserId}::uuid
+        AND resource = ${`product_category:${created.category.id}`}
+    `;
+    expect(audits.some((a) => a.action === "catalog.category.create")).toBe(true);
+    await auditSql.end();
+
     const listRes = await worker.fetch(
       authRequest(
         `https://api.test/api/v1/branches/${DEMO_BRANCH_ID}/catalog/admin/categories?includeInactive=1`,

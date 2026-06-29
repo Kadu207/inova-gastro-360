@@ -1,6 +1,7 @@
 import type { JwtPayload } from "@inova-gastro-360/auth";
 import { PresignInputSchema } from "@inova-gastro-360/validation";
 import { jsonResponse } from "../lib";
+import { writeCatalogAuditLog } from "../lib/audit-log";
 import { assertCatalogBranchAccess } from "../lib/catalog-access";
 import { getSql } from "../lib/db";
 import {
@@ -153,6 +154,13 @@ export async function handleAdminUploadProductImage(
     const [category] = await sql<{ name: string }[]>`
       SELECT name FROM product_categories WHERE id = ${updated.category_id}::uuid LIMIT 1
     `;
+    await writeCatalogAuditLog(env, {
+      tenantId: access.tenantId,
+      userId: user.sub,
+      action: "catalog.product.image_upload",
+      resource: `product:${productId}`,
+      metadata: { branchId, publicUrl: uploaded.publicUrl },
+    });
     return jsonResponse({
       publicUrl: uploaded.publicUrl,
       product: { ...updated, category_name: category?.name ?? "" },

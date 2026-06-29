@@ -31,10 +31,11 @@ Adiado (spec 005)
 - [x] Painéis refinados (balcão/cozinha/delivery)
 - [ ] Deploy VPS pós-merge
 
-## Spec 014 catalog-admin — T001–T022 ✅ (código + produção CRUD)
+## Spec 014 catalog-admin — T001–T024 ✅ (produção)
 - [x] CRUD categorias + produtos + upload (código)
 - [x] Hardening GET público + scripts deploy VPS
-- [x] Smoke produção: login, admin, vitrine (sem fotos)
-- [x] MinIO/S3 na VPS (rede Docker interna + bucket)
-- [x] Rotação senha Postgres (`.env.production`)
-- [ ] Teste upload foto produção + CDN vitrine
+- [x] Upload foto + exibição vitrine (GET /media/ via api-gateway)
+- [x] smoke-catalog-upload.sh HTTP 200
+- [x] T023 audit_logs em writes catálogo
+- [x] T024 memory-bank + tasks entregues
+- [ ] CDN Cloudflare R2 (backlog T027)
