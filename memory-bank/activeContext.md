@@ -12,10 +12,21 @@
 
 ### MinIO/S3 ✅ (rede Docker interna)
 
-- Bucket `inova-gastro-360` criado
+- Bucket `inova-gastro-360` + prefixo `tenants/` com download público
 - `S3_ENDPOINT=http://inova-platform-core-minio-1:9000`
-- API conectada à rede `inova-platform-core_inova-platform`
-- Pendente: teste upload foto + CDN vitrine; rotação senha Postgres
+- API na rede `inova-platform-core_inova-platform`
+- CORS presign: opcional (multipart T017 OK)
+
+### Segurança Postgres ✅
+
+- Senha `inova_gastro` rotacionada via `rotate-postgres-password-vps.sh`
+- `.env.production` + api-gateway atualizados
+- Pendente janela manutenção: alinhar `POSTGRES_PASSWORD` no `docker-compose.prod.yml` antes de recriar container Postgres
+
+### Pendente operacional
+
+- Teste upload foto em `/dashboard/catalogo`
+- CDN/nginx para `S3_PUBLIC_BASE_URL` (vitrine exibir imagens)
 
 ### Demo produção
 

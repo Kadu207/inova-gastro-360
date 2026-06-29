@@ -35,5 +35,6 @@ Adiado (spec 005)
 - [x] CRUD categorias + produtos + upload (código)
 - [x] Hardening GET público + scripts deploy VPS
 - [x] Smoke produção: login, admin, vitrine (sem fotos)
-- [ ] MinIO/S3 na VPS (`configure-s3-env-vps.sh` + `setup-minio-catalog.sh`)
-- [ ] Rotação senha Postgres (`rotate-postgres-password-vps.sh`)
+- [x] MinIO/S3 na VPS (rede Docker interna + bucket)
+- [x] Rotação senha Postgres (`.env.production`)
+- [ ] Teste upload foto produção + CDN vitrine

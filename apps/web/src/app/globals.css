@@ -1317,9 +1317,93 @@ h1 {
   font-size: 0.85rem;
 }
 
-.catalog-image-uploader input[type="file"] {
-  max-width: 100%;
+.catalog-image-uploader-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
 }
+
+.catalog-image-uploader-btn {
+  width: auto !important;
+  margin-top: 0 !important;
+}
+
+.catalog-image-uploader-remove {
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.catalog-admin-btn-primary {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: #052e16;
+  font-weight: 700;
+  cursor: pointer;
+  width: auto;
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+.catalog-admin-btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.catalog-admin-form-row .catalog-admin-btn-primary {
+  align-self: flex-end;
+}
+
+.catalog-message {
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.catalog-message-error {
+  background: color-mix(in srgb, #ef4444 15%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, #ef4444 40%, var(--border));
+  color: #fecaca;
+}
+
+.catalog-message-ok {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  color: var(--accent-soft);
+}
+
+.catalog-admin-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.catalog-admin-photo-block {
+  padding: 0.75rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+}
+
+.catalog-admin-photo-block h4 {
+  margin: 0 0 0.25rem;
+  font-size: 0.9rem;
+}
+
+.catalog-admin-form-row input[type="text"],
+.catalog-admin-form-row input[type="number"],
 
 @media (max-width: 900px) {
   .catalog-layout {

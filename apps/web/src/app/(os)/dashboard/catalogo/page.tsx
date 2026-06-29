@@ -39,12 +39,22 @@ function centsToInput(cents: number): string {
   return (cents / 100).toFixed(2).replace(".", ",");
 }
 
+function apiErrorMessage(data: Record<string, unknown>, fallback: string): string {
+  if (data.error === "forbidden") return "Sem permissão para esta filial — faça login novamente.";
+  if (data.error === "validation_error") return "Dados inválidos — verifique os campos.";
+  if (typeof data.message === "string") return data.message;
+  if (typeof data.error === "string") return data.error;
+  return fallback;
+}
+
 export default function CatalogoAdminPage() {
   const [tab, setTab] = useState<"categories" | "products">("products");
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [messageIsError, setMessageIsError] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const [catForm, setCatForm] = useState({ name: "", sortOrder: "0" });
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
@@ -75,148 +85,248 @@ export default function CatalogoAdminPage() {
     };
   }, []);
 
-  const loadCategories = useCallback(async () => {
-    const res = await fetch(`${categoriesUrl}?includeInactive=1`, { headers: headers() });
-    const data = await res.json();
-    if (res.ok) setCategories(data.categories ?? []);
-  }, [headers]);
+  const showMessage = useCallback((text: string, isError = false) => {
+    setMessage(text);
+    setMessageIsError(isError);
+  }, []);
 
-  const loadProducts = useCallback(async () => {
+  const loadCategories = useCallback(async (): Promise<boolean> => {
+    if (!getToken()) {
+      showMessage("Sessão expirada — faça login novamente.", true);
+      return false;
+    }
+    const res = await fetch(`${categoriesUrl}?includeInactive=1`, { headers: headers() });
+    const data = (await res.json()) as { categories?: Category[] } & Record<string, unknown>;
+    if (res.ok) {
+      setCategories(data.categories ?? []);
+      return true;
+    }
+    showMessage(apiErrorMessage(data, `Erro ao carregar categorias (${res.status})`), true);
+    return false;
+  }, [headers, showMessage]);
+
+  const loadProducts = useCallback(async (): Promise<boolean> => {
+    if (!getToken()) {
+      showMessage("Sessão expirada — faça login novamente.", true);
+      return false;
+    }
     const res = await fetch(`${productsUrl}?includeUnavailable=1`, { headers: headers() });
-    const data = await res.json();
-    if (res.ok) setProducts(data.products ?? []);
-  }, [headers]);
+    const data = (await res.json()) as { products?: Product[] } & Record<string, unknown>;
+    if (res.ok) {
+      setProducts(data.products ?? []);
+      return true;
+    }
+    showMessage(apiErrorMessage(data, `Erro ao carregar produtos (${res.status})`), true);
+    return false;
+  }, [headers, showMessage]);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
+    showMessage("");
     try {
       await Promise.all([loadCategories(), loadProducts()]);
     } finally {
       setLoading(false);
     }
-  }, [loadCategories, loadProducts]);
+  }, [loadCategories, loadProducts, showMessage]);
 
   useEffect(() => {
     loadAll();
   }, [loadAll]);
 
-  useEffect(() => {
-    if (!prodForm.categoryId && categories.length > 0) {
-      setProdForm((f) => ({ ...f, categoryId: categories.find((c) => c.is_active)?.id ?? categories[0].id }));
-    }
-  }, [categories, prodForm.categoryId]);
+  const selectableCategories = categories.filter((c) => c.is_active);
+  const categoriesForSelect = selectableCategories.length > 0 ? selectableCategories : categories;
 
-  async function createCategory(e: React.FormEvent) {
-    e.preventDefault();
-    setMessage("");
-    const res = await fetch(categoriesUrl, {
-      method: "POST",
-      headers: headers(),
-      body: JSON.stringify({
-        name: catForm.name.trim(),
-        sortOrder: Number.parseInt(catForm.sortOrder, 10) || 0,
-        isActive: true,
-      }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setCatForm({ name: "", sortOrder: "0" });
-      loadAll();
-    } else {
-      setMessage(data.message ?? data.error ?? "Erro ao criar categoria");
+  useEffect(() => {
+    if (!prodForm.categoryId && categoriesForSelect.length > 0) {
+      setProdForm((f) => ({ ...f, categoryId: categoriesForSelect[0].id }));
+    }
+  }, [categoriesForSelect, prodForm.categoryId]);
+
+  async function createCategory(e?: React.FormEvent) {
+    e?.preventDefault();
+    if (!getToken()) {
+      showMessage("Sessão expirada — faça login novamente.", true);
+      return;
+    }
+    if (!catForm.name.trim()) {
+      showMessage("Informe o nome da categoria.", true);
+      return;
+    }
+    setSaving(true);
+    showMessage("");
+    try {
+      const res = await fetch(categoriesUrl, {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({
+          name: catForm.name.trim(),
+          sortOrder: Number.parseInt(catForm.sortOrder, 10) || 0,
+          isActive: true,
+        }),
+      });
+      const data = (await res.json()) as Record<string, unknown>;
+      if (res.ok) {
+        setCatForm({ name: "", sortOrder: "0" });
+        showMessage("Categoria adicionada.");
+        await loadAll();
+      } else {
+        showMessage(apiErrorMessage(data, "Erro ao criar categoria"), true);
+      }
+    } catch {
+      showMessage("Falha de rede ao criar categoria.", true);
+    } finally {
+      setSaving(false);
     }
   }
 
   async function saveCategoryEdit(id: string) {
-    setMessage("");
-    const res = await fetch(`${categoriesUrl}/${id}`, {
-      method: "PATCH",
-      headers: headers(),
-      body: JSON.stringify({
-        name: catEditForm.name.trim(),
-        sortOrder: Number.parseInt(catEditForm.sortOrder, 10) || 0,
-        isActive: catEditForm.isActive,
-      }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setEditingCatId(null);
-      loadAll();
-    } else {
-      setMessage(data.error ?? "Erro ao salvar categoria");
+    setSaving(true);
+    showMessage("");
+    try {
+      const res = await fetch(`${categoriesUrl}/${id}`, {
+        method: "PATCH",
+        headers: headers(),
+        body: JSON.stringify({
+          name: catEditForm.name.trim(),
+          sortOrder: Number.parseInt(catEditForm.sortOrder, 10) || 0,
+          isActive: catEditForm.isActive,
+        }),
+      });
+      const data = (await res.json()) as Record<string, unknown>;
+      if (res.ok) {
+        setEditingCatId(null);
+        showMessage("Categoria salva.");
+        await loadAll();
+      } else {
+        showMessage(apiErrorMessage(data, "Erro ao salvar categoria"), true);
+      }
+    } finally {
+      setSaving(false);
     }
   }
 
   async function removeCategory(id: string) {
     if (!confirm("Excluir categoria? Só funciona se não houver produtos.")) return;
     const res = await fetch(`${categoriesUrl}/${id}`, { method: "DELETE", headers: headers() });
-    const data = await res.json();
-    if (res.ok) loadAll();
-    else setMessage(data.error === "category_has_products" ? "Categoria possui produtos" : data.error ?? "Erro");
+    const data = (await res.json()) as Record<string, unknown>;
+    if (res.ok) {
+      showMessage("Categoria excluída.");
+      loadAll();
+    } else {
+      showMessage(
+        data.error === "category_has_products" ? "Categoria possui produtos" : apiErrorMessage(data, "Erro"),
+        true,
+      );
+    }
   }
 
-  async function createProduct(e: React.FormEvent) {
-    e.preventDefault();
-    setMessage("");
-    const priceCents = parsePriceToCents(prodForm.price);
-    if (!priceCents) {
-      setMessage("Preço inválido");
+  async function createProduct(e?: React.FormEvent) {
+    e?.preventDefault();
+    if (!getToken()) {
+      showMessage("Sessão expirada — faça login novamente.", true);
       return;
     }
-    const res = await fetch(productsUrl, {
-      method: "POST",
-      headers: headers(),
-      body: JSON.stringify({
-        categoryId: prodForm.categoryId,
-        name: prodForm.name.trim(),
-        description: prodForm.description.trim() || undefined,
-        priceCents,
-        isAvailable: prodForm.isAvailable,
-      }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setProdForm((f) => ({ ...f, name: "", description: "", price: "" }));
-      loadProducts();
-      setTab("products");
-    } else {
-      setMessage(data.error ?? "Erro ao criar produto");
+    if (categoriesForSelect.length === 0) {
+      showMessage("Crie uma categoria antes de adicionar produtos.", true);
+      setTab("categories");
+      return;
+    }
+    const priceCents = parsePriceToCents(prodForm.price);
+    if (!priceCents) {
+      showMessage("Preço inválido — use formato 29,90", true);
+      return;
+    }
+    if (!prodForm.name.trim()) {
+      showMessage("Informe o nome do produto.", true);
+      return;
+    }
+    setSaving(true);
+    showMessage("");
+    try {
+      const res = await fetch(productsUrl, {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({
+          categoryId: prodForm.categoryId || categoriesForSelect[0].id,
+          name: prodForm.name.trim(),
+          description: prodForm.description.trim() || undefined,
+          priceCents,
+          isAvailable: prodForm.isAvailable,
+        }),
+      });
+      const data = (await res.json()) as { product?: Product } & Record<string, unknown>;
+      if (res.ok && data.product) {
+        setProdForm((f) => ({ ...f, name: "", description: "", price: "" }));
+        showMessage("Produto adicionado — envie a foto abaixo.");
+        await loadProducts();
+        setEditingProdId(data.product.id);
+        setProdEditForm({
+          name: data.product.name,
+          description: data.product.description ?? "",
+          price: centsToInput(data.product.price_cents),
+          categoryId: data.product.category_id,
+          isAvailable: data.product.is_available,
+          imageUrl: data.product.image_url,
+        });
+      } else if (res.ok) {
+        setProdForm((f) => ({ ...f, name: "", description: "", price: "" }));
+        showMessage("Produto adicionado.");
+        loadProducts();
+      } else {
+        showMessage(apiErrorMessage(data, "Erro ao criar produto"), true);
+      }
+    } catch {
+      showMessage("Falha de rede ao criar produto.", true);
+    } finally {
+      setSaving(false);
     }
   }
 
   async function saveProductEdit(id: string) {
-    setMessage("");
     const priceCents = parsePriceToCents(prodEditForm.price);
     if (!priceCents) {
-      setMessage("Preço inválido");
+      showMessage("Preço inválido", true);
       return;
     }
-    const res = await fetch(`${productsUrl}/${id}`, {
-      method: "PATCH",
-      headers: headers(),
-      body: JSON.stringify({
-        categoryId: prodEditForm.categoryId,
-        name: prodEditForm.name.trim(),
-        description: prodEditForm.description.trim() || null,
-        priceCents,
-        isAvailable: prodEditForm.isAvailable,
-      }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setEditingProdId(null);
-      loadProducts();
-    } else {
-      setMessage(data.error ?? "Erro ao salvar produto");
+    setSaving(true);
+    showMessage("");
+    try {
+      const res = await fetch(`${productsUrl}/${id}`, {
+        method: "PATCH",
+        headers: headers(),
+        body: JSON.stringify({
+          categoryId: prodEditForm.categoryId,
+          name: prodEditForm.name.trim(),
+          description: prodEditForm.description.trim() || null,
+          priceCents,
+          isAvailable: prodEditForm.isAvailable,
+        }),
+      });
+      const data = (await res.json()) as Record<string, unknown>;
+      if (res.ok) {
+        setEditingProdId(null);
+        showMessage("Produto salvo.");
+        loadProducts();
+      } else {
+        showMessage(apiErrorMessage(data, "Erro ao salvar produto"), true);
+      }
+    } finally {
+      setSaving(false);
     }
   }
 
   async function removeProduct(id: string) {
     if (!confirm("Excluir produto? Falha se já estiver em pedidos.")) return;
     const res = await fetch(`${productsUrl}/${id}`, { method: "DELETE", headers: headers() });
-    const data = await res.json();
+    const data = (await res.json()) as Record<string, unknown>;
     if (res.ok) loadProducts();
-    else setMessage(data.error === "product_has_orders" ? "Produto em pedidos — indisponibilize" : data.error ?? "Erro");
+    else {
+      showMessage(
+        data.error === "product_has_orders" ? "Produto em pedidos — indisponibilize" : apiErrorMessage(data, "Erro"),
+        true,
+      );
+    }
   }
 
   function startEditProduct(p: Product) {
@@ -229,16 +339,19 @@ export default function CatalogoAdminPage() {
       isAvailable: p.is_available,
       imageUrl: p.image_url,
     });
+    showMessage("");
   }
 
-  const activeCategories = categories.filter((c) => c.is_active);
+  const canAddProduct = categoriesForSelect.length > 0 && !loading;
 
   return (
     <div className="os-page catalog-admin-page">
       <div className="catalog-admin-header">
         <div>
           <h2>Gestão do cardápio</h2>
-          <p className="catalog-sub">Categorias, produtos e fotos da filial demo.</p>
+          <p className="catalog-sub">
+            Categorias, produtos e fotos da filial demo. Para enviar foto, use <strong>Editar</strong> no produto.
+          </p>
         </div>
         <Link href="/cardapio" className="catalog-link" target="_blank" rel="noopener noreferrer">
           Ver cardápio público ↗
@@ -262,20 +375,30 @@ export default function CatalogoAdminPage() {
         </button>
       </div>
 
-      {message && <p className="os-hint catalog-message">{message}</p>}
+      {message && (
+        <p className={messageIsError ? "catalog-message catalog-message-error" : "catalog-message catalog-message-ok"}>
+          {message}
+        </p>
+      )}
 
       {tab === "categories" && (
         <>
-          <form className="catalog-admin-form" onSubmit={createCategory}>
+          <form
+            className="catalog-admin-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void createCategory(e);
+            }}
+          >
             <h3>Nova categoria</h3>
             <div className="catalog-admin-form-row">
               <label>
                 Nome
                 <input
+                  type="text"
                   value={catForm.name}
                   onChange={(e) => setCatForm((f) => ({ ...f, name: e.target.value }))}
                   placeholder="Ex.: Pizzas, Porções"
-                  required
                 />
               </label>
               <label>
@@ -287,8 +410,13 @@ export default function CatalogoAdminPage() {
                   onChange={(e) => setCatForm((f) => ({ ...f, sortOrder: e.target.value }))}
                 />
               </label>
-              <button type="submit" className="os-btn-primary">
-                Adicionar
+              <button
+                type="button"
+                className="catalog-admin-btn-primary"
+                disabled={saving}
+                onClick={() => void createCategory()}
+              >
+                {saving ? "Salvando…" : "Adicionar"}
               </button>
             </div>
           </form>
@@ -301,6 +429,7 @@ export default function CatalogoAdminPage() {
                   {editingCatId === c.id ? (
                     <div className="catalog-admin-form-row">
                       <input
+                        type="text"
                         value={catEditForm.name}
                         onChange={(e) => setCatEditForm((f) => ({ ...f, name: e.target.value }))}
                       />
@@ -318,7 +447,7 @@ export default function CatalogoAdminPage() {
                         />
                         Ativa
                       </label>
-                      <button type="button" onClick={() => saveCategoryEdit(c.id)}>
+                      <button type="button" disabled={saving} onClick={() => saveCategoryEdit(c.id)}>
                         Salvar
                       </button>
                       <button type="button" onClick={() => setEditingCatId(null)}>
@@ -334,14 +463,17 @@ export default function CatalogoAdminPage() {
                         </span>
                       </span>
                       <div className="catalog-admin-actions">
-                        <button type="button" onClick={() => {
-                          setEditingCatId(c.id);
-                          setCatEditForm({
-                            name: c.name,
-                            sortOrder: String(c.sort_order),
-                            isActive: c.is_active,
-                          });
-                        }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingCatId(c.id);
+                            setCatEditForm({
+                              name: c.name,
+                              sortOrder: String(c.sort_order),
+                              isActive: c.is_active,
+                            });
+                          }}
+                        >
                           Editar
                         </button>
                         <button type="button" onClick={() => removeCategory(c.id)}>
@@ -359,24 +491,37 @@ export default function CatalogoAdminPage() {
 
       {tab === "products" && (
         <>
-          <form className="catalog-admin-form" onSubmit={createProduct}>
+          {!canAddProduct && !loading && (
+            <p className="catalog-message catalog-message-error">
+              Nenhuma categoria disponível — adicione uma categoria na aba Categorias primeiro.
+            </p>
+          )}
+
+          <form
+            className="catalog-admin-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void createProduct(e);
+            }}
+          >
             <h3>Novo produto</h3>
             <div className="catalog-admin-form-row">
               <label>
                 Nome
                 <input
+                  type="text"
                   value={prodForm.name}
                   onChange={(e) => setProdForm((f) => ({ ...f, name: e.target.value }))}
-                  required
                 />
               </label>
               <label>
                 Preço (R$)
                 <input
+                  type="text"
+                  inputMode="decimal"
                   value={prodForm.price}
                   onChange={(e) => setProdForm((f) => ({ ...f, price: e.target.value }))}
                   placeholder="29,90"
-                  required
                 />
               </label>
               <label>
@@ -384,9 +529,9 @@ export default function CatalogoAdminPage() {
                 <select
                   value={prodForm.categoryId}
                   onChange={(e) => setProdForm((f) => ({ ...f, categoryId: e.target.value }))}
-                  required
+                  disabled={categoriesForSelect.length === 0}
                 >
-                  {activeCategories.map((c) => (
+                  {categoriesForSelect.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
@@ -401,8 +546,13 @@ export default function CatalogoAdminPage() {
                 />
                 Disponível
               </label>
-              <button type="submit" className="os-btn-primary" disabled={activeCategories.length === 0}>
-                Adicionar
+              <button
+                type="button"
+                className="catalog-admin-btn-primary"
+                disabled={!canAddProduct || saving}
+                onClick={() => void createProduct()}
+              >
+                {saving ? "Salvando…" : "Adicionar"}
               </button>
             </div>
             <label className="catalog-admin-full">
@@ -413,6 +563,10 @@ export default function CatalogoAdminPage() {
                 rows={2}
               />
             </label>
+            <p className="catalog-admin-hint">
+              Após adicionar, o formulário de foto abre automaticamente. Também pode clicar em <strong>Editar</strong>{" "}
+              em qualquer produto da lista.
+            </p>
           </form>
 
           <section className="catalog-admin-list">
@@ -427,10 +581,13 @@ export default function CatalogoAdminPage() {
                       </div>
                       <div className="catalog-admin-form-row">
                         <input
+                          type="text"
                           value={prodEditForm.name}
                           onChange={(e) => setProdEditForm((f) => ({ ...f, name: e.target.value }))}
                         />
                         <input
+                          type="text"
+                          inputMode="decimal"
                           value={prodEditForm.price}
                           onChange={(e) => setProdEditForm((f) => ({ ...f, price: e.target.value }))}
                         />
@@ -460,16 +617,21 @@ export default function CatalogoAdminPage() {
                         onChange={(e) => setProdEditForm((f) => ({ ...f, description: e.target.value }))}
                         rows={2}
                       />
-                      <ImageUploader
-                        productId={p.id}
-                        currentImageUrl={prodEditForm.imageUrl}
-                        onUploaded={(url) => {
-                          setProdEditForm((f) => ({ ...f, imageUrl: url }));
-                          loadProducts();
-                        }}
-                      />
+                      <div className="catalog-admin-photo-block">
+                        <h4>Foto do produto</h4>
+                        <p className="catalog-admin-hint">JPEG, PNG ou WebP — até 5 MB</p>
+                        <ImageUploader
+                          productId={p.id}
+                          currentImageUrl={prodEditForm.imageUrl}
+                          onUploaded={(url) => {
+                            setProdEditForm((f) => ({ ...f, imageUrl: url }));
+                            loadProducts();
+                            showMessage("Foto enviada com sucesso.");
+                          }}
+                        />
+                      </div>
                       <div className="catalog-admin-actions">
-                        <button type="button" onClick={() => saveProductEdit(p.id)}>
+                        <button type="button" disabled={saving} onClick={() => saveProductEdit(p.id)}>
                           Salvar
                         </button>
                         <button type="button" onClick={() => setEditingProdId(null)}>
@@ -486,12 +648,13 @@ export default function CatalogoAdminPage() {
                           <span className="catalog-admin-meta">
                             {formatBRL(p.price_cents)} · {p.category_name} ·{" "}
                             {p.is_available ? "disponível" : "indisponível"}
+                            {!p.image_url && " · sem foto"}
                           </span>
                         </span>
                       </div>
                       <div className="catalog-admin-actions">
                         <button type="button" onClick={() => startEditProduct(p)}>
-                          Editar
+                          Editar / Foto
                         </button>
                         <button type="button" onClick={() => removeProduct(p.id)}>
                           Excluir

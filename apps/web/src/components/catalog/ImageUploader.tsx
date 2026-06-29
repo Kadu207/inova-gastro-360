@@ -84,6 +84,10 @@ export default function ImageUploader({ productId, currentImageUrl, onUploaded }
   }
 
   async function handleFile(file: File) {
+    if (!getToken()) {
+      setMessage("Sessão expirada — faça login novamente.");
+      return;
+    }
     if (!ALLOWED_TYPES.includes(file.type)) {
       setMessage("Use JPEG, PNG ou WebP");
       return;
@@ -124,20 +128,32 @@ export default function ImageUploader({ productId, currentImageUrl, onUploaded }
     <div className="catalog-image-uploader">
       <input
         ref={inputRef}
+        id={`photo-${productId}`}
         type="file"
         accept={ALLOWED_TYPES.join(",")}
         disabled={busy}
+        className="catalog-image-uploader-input"
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) void handleFile(file);
         }}
       />
+      <button
+        type="button"
+        className="catalog-admin-btn-primary catalog-image-uploader-btn"
+        disabled={busy}
+        onClick={() => inputRef.current?.click()}
+      >
+        {busy ? "Enviando…" : currentImageUrl ? "Trocar foto" : "Escolher foto"}
+      </button>
       {currentImageUrl && (
-        <button type="button" disabled={busy} onClick={() => void removeImage()}>
+        <button type="button" className="catalog-image-uploader-remove" disabled={busy} onClick={() => void removeImage()}>
           Remover foto
         </button>
       )}
-      {message && <span className="catalog-admin-meta">{message}</span>}
+      {message && (
+        <span className={message.includes("enviada") ? "catalog-message-ok" : "catalog-admin-meta"}>{message}</span>
+      )}
     </div>
   );
 }
