@@ -15,6 +15,7 @@ echo "==> prisma generate + seed..."
 docker run --rm -v "$ROOT:/app" -w /app --network host \
   -e DATABASE_URL="$DB_URL" \
   -e DATABASE_SSL_INSECURE=1 \
+  -e NODE_TLS_REJECT_UNAUTHORIZED=0 \
   node:20-alpine sh -c "npm run db:generate && npm run db:seed"
 
 echo "==> Seed concluído"

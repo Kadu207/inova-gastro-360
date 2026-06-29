@@ -13,14 +13,11 @@ function getConnectionString(databaseUrl?: string): string {
 }
 
 function stripSslModeFromUrl(connectionString: string): string {
-  try {
-    const url = new URL(connectionString);
-    url.searchParams.delete("sslmode");
-    url.searchParams.delete("uselibpqcompat");
-    return url.toString();
-  } catch {
-    return connectionString.replace(/[?&]sslmode=[^&]*/g, "").replace(/\?$/, "");
-  }
+  return connectionString
+    .replace(/([?&])sslmode=[^&]*/g, "")
+    .replace(/([?&])uselibpqcompat=[^&]*/g, "")
+    .replace(/\?&/, "?")
+    .replace(/\?$/, "");
 }
 
 function createPgPool(connectionString: string): pg.Pool {
@@ -29,7 +26,7 @@ function createPgPool(connectionString: string): pg.Pool {
   if (insecureSsl) {
     return new pg.Pool({
       connectionString: stripSslModeFromUrl(connectionString),
-      ssl: { rejectUnauthorized: false },
+      ssl: true,
     });
   }
   return new pg.Pool({ connectionString });

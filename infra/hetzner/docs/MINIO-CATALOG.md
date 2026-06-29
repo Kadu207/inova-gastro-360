@@ -30,11 +30,20 @@ Leitura pública apenas no prefixo `tenants/` (URLs servidas via CDN/nginx).
 
 Ver `infra/hetzner/.env.production.example` — seção `STORAGE_*`.
 
-Dentro do Docker Compose (rede interna):
+Dentro do Docker Compose (api-gateway → MinIO no host, mesmo padrão do Postgres):
 
 ```bash
-S3_ENDPOINT=http://minio:9000
+S3_ENDPOINT=http://host.docker.internal:9000
 S3_PUBLIC_BASE_URL=https://cdn.inovatitech.com.br/inova-gastro-360
+```
+
+Configurar automaticamente a partir do MinIO existente:
+
+```bash
+bash infra/hetzner/scripts/discover-minio-vps.sh
+bash infra/hetzner/scripts/configure-s3-env-vps.sh NOME_CONTAINER_MINIO 9000
+bash infra/hetzner/scripts/setup-minio-catalog.sh
+bash infra/hetzner/scripts/recreate-api-vps.sh
 ```
 
 ## CORS (upload presign do browser)
