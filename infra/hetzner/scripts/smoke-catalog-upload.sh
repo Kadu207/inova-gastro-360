@@ -81,7 +81,7 @@ if [[ -n "$PUBLIC_URL" ]]; then
   fi
   img_code=$(curl -sS -o /dev/null -w "%{http_code}" "http://127.0.0.1:9088${media_path}" 2>/dev/null || echo "000")
   echo "    GET :9088${media_path} → HTTP ${img_code}"
-  [[ "$img_code" == "200" ]] || echo "    Aviso: proxy /media/ — rode setup-media-proxy-vps.sh"
+  [[ "$img_code" == "200" ]] || { echo "    Falha: proxy /media/ HTTP ${img_code} — rode recreate-api-vps.sh"; exit 1; }
 fi
 
 echo "==> Smoke upload OK"

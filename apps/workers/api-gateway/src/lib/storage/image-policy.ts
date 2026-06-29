@@ -36,3 +36,23 @@ export function buildPublicObjectUrl(publicBaseUrl: string, objectKey: string): 
   const key = objectKey.replace(/^\//, "");
   return `${base}/${key}`;
 }
+
+const UUID =
+  "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+
+/** Chaves servidas publicamente via GET /media/{bucket}/... */
+export function isPublicCatalogObjectKey(objectKey: string): boolean {
+  const key = objectKey.replace(/^\/+/, "");
+  return new RegExp(
+    `^tenants/${UUID}/branches/${UUID}/products/${UUID}/[0-9a-f-]+\\.(jpg|jpeg|png|webp)$`,
+    "i",
+  ).test(key);
+}
+
+export function parseMediaPath(pathname: string, bucket: string): string | null {
+  const prefix = `/media/${bucket}/`;
+  if (!pathname.startsWith(prefix)) return null;
+  const key = pathname.slice(prefix.length);
+  if (!key || key.includes("..")) return null;
+  return key;
+}

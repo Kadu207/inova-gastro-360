@@ -3,6 +3,8 @@ import {
   buildProductImageObjectKey,
   buildPublicObjectUrl,
   isAllowedImageContentType,
+  isPublicCatalogObjectKey,
+  parseMediaPath,
   MAX_CATALOG_IMAGE_BYTES,
 } from "./image-policy";
 
@@ -29,5 +31,19 @@ describe("image-policy", () => {
 
   it("limite 5MB documentado", () => {
     expect(MAX_CATALOG_IMAGE_BYTES).toBe(5_242_880);
+  });
+
+  it("valida object key pública do catálogo", () => {
+    const key = `tenants/${tenantId}/branches/${branchId}/products/${productId}/abc.webp`;
+    expect(isPublicCatalogObjectKey(key)).toBe(true);
+    expect(isPublicCatalogObjectKey("tenants/evil/../../etc/passwd")).toBe(false);
+  });
+
+  it("parseMediaPath extrai key do pathname", () => {
+    const key = parseMediaPath(
+      `/media/inova-gastro-360/tenants/${tenantId}/branches/${branchId}/products/${productId}/x.png`,
+      "inova-gastro-360",
+    );
+    expect(key).toContain("tenants/");
   });
 });

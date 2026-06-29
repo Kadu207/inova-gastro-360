@@ -1,4 +1,4 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { GatewayEnv } from "../../types/env";
 import {
@@ -134,4 +134,30 @@ export async function presignProductImageUpload(
     headers: { "Content-Type": params.contentType },
     objectKey,
   };
+}
+
+export async function getCatalogMediaObject(
+  env: GatewayEnv,
+  objectKey: string,
+): Promise<{ body: Uint8Array; contentType: string } | null> {
+  const config = getStorageConfig(env);
+  if (!config) return null;
+
+  const client = createS3Client(config);
+  try {
+    const res = await client.send(
+      new GetObjectCommand({
+        Bucket: config.bucket,
+        Key: objectKey,
+      }),
+    );
+    if (!res.Body) return null;
+    const body = new Uint8Array(await res.Body.transformToByteArray());
+    return {
+      body,
+      contentType: res.ContentType ?? "application/octet-stream",
+    };
+  } catch {
+    return null;
+  }
 }

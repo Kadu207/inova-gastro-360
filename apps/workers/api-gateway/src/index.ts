@@ -15,6 +15,7 @@ import {
   handleAdminPresignProductImage,
   handleAdminUploadProductImage,
 } from "./routes/catalog-upload";
+import { handleServeCatalogMedia } from "./routes/catalog-media";
 import {
   handleCreateOrder,
   handleListOrders,
@@ -90,6 +91,10 @@ export default {
 
     if (path === "/api/v1/auth/me" && request.method === "GET") {
       return withCors(await handleMe(request, env));
+    }
+
+    if (path.startsWith("/media/") && (request.method === "GET" || request.method === "HEAD")) {
+      return handleServeCatalogMedia(request, env);
     }
 
     const branchMatch = path.match(/^\/api\/v1\/branches\/([^/]+)\/catalog\/(categories|products)$/);

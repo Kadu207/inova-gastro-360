@@ -42,7 +42,7 @@ S3_ENDPOINT=http://inova-platform-core-minio-1:9000
 S3_PUBLIC_BASE_URL=https://inovagastro360.inovatitech.com.br/media/inova-gastro-360
 ```
 
-O nginx do app faz proxy de `/media/inova-gastro-360/` → MinIO (fotos visíveis no cardápio).
+O nginx encaminha `/media/inova-gastro-360/` para o **api-gateway**, que lê o MinIO com credenciais (objetos privados; anonymous retorna 403).
 
 ```bash
 bash infra/hetzner/scripts/setup-media-proxy-vps.sh
