@@ -25,7 +25,15 @@ Ou rebuild completo: `bash infra/hetzner/scripts/build-web-vps.sh` (já roda npm
 
 **Sempre rode comandos dentro de `~/inova-gastro-360`**, não em `~`.
 
-Ou rebuild completo: `bash infra/hetzner/scripts/build-web-vps.sh` (já roda npm ci se @aws-sdk faltar).
+Arquivo correto: `~/inova-gastro-360/infra/hetzner/.env.production` (não `~/infra/...`).
+
+```bash
+cd ~/inova-gastro-360
+git pull origin feat/006-escpos
+JWT_SECRET_NEW='SUA_STRING_OPENSSL' bash infra/hetzner/scripts/fix-env-db-url-vps.sh
+```
+
+Seed: `npm run db:seed` na **raiz** do repo (não `db:seed` no workspace database).
 
 ## Login HTTP 500 — internal_error (API health OK)
 
