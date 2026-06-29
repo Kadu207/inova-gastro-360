@@ -10,10 +10,11 @@
 - `/dashboard/catalogo` deployado @ `feat/006-escpos`
 - Scripts VPS: sync-git, npm-ci, fix-env, recreate-api, smoke-catalog-admin
 
-### Pendente operacional
+### Pendente operacional (commit `7781fc5`)
 
-- **S3_* / MinIO** — upload de fotos (CRUD produtos funciona sem foto)
-- Rotação senha Postgres (exposta em troubleshooting)
+- **MinIO/S3** — scripts `discover-minio-vps.sh`, `configure-s3-env-vps.sh`, `setup-minio-catalog.sh`
+- **Rotação Postgres** — `rotate-postgres-password-vps.sh` (senha exposta em chat anterior)
+- Seed VPS opcional (demo já existe; fix SSL em `packages/database`)
 - T023 audit_logs (opcional)
 
 ### Demo produção

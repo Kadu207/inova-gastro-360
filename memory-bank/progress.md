@@ -31,7 +31,9 @@ Adiado (spec 005)
 - [x] Painéis refinados (balcão/cozinha/delivery)
 - [ ] Deploy VPS pós-merge
 
-## Spec 014 catalog-admin — T001–T022 ✅ (código)
-- [x] CRUD categorias + produtos + upload
+## Spec 014 catalog-admin — T001–T022 ✅ (código + produção CRUD)
+- [x] CRUD categorias + produtos + upload (código)
 - [x] Hardening GET público + scripts deploy VPS
-- [ ] Restaurar `.env.production` na VPS + smoke upload MinIO
+- [x] Smoke produção: login, admin, vitrine (sem fotos)
+- [ ] MinIO/S3 na VPS (`configure-s3-env-vps.sh` + `setup-minio-catalog.sh`)
+- [ ] Rotação senha Postgres (`rotate-postgres-password-vps.sh`)

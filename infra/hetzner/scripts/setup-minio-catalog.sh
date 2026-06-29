@@ -71,5 +71,5 @@ mc cors set "inova-catalog/$BUCKET" "$CORS_FILE" 2>/dev/null || echo "Aviso: mc 
 rm -f "$CORS_FILE"
 
 echo "==> OK — bucket $BUCKET pronto"
-echo "    api-gateway usa S3_ENDPOINT=http://minio:9000 (rede Docker)"
+echo "    api-gateway: S3_ENDPOINT=http://host.docker.internal:${HOST_PORT:-9000}"
 echo "    S3_PUBLIC_BASE_URL deve apontar para CDN/nginx do prefixo tenants/"
