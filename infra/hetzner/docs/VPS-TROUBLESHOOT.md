@@ -25,6 +25,43 @@ Ou rebuild completo: `bash infra/hetzner/scripts/build-web-vps.sh` (já roda npm
 
 **Sempre rode comandos dentro de `~/inova-gastro-360`**, não em `~`.
 
+Ou rebuild completo: `bash infra/hetzner/scripts/build-web-vps.sh` (já roda npm ci se @aws-sdk faltar).
+
+## Login HTTP 500 — internal_error (API health OK)
+
+O api-gateway sobe mas o Postgres falha no login.
+
+```bash
+cd ~/inova-gastro-360
+bash infra/hetzner/scripts/smoke-db-vps.sh
+docker logs inova-gastro-360-api --tail 30
+```
+
+**Causas frequentes:**
+
+1. **`DATABASE_URL` com `CHANGE_ME`** — recriou `.env` do example. Pegue a senha real:
+   ```bash
+   docker exec inova-gastro-360-postgres printenv POSTGRES_PASSWORD
+   ```
+   Edite `infra/hetzner/.env.production`:
+   ```bash
+   DATABASE_URL=postgresql://inova_gastro:SENHA_ACIMA@host.docker.internal:5440/inova_gastro_360?sslmode=require
+   POSTGRES_PASSWORD=SENHA_ACIMA
+   ```
+
+2. **SSL obrigatório** — Postgres prod usa `ssl=on`. Inclua `?sslmode=require` na URL.
+
+3. **Seed ausente** — após DB ok, se login retornar **401**:
+   ```bash
+   bash infra/hetzner/scripts/install-stack-deps.sh   # ou só db:seed
+   ```
+
+Reinicie api após corrigir `.env`:
+```bash
+docker compose -f infra/hetzner/docker-compose.app.yml \
+  --env-file infra/hetzner/.env.production restart api-gateway
+```
+
 ## Login falhou no smoke
 
 Quase sempre o `.env.production` foi recriado a partir do **example** com placeholders.
