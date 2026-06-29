@@ -48,39 +48,20 @@ export default function ImageUploader({ productId, currentImageUrl, onUploaded }
       headers: authHeaders(),
       body: form,
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message ?? data.error ?? "Upload falhou");
+    let data: { message?: string; error?: string; publicUrl?: string; product?: { image_url?: string } };
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error(res.ok ? "Resposta inválida da API" : `Upload falhou (${res.status})`);
+    }
+    if (!res.ok) {
+      throw new Error(data.message ?? data.error ?? `Upload falhou (${res.status})`);
+    }
     onUploaded(data.publicUrl ?? data.product?.image_url ?? null);
   }
 
-  async function uploadPresign(file: File) {
-    const presignRes = await fetch(`${base}/image/presign`, {
-      method: "POST",
-      headers: authHeaders(true),
-      body: JSON.stringify({ contentType: file.type, contentLength: file.size }),
-    });
-    const presignData = await presignRes.json();
-
-    if (presignRes.status === 503 && presignData.error === "storage_not_configured") {
-      await uploadMultipart(file);
-      return;
-    }
-    if (!presignRes.ok) {
-      throw new Error(presignData.error ?? "Presign falhou");
-    }
-
-    const putRes = await fetch(presignData.uploadUrl, {
-      method: presignData.method ?? "PUT",
-      headers: presignData.headers ?? { "Content-Type": file.type },
-      body: file,
-    });
-
-    if (!putRes.ok) {
-      await uploadMultipart(file);
-      return;
-    }
-
-    await patchImageUrl(presignData.publicUrl);
+  async function uploadImage(file: File) {
+    await uploadMultipart(file);
   }
 
   async function handleFile(file: File) {
@@ -100,10 +81,15 @@ export default function ImageUploader({ productId, currentImageUrl, onUploaded }
     setBusy(true);
     setMessage("");
     try {
-      await uploadPresign(file);
+      await uploadImage(file);
       setMessage("Foto enviada");
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Erro no upload");
+      const text = err instanceof Error ? err.message : "Erro no upload";
+      setMessage(
+        text === "Failed to fetch"
+          ? "Falha de rede — verifique login e tente novamente"
+          : text,
+      );
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
