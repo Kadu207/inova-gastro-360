@@ -12,28 +12,28 @@ function getConnectionString(databaseUrl?: string): string {
   );
 }
 
-function stripSslModeFromUrl(connectionString: string): string {
+function normalizePgConnectionString(connectionString: string): string {
   return connectionString
     .replace(/([?&])sslmode=[^&]*/g, "")
     .replace(/([?&])uselibpqcompat=[^&]*/g, "")
+    .replace(/([?&])schema=[^&]*/g, "")
     .replace(/\?&/, "?")
     .replace(/\?$/, "");
 }
 
-function createPgPool(connectionString: string): pg.Pool {
+export function createPrismaClient(databaseUrl?: string): PrismaClient {
+  const connectionString = normalizePgConnectionString(getConnectionString(databaseUrl));
   const insecureSsl =
     process.env.DATABASE_SSL_INSECURE === "1" || process.env.DATABASE_SSL_INSECURE === "true";
-  if (insecureSsl) {
-    return new pg.Pool({
-      connectionString: stripSslModeFromUrl(connectionString),
-      ssl: true,
-    });
-  }
-  return new pg.Pool({ connectionString });
-}
 
-export function createPrismaClient(databaseUrl?: string): PrismaClient {
-  const adapter = new PrismaPg(createPgPool(getConnectionString(databaseUrl)));
+  const adapter = insecureSsl
+    ? new PrismaPg(
+        new pg.Pool({
+          connectionString,
+          ssl: { rejectUnauthorized: false },
+        }),
+      )
+    : new PrismaPg({ connectionString });
   return new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
