@@ -39,16 +39,16 @@
 
 ## Fase 5 — US4 Nav + vitrine (P2)
 
-- [ ] T018 Nav: item **Gestão cardápio** → `/dashboard/catalogo`; **Cardápio** link vitrine `/cardapio`
-- [ ] T019 `DashboardShell`: rota admin exige login; botão "Ver cardápio público"
-- [ ] T020 Hardening GET público catalog: incluir `tenant_id` via join branch (defense in depth)
+- [x] T018 Nav: item **Gestão cardápio** → `/dashboard/catalogo`; **Cardápio** link vitrine `/cardapio`
+- [x] T019 `DashboardShell`: rota admin exige login; botão "Ver cardápio público"
+- [x] T020 Hardening GET público catalog: incluir `tenant_id` via join branch (defense in depth)
 
 **Teste independente**: gestão exige login; vitrine anônima OK.
 
 ## Fase 6 — Deploy + polish
 
-- [ ] T021 Criar bucket MinIO `inova-gastro-360` na VPS + policy leitura CDN
-- [ ] T022 Deploy VPS: env S3_* + rebuild api-gateway + web + smoke admin→público
+- [x] T021 Criar bucket MinIO `inova-gastro-360` na VPS + policy leitura CDN (`setup-minio-catalog.sh`)
+- [x] T022 Deploy VPS: env S3_* + rebuild api-gateway + web + smoke admin→público (`smoke-catalog-admin.sh`)
 - [ ] T023 (opcional) `audit_logs` em write produto/categoria
 - [ ] T024 Atualizar `memory-bank/progress.md` + marcar tasks entregues
 

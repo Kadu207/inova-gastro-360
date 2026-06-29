@@ -9,6 +9,14 @@ Bucket S3-compatible para fotos de produtos do **Inova Gastro 360**, reutilizand
 
 ## Criar bucket (VPS)
 
+Script automatizado (requer `mc` instalado):
+
+```bash
+bash infra/hetzner/scripts/setup-minio-catalog.sh
+```
+
+Manual:
+
 ```bash
 # Ajuste alias mc conforme seu ambiente MinIO
 mc alias set local http://127.0.0.1:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
@@ -61,6 +69,12 @@ S3_PUBLIC_BASE_URL=https://media.inovagastro360.inovatitech.com.br
 Handlers usam `@aws-sdk/client-s3` — sem mudança de código.
 
 ## Smoke
+
+```bash
+bash infra/hetzner/scripts/smoke-catalog-admin.sh
+```
+
+Ou manualmente:
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}\n" \

@@ -42,6 +42,16 @@ if id -u "$DEPLOY_USER" &>/dev/null; then
     sudo chown -R "$DEPLOY_USER:$DEPLOY_USER" "$ROOT/node_modules" 2>/dev/null || true
 fi
 
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo ""
+  echo "Erro: $ENV_FILE não encontrado — containers NÃO serão reiniciados."
+  echo "  cp infra/hetzner/.env.production.example infra/hetzner/.env.production"
+  echo "  nano infra/hetzner/.env.production   # DATABASE_URL, JWT_SECRET, S3_*"
+  echo ""
+  echo "Build estático concluído em apps/web/out — rode novamente após criar o .env."
+  exit 1
+fi
+
 echo "==> Reiniciando web + api-gateway + nginx (re-resolve DNS)..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate web
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d api-gateway
@@ -60,6 +70,12 @@ done
 
 echo "==> Smoke local..."
 grep -q 'catalog-page' "$ROOT/apps/web/out/cardapio.html" 2>/dev/null && echo "    out/cardapio.html: catalog-page OK" || echo "Aviso: catalog-page não encontrado em out/"
+if [[ -f "$ROOT/apps/web/out/dashboard/catalogo.html" ]]; then
+  echo "    out/dashboard/catalogo.html: OK (spec 014 admin)"
+else
+  echo "Aviso: out/dashboard/catalogo.html ausente — git pull falhou? Rode:"
+  echo "    bash infra/hetzner/scripts/sync-git-vps.sh"
+fi
 curl -sf -o /dev/null -w "    local :9088: %{http_code}\n" "http://127.0.0.1:9088/cardapio" || echo "Aviso: local :9088 indisponível"
 curl -sf -o /dev/null -w "    cardapio HTTPS: %{http_code}\n" "https://inovagastro360.inovatitech.com.br/cardapio" || echo "Aviso: HTTPS indisponível — rode tunnel-connect-inova.sh"
 

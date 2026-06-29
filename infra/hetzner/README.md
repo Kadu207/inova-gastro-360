@@ -35,8 +35,12 @@ docker compose -f infra/hetzner/docker-compose.prod.yml up -d
 **Importante:** nunca rode `npm ci` dentro de vários containers ao mesmo tempo — corrompe `node_modules`.
 
 ```bash
+# Sincronizar código (se git pull falhar com "divergent branches"):
+bash infra/hetzner/scripts/sync-git-vps.sh feat/006-escpos
+
 bash infra/hetzner/scripts/install-stack-deps.sh   # uma vez (ou após git pull grande)
-bash infra/hetzner/scripts/deploy-vps.sh
+bash infra/hetzner/scripts/build-web-vps.sh        # rebuild web + restart api-gateway
+bash infra/hetzner/scripts/deploy-vps.sh           # stack completo (primeira vez)
 ```
 
 ## 5. Nginx + TLS + firewall
