@@ -7,6 +7,8 @@ import TopHeader from "./TopHeader";
 import { FOOTER_FEATURES } from "@/lib/nav";
 import { getToken } from "@/lib/api";
 
+const PUBLIC_PATHS = ["/cardapio"];
+
 const TITLES: Record<string, string> = {
   "/dashboard": "Dashboard Geral",
   "/cardapio": "Cardápio",
@@ -21,9 +23,21 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const pathname = usePathname();
   const title = TITLES[pathname] ?? "Inova Gastro OS";
 
+  const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
   useEffect(() => {
-    if (!getToken()) router.replace("/login");
-  }, [router]);
+    if (!isPublic && !getToken()) router.replace("/login");
+  }, [router, isPublic]);
+
+  if (isPublic && !getToken()) {
+    return (
+      <div className="os-layout os-layout-public">
+        <div className="os-main os-main-public">
+          <div className="os-content">{children}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="os-layout">

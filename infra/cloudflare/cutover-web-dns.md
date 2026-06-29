@@ -1,5 +1,8 @@
 # Cutover DNS — Web Inova Gastro 360
 
+> **Produção VPS (spec 013):** use **`infra/hetzner/CLOUDFLARE-CUTOVER.md`** (Tunnel → `:9088`).
+> Este doc aplica-se apenas se voltar a hospedar o web no **Worker** Cloudflare.
+
 O Worker `inova-gastro-360-web` está no ar, mas `inovagastro360.inovatitech.com.br` ainda aponta para o **Excellence Dental** (registros DNS manuais na zona).
 
 ## Passo 1 — Remover DNS antigo (Dashboard)

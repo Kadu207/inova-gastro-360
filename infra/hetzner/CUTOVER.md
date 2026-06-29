@@ -25,6 +25,8 @@ SSL Cloudflare: **Full (strict)** com certificado origem Let's Encrypt na VPS.
 4. `print_jobs` criado; print-agent na LAN marca `printed`
 5. `curl https://inovagastro360.inovatitech.com.br/health/stack` → ok
 
-## Alternativa sem abrir 443 direto
+## Alternativa sem abrir 443 direto (recomendado na VPS compartilhada)
 
-Cloudflare Tunnel (`cloudflared`) apontando para `127.0.0.1:443`.
+Cloudflare Tunnel (`cloudflared`) apontando para `http://127.0.0.1:9088` (nginx-proxy Docker).
+
+**Importante:** remover o custom domain do Worker `inova-gastro-360-web` antes de validar HTTPS — senão o edge continua servindo deploy antigo (chunk `page-126fac65…`, `POST /api` → 405). Passo a passo: **`CLOUDFLARE-CUTOVER.md`**.

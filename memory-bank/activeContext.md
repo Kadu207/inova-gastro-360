@@ -1,31 +1,34 @@
 # Contexto ativo — Inova Gastro 360
 
-**Última atualização:** 2026-06-27
+**Última atualização:** 2026-06-26
 
-## Runtime VPS (spec 013) — deploy Hetzner operacional
+## Feature ativa: spec 002-cardapio-online
 
-- **Stack Docker:** postgres + redis + workers + web — health OK (`/health/stack`)
-- **Proxy público:** `nginx-proxy` container `:9088` → web/api/ws (Tunnel Cloudflare)
-- **Nginx host:** não usado (`:80` ocupada por outro container na VPS compartilhada)
-- **URLs produção:** `NEXT_PUBLIC_*` → `https://inovagastro360.inovatitech.com.br`
-- **Login via proxy:** `POST /api/v1/auth/login` retorna `accessToken` na `:9088`
+Roadmap: **002 (refino)** → **003 (entregue)** → **005 financeiro (Onda 4, adiado)**
 
-## Comandos
+### Entregue nesta sessão (002 Fase 2)
 
-```bash
-docker compose up -d
-npm run db:seed
-npm run dev:stack          # desenvolvimento (Wrangler)
-npm run start:stack        # produção Node (VPS)
-npm run smoke:health
-npm run outbox:flush
-npm run print-agent:dev
-```
+- `/cardapio` público sem login (DashboardShell `PUBLIC_PATHS`)
+- UI: categorias, busca, tabs delivery/retirada, layout catalog + carrinho sticky
+- Guest checkout: nome + telefone → POST `/api/v1/orders` (tenant via `branchId`)
+- `apps/web/src/lib/cardapio.ts` + testes vitest (5)
+- CSS `.catalog-*` em `globals.css`
+- `npm run test` — **verde** (11 packages)
 
-**Demo:** `admin@inovagastro360.local` / `InovaGastro360!`
+### Produção VPS (spec 013) — OK
 
-## Próximo (operação / Fase F)
+- HTTPS: `https://inovagastro360.inovatitech.com.br`
+- Tunnel: `http://inova-gastro-360-nginx:9088` + cron `tunnel-connect-inova.sh`
 
-- Validar login no browser via Tunnel (`https://inovagastro360.inovatitech.com.br/login`)
-- Commit/push `nginx-proxy` + `inovagastro360.docker.conf` no PC (se ainda não no remoto)
-- Workers Paid + Queues quando go-live comercial (T050–T051)
+## Próximo deploy VPS
+
+Após `git pull` na VPS: rebuild `web` + `api-gateway` (comandos abaixo no handoff).
+
+## Pendente (002 backlog)
+
+- T009 imagens produto + lazy load
+- T010 modificadores/combos (fora MVP)
+
+## Demo
+
+`admin@inovagastro360.local` / `InovaGastro360!` / tenant `demo-burger`

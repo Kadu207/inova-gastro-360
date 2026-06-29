@@ -11,7 +11,7 @@
 
 ## Fase 2 (melhorias)
 
-- [ ] T007 [P] Testes vitest checkout mock API em `apps/web`
-- [ ] T008 Cardápio público sem login (guest checkout + telefone)
-- [ ] T009 Imagens produto + lazy load
+- [x] T007 [P] Testes vitest checkout mock API em `apps/web` (`cardapio.test.ts`)
+- [x] T008 Cardápio público sem login (guest checkout + telefone)
+- [ ] T009 Imagens produto + lazy load (placeholder + suporte `image_url`)
 - [ ] T010 Modificadores/combos (fora MVP)

@@ -31,7 +31,7 @@ describe("orders handlers — validação (sem DB)", () => {
     expect(body.error).toBe("validation_error");
   });
 
-  it("create order exige tenant_id no JWT", async () => {
+  it("create order sem JWT exige nome e telefone (guest)", async () => {
     const req = new Request("http://test/api/v1/orders", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -43,7 +43,7 @@ describe("orders handlers — validação (sem DB)", () => {
     const res = await handleCreateOrder(req, env, undefined);
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error: string };
-    expect(body.error).toBe("tenant_required");
+    expect(body.error).toBe("guest_contact_required");
   });
 
   it("list orders exige branchId", async () => {
@@ -140,7 +140,7 @@ describe("orders — auth via worker", () => {
     expect(res.status).toBe(401);
   });
 
-  it("POST /api/v1/orders sem token retorna tenant_required após validação", async () => {
+  it("POST /api/v1/orders sem token exige contato guest", async () => {
     const worker = (await import("../index")).default;
     const res = await worker.fetch(
       new Request("https://api.test/api/v1/orders", {
@@ -155,7 +155,7 @@ describe("orders — auth via worker", () => {
     );
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error: string };
-    expect(body.error).toBe("tenant_required");
+    expect(body.error).toBe("guest_contact_required");
   });
 
   it("GET /api/v1/orders com token inválido retorna 401", async () => {

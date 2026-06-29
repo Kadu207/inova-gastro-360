@@ -140,12 +140,25 @@ export async function handleCreateOrder(request: Request, env: GatewayEnv, user?
   }
 
   const { branchId, channel, customerName, customerPhone, notes, items } = parsed.data;
-  const tenantId = user?.tid;
-  if (!tenantId) return jsonResponse({ error: "tenant_required" }, 400);
-
   const sql = getSql(env);
 
   try {
+    let tenantId = user?.tid;
+    if (!tenantId) {
+      if (!customerName?.trim() || !customerPhone?.trim()) {
+        return jsonResponse(
+          { error: "guest_contact_required", message: "Nome e telefone são obrigatórios para pedido sem login" },
+          400,
+        );
+      }
+      const [branch] = await sql<{ tenant_id: string }[]>`
+        SELECT tenant_id FROM branches
+        WHERE id = ${branchId}::uuid AND is_active = true
+        LIMIT 1
+      `;
+      if (!branch) return jsonResponse({ error: "branch_not_found" }, 404);
+      tenantId = branch.tenant_id;
+    }
     if (idempotency.key) {
       const existing = await findOrderByIdempotencyKey(sql, tenantId, idempotency.key);
       if (existing) {

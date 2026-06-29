@@ -58,7 +58,7 @@ EMB-01 a EMB-15 — ver docs/architecture.md
 ## Feature ativa (Spec Kit)
 
 <!-- speckit:active-feature:start -->
-- **Diretório:** `specs/013-vps-runtime`
+- **Diretório:** `specs/002-cardapio-online`
 - **Spec:** `spec.md` | **Plan:** `plan.md` | **Tasks:** `tasks.md`
-- **Atualizado:** 2026-06-21T16:08:36Z
+- **Atualizado:** 2026-06-26
 <!-- speckit:active-feature:end -->

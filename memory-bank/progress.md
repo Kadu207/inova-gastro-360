@@ -21,3 +21,11 @@
 
 ## Onda 4 — Financeiro
 Adiado (spec 005)
+
+## Spec 002 cardápio online — Fase 2 ✅ (código local)
+- [x] Cardápio público + guest checkout (nome/telefone)
+- [x] Categorias, busca, canal delivery/retirada
+- [x] `cardapio.ts` + testes vitest
+- [x] API guest checkout via branchId
+- [ ] Deploy VPS + smoke `/cardapio` anônimo
+- [ ] T009 imagens | T010 combos (backlog)
