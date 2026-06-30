@@ -56,7 +56,7 @@
 
 - T025 Import CSV/ZIP (US5 P3)
 - T026 T010 combos/modificadores (002)
-- T027 Migração storage R2 produção (swap env only)
+- T027 Migração storage R2 produção — prep: `docs/R2-STORAGE.md` + `configure-r2-env-vps.sh` (cutover requer credenciais CF)
 
 ## Ordem de dependência
 
