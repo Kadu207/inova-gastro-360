@@ -2,33 +2,26 @@
 
 **Última atualização:** 2026-06-29
 
-## Feature ativa: spec 014-catalog-admin — concluída ✅ (T001–T024)
+## Produção VPS ✅ (master — PR #13 merged)
 
-### Merge pendente
+- Spec 014 catálogo + fotos OK
+- Spec 003 pedidos: código no ar; smoke `smoke-orders-vps.sh` (T016)
+- Branch VPS: `master` @ origin/master
 
-- Branch: `feat/006-escpos` → `master`
-- Após merge: `recreate-api-vps.sh` na VPS (audit_logs + media)
+### Próximo deploy VPS (após pull)
 
-### Produção (smoke verde + fotos)
+```bash
+git fetch origin master && git reset --hard origin/master
+bash infra/hetzner/scripts/npm-ci-vps.sh    # Next 15.5.19 (CVE #15)
+bash infra/hetzner/scripts/build-web-vps.sh
+bash infra/hetzner/scripts/smoke-orders-vps.sh
+```
 
-- CRUD categorias/produtos + upload multipart (T017)
-- Fotos visíveis em `/dashboard/catalogo` e `/cardapio`
-- `GET /media/inova-gastro-360/...` → api-gateway → MinIO (HTTP 200)
-- Branch `feat/006-escpos` @ `b725cd2`
+### T027 R2 (prep, não cutover)
 
-### MinIO/S3 ✅
+- Docs: `infra/hetzner/docs/R2-STORAGE.md`
+- Script: `configure-r2-env-vps.sh` (requer credenciais Cloudflare)
 
-- Bucket `inova-gastro-360`, rede `inova-platform-core_inova-platform` no compose
-- `S3_ENDPOINT=http://inova-platform-core-minio-1:9000`
-- `S3_PUBLIC_BASE_URL=https://inovagastro360.inovatitech.com.br/media/inova-gastro-360`
-- Scripts: `setup-media-proxy-vps.sh`, `smoke-catalog-upload.sh`, `connect-minio-network-vps.sh`
+### Demo
 
-### Segurança Postgres ✅
-
-- Senha rotacionada; pendente alinhar `POSTGRES_PASSWORD` no compose Postgres antes de recreate
-
-### Demo produção
-
-`https://inovagastro360.inovatitech.com.br` → login → **Gestão cardápio**
-
-`admin@inovagastro360.local` / `InovaGastro360!`
+`https://inovagastro360.inovatitech.com.br` — `admin@inovagastro360.local` / `InovaGastro360!`

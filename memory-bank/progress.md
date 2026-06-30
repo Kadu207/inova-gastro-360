@@ -9,7 +9,7 @@
 - [x] `/health/stack` + `npm run smoke:health`
 - [x] Nginx Docker `:9088` + Tunnel Cloudflare (VPS compartilhada, spec 013)
 - [x] Login API via proxy confirmado na VPS
-- [ ] Validar acesso HTTPS público no browser (smoke final)
+- [x] Validar acesso HTTPS público no browser (smoke final pós PR #13)
 
 ## Spec 006 print-agent ✅
 
@@ -26,10 +26,10 @@ Adiado (spec 005)
 - [x] T009 imagens + lazy load
 - [ ] T010 combos (backlog)
 
-## Spec 003 pedidos — Fase 3 ✅ (código)
+## Spec 003 pedidos — Fase 3 ✅ (produção)
 - [x] Filtros canal + busca API/UI
 - [x] Painéis refinados (balcão/cozinha/delivery)
-- [ ] Deploy VPS pós-merge
+- [x] Deploy VPS: smoke-orders-vps.sh (T016)
 
 ## Spec 014 catalog-admin — T001–T024 ✅ (produção)
 - [x] CRUD categorias + produtos + upload (código)
@@ -38,4 +38,4 @@ Adiado (spec 005)
 - [x] smoke-catalog-upload.sh HTTP 200
 - [x] T023 audit_logs em writes catálogo
 - [x] T024 memory-bank + tasks entregues
-- [ ] CDN Cloudflare R2 (backlog T027)
+- [x] T027 prep R2 (docs + configure-r2-env-vps.sh; cutover CF pendente)

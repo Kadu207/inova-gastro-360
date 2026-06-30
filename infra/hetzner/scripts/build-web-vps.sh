@@ -31,6 +31,22 @@ if [[ ! -d node_modules/@aws-sdk/client-s3 ]]; then
   need_npm_ci=true
 fi
 
+# package-lock ou versão Next desatualizada (ex.: merge CVE #15 sem npm ci na VPS)
+if [[ -f "$ROOT/package-lock.json" ]] && [[ -d "$ROOT/node_modules" ]]; then
+  if [[ "$ROOT/package-lock.json" -nt "$ROOT/node_modules" ]]; then
+    echo "    package-lock.json mais recente que node_modules — npm ci necessário"
+    need_npm_ci=true
+  fi
+  if [[ -f "$ROOT/node_modules/next/package.json" ]]; then
+    WEB_NEXT_WANTED=$(grep -E '"next":' "$ROOT/apps/web/package.json" | sed -E 's/.*"next": "([^"]+)".*/\1/' | head -1)
+    WEB_NEXT_INSTALLED=$(grep -E '"version":' "$ROOT/node_modules/next/package.json" | sed -E 's/.*"version": "([^"]+)".*/\1/' | head -1)
+    if [[ -n "$WEB_NEXT_WANTED" && -n "$WEB_NEXT_INSTALLED" && "$WEB_NEXT_WANTED" != "$WEB_NEXT_INSTALLED" ]]; then
+      echo "    next@${WEB_NEXT_INSTALLED} instalado, package.json pede ${WEB_NEXT_WANTED} — npm ci necessário"
+      need_npm_ci=true
+    fi
+  fi
+fi
+
 if [[ "$need_npm_ci" == true ]]; then
   echo "==> npm ci (Docker)..."
   docker run --rm -v "$ROOT:/app" -w /app node:20-alpine sh -c "npm ci"
@@ -85,6 +101,13 @@ else
   echo "Aviso: out/dashboard/catalogo.html ausente — git pull falhou? Rode:"
   echo "    bash infra/hetzner/scripts/sync-git-vps.sh"
 fi
+for p in painel/balcao painel/cozinha painel/delivery; do
+  if [[ -f "$ROOT/apps/web/out/$p.html" ]]; then
+    echo "    out/$p.html: OK (spec 003 painéis)"
+  else
+    echo "Aviso: out/$p.html ausente"
+  fi
+done
 curl -sf -o /dev/null -w "    local :9088: %{http_code}\n" "http://127.0.0.1:9088/cardapio" || echo "Aviso: local :9088 indisponível"
 curl -sf -o /dev/null -w "    cardapio HTTPS: %{http_code}\n" "https://inovagastro360.inovatitech.com.br/cardapio" || echo "Aviso: HTTPS indisponível — rode tunnel-connect-inova.sh"
 

@@ -36,14 +36,18 @@ docker compose -f infra/hetzner/docker-compose.prod.yml up -d
 
 ```bash
 # Sincronizar código (se git pull falhar com "divergent branches"):
-bash infra/hetzner/scripts/sync-git-vps.sh feat/006-escpos
+bash infra/hetzner/scripts/sync-git-vps.sh master
 
-# Após pull com deps novas (ex. spec 014 @aws-sdk):
+# Após pull com deps novas (ex. bump Next.js / @aws-sdk):
 bash infra/hetzner/scripts/npm-ci-vps.sh
 
 bash infra/hetzner/scripts/install-stack-deps.sh   # uma vez (ou após git pull grande)
 bash infra/hetzner/scripts/build-web-vps.sh        # rebuild web + restart api-gateway
 bash infra/hetzner/scripts/deploy-vps.sh           # stack completo (primeira vez)
+
+# Smoke pós-deploy
+bash infra/hetzner/scripts/smoke-catalog-admin.sh
+bash infra/hetzner/scripts/smoke-orders-vps.sh      # spec 003 pedidos
 ```
 
 ## 5. Nginx + TLS + firewall

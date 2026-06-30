@@ -21,3 +21,7 @@
 - [x] T013 Filtro por canal (`channel`) na API + UI
 - [x] T014 Busca por nº pedido, nome ou telefone (`q`)
 - [x] T015 Labels PT-BR, badges, defaults por painel (balcão/cozinha/delivery)
+
+## Deploy VPS
+
+- [x] T016 `smoke-orders-vps.sh` — criar/listar/buscar/atualizar status + páginas painel

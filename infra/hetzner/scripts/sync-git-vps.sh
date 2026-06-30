@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Sincroniza o repositório na VPS com o remoto (resolve branches divergentes).
 # Uso: bash infra/hetzner/scripts/sync-git-vps.sh [branch]
-# Padrão: feat/006-escpos
+# Padrão: master
 #
 # Descarta commits locais na VPS — a fonte de verdade é o GitHub.
 # Alterações locais não commitadas em arquivos rastreados também são perdidas.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-BRANCH="${1:-feat/006-escpos}"
+BRANCH="${1:-master}"
 
 cd "$ROOT"
 

@@ -88,6 +88,8 @@ S3_PUBLIC_BASE_URL=https://media.inovagastro360.inovatitech.com.br
 
 Handlers usam `@aws-sdk/client-s3` — sem mudança de código.
 
+Runbook completo: [R2-STORAGE.md](./R2-STORAGE.md) + `configure-r2-env-vps.sh`.
+
 ## Smoke
 
 ```bash
