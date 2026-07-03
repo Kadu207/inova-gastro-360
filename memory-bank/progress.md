@@ -53,7 +53,10 @@ Adiado (spec 005)
 - [x] P2 extra: magic bytes upload, rate limit pedidos guest, withTenant na criação de pedidos
 - [x] Testes auth (refresh/logout/rate limit) + configure-security-env-vps.sh + setup-app-db-role-vps.sh
 - [x] docs/infoproduto/primeiro-post-build-in-public.md
-- [ ] Operacional VPS: T050–T053 (configure-security-env, migrate, rotate senha, app db role)
+- [x] Operacional VPS: T050–T052 (configure-security-env, migrate, rotate senha) — 2026-07-03
+- [ ] T053 opcional: `setup-app-db-role-vps.sh` (RLS defense-in-depth com `inova_gastro_app`)
+- [ ] Fix outbox dispatch Node (`duplex` em Service Binding fetch)
+- [ ] PR merge `feat/015-security-hardening` → `master`
 
 ## Infoproduto (estratégia D→A→B)
 - [x] docs/infoproduto: estrategia.md, calendario-conteudo.md (12 semanas), ementa-curso.md

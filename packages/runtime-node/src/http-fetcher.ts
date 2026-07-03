@@ -7,11 +7,16 @@ export function createServiceFetcher(baseUrl: string): Fetcher {
       const req = input instanceof Request ? input : new Request(input, init);
       const parsed = new URL(req.url);
       const target = `${base}${parsed.pathname}${parsed.search}`;
-      return fetch(target, {
+      const forward: RequestInit & { duplex?: "half" } = {
         method: req.method,
         headers: req.headers,
-        body: req.body,
-      });
+      };
+      if (req.body) {
+        forward.body = req.body;
+        // Node fetch exige duplex ao reenviar ReadableStream (Service Binding shim).
+        forward.duplex = "half";
+      }
+      return fetch(target, forward);
     },
   } as Fetcher;
 }
