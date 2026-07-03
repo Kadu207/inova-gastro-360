@@ -5,6 +5,10 @@ export interface GatewayEnv {
   DATABASE_SSL_INSECURE?: string;
   JWT_SECRET?: string;
   OUTBOX_FLUSH_SECRET?: string;
+  /** Segredo compartilhado para autenticar rotas internas entre workers */
+  INTERNAL_SHARED_SECRET?: string;
+  /** Lista CSV de origens permitidas em CORS (produção) */
+  CORS_ALLOWED_ORIGINS?: string;
   MESSAGING_SERVICE?: Fetcher;
   /** Binding Hyperdrive (produção). Local dev usa DATABASE_URL em .dev.vars */
   HYPERDRIVE?: Hyperdrive;

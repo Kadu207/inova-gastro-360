@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { API_BASE, DEMO_BRANCH_ID, getToken } from "@/lib/api";
+import { API_BASE, getActiveBranchId, getToken } from "@/lib/api";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 5_242_880;
@@ -17,7 +17,7 @@ export default function ImageUploader({ productId, currentImageUrl, onUploaded }
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
-  const base = `${API_BASE}/api/v1/branches/${DEMO_BRANCH_ID}/catalog/admin/products/${productId}`;
+  const base = `${API_BASE}/api/v1/branches/${getActiveBranchId()}/catalog/admin/products/${productId}`;
 
   function authHeaders(json = false): Record<string, string> {
     const token = getToken();

@@ -23,3 +23,23 @@ export function healthHandler(service: string, version = "0.1.0"): Response {
     timestamp: new Date().toISOString(),
   });
 }
+
+/** IP do cliente (Cloudflare ou proxy reverso). */
+export function clientIp(request: Request): string {
+  return (
+    request.headers.get("cf-connecting-ip") ??
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    "unknown"
+  );
+}
+
+/** Lê e faz parse de JSON do corpo. Retorna null se vazio ou inválido. */
+export async function parseJsonBody(request: Request): Promise<unknown | null> {
+  try {
+    const text = await request.text();
+    if (!text.trim()) return null;
+    return JSON.parse(text) as unknown;
+  } catch {
+    return null;
+  }
+}

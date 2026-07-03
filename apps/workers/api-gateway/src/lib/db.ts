@@ -31,3 +31,41 @@ export function getSql(env: GatewayEnv) {
   }
   return postgres(normalizeDatabaseUrl(url), options);
 }
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Executa `fn` dentro de uma transação com o contexto de tenant definido
+ * (`app.current_tenant_id`), ativando o isolamento RLS. `tenantId` é validado
+ * como UUID e passado por parâmetro (set_config), sem interpolação de string.
+ */
+export async function withTenant<T>(
+  sql: ReturnType<typeof getSql>,
+  tenantId: string,
+  fn: (tx: ReturnType<typeof getSql>) => Promise<T>,
+): Promise<T> {
+  if (!UUID_RE.test(tenantId)) {
+    throw new Error("tenantId inválido para contexto RLS");
+  }
+  return sql.begin(async (tx) => {
+    await tx`SELECT set_config('app.current_tenant_id', ${tenantId}, true)`;
+    return fn(tx as unknown as ReturnType<typeof getSql>);
+  }) as Promise<T>;
+}
+
+/**
+ * Abre conexão, executa `fn` com contexto RLS do tenant e encerra a conexão.
+ * Preferir em handlers que fazem apenas operações tenant-scoped.
+ */
+export async function runWithTenant<T>(
+  env: GatewayEnv,
+  tenantId: string,
+  fn: (tx: ReturnType<typeof getSql>) => Promise<T>,
+): Promise<T> {
+  const sql = getSql(env);
+  try {
+    return await withTenant(sql, tenantId, fn);
+  } finally {
+    await sql.end();
+  }
+}

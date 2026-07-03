@@ -97,7 +97,7 @@ Se aparecer `CHANGE_ME` ou `change-me-min-32-chars-production`, restaure os valo
    ```bash
    curl -s -X POST https://inovagastro360.inovatitech.com.br/api/v1/auth/login \
      -H 'content-type: application/json' \
-     -d '{"email":"admin@inovagastro360.local","password":"InovaGastro360!"}'
+     -d "{\"email\":\"admin@inovagastro360.local\",\"password\":\"$SEED_ADMIN_PASSWORD\"}"
    ```
 
 5. Se **401 invalid_credentials** (DB ok): rodar seed:

@@ -20,7 +20,36 @@ Se o código ainda não foi enviado (`git push`) da sua máquina de desenvolvime
 
 ```bash
 cp infra/hetzner/.env.production.example infra/hetzner/.env.production
-nano infra/hetzner/.env.production   # DATABASE_URL, JWT_SECRET, senhas
+# Gerar segredos automaticamente (spec 015):
+bash infra/hetzner/scripts/configure-security-env-vps.sh
+# Ou editar manualmente:
+nano infra/hetzner/.env.production
+```
+
+### Variáveis obrigatórias (spec 015 — segurança)
+
+Gere segredos fortes com `openssl rand -base64 32`. Sem eles a API responde `server_misconfigured`:
+
+| Variável | Uso |
+|----------|-----|
+| `JWT_SECRET` | Assinatura JWT (sem fallback — obrigatório) |
+| `OUTBOX_FLUSH_SECRET` | Autoriza `POST /internal/outbox/flush` |
+| `INTERNAL_SHARED_SECRET` | Autentica rotas internas entre workers e `/broadcast` do realtime |
+| `CORS_ALLOWED_ORIGINS` | CSV de origens permitidas (ex.: `https://inovagastro360.inovatitech.com.br`) |
+| `SEED_ADMIN_PASSWORD` | Senha do admin demo no seed (nunca versionar) |
+
+Para rotacionar a senha do admin (revoga sessões):
+
+```bash
+NEW_PASSWORD='<nova senha>' bash infra/hetzner/scripts/rotate-admin-password-vps.sh
+```
+
+RLS defense-in-depth (role `inova_gastro_app`):
+
+```bash
+APP_DB_PASSWORD='<senha>' bash infra/hetzner/scripts/setup-app-db-role-vps.sh
+npx prisma migrate deploy   # se ainda não aplicou migration 20260702160000
+bash infra/hetzner/scripts/recreate-api-vps.sh
 ```
 
 ## 3. Postgres + Redis (se ainda não rodando)

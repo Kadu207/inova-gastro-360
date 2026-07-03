@@ -8,6 +8,8 @@ async function main(): Promise<void> {
     port,
     redisUrl,
     serviceName: "realtime-hub",
+    internalSecret: process.env.INTERNAL_SHARED_SECRET,
+    jwtSecret: process.env.JWT_SECRET,
   });
 }
 

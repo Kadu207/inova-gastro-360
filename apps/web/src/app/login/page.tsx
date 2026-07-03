@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { APP_NAME } from "@inova-gastro-360/config";
-import { API_BASE } from "@/lib/api";
+import { API_BASE, storeSession, setActiveBranchId } from "@/lib/api";
 import { loginErrorMessage } from "@/lib/login-errors";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("admin@inovagastro360.local");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [tenantSlug, setTenantSlug] = useState("demo-burger");
+  const [tenantSlug, setTenantSlug] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,7 +24,12 @@ export default function LoginPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ email, password, tenantSlug }),
       });
-      const data = (await res.json()) as { error?: string; accessToken?: string };
+      const data = (await res.json()) as {
+        error?: string;
+        accessToken?: string;
+        refreshToken?: string;
+        user?: { branchIds?: string[] };
+      };
       if (!res.ok) {
         setError(loginErrorMessage(data.error, API_BASE));
         return;
@@ -33,7 +38,8 @@ export default function LoginPage() {
         setError("Resposta inválida da API.");
         return;
       }
-      localStorage.setItem("accessToken", data.accessToken);
+      storeSession(data.accessToken, data.refreshToken);
+      if (data.user?.branchIds?.[0]) setActiveBranchId(data.user.branchIds[0]);
       window.location.href = "/dashboard";
     } catch {
       setError(`API indisponível em ${API_BASE}. Inicie: npm run dev:api`);

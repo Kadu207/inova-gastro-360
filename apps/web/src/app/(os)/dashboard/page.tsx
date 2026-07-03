@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { API_BASE, DEMO_BRANCH_ID, formatBRL, getToken } from "@/lib/api";
+import { API_BASE, formatBRL, getActiveBranchId, getToken } from "@/lib/api";
 
 const KPIS = [
   { label: "Vendas hoje", value: "R$ 4.280,00", delta: "+12,5%" },
@@ -41,7 +41,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const token = getToken();
     if (!token) return;
-    fetch(`${API_BASE}/api/v1/orders?branchId=${DEMO_BRANCH_ID}`, {
+    fetch(`${API_BASE}/api/v1/orders?branchId=${getActiveBranchId()}`, {
       headers: { authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())

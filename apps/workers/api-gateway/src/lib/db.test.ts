@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { getDatabaseUrl, normalizeDatabaseUrl } from "./db";
+import { describe, expect, it, vi } from "vitest";
+import { getDatabaseUrl, normalizeDatabaseUrl, withTenant } from "./db";
 import type { GatewayEnv } from "../types/env";
 
 describe("getDatabaseUrl", () => {
@@ -16,6 +16,19 @@ describe("getDatabaseUrl", () => {
       HYPERDRIVE: { connectionString: "postgresql://vps:5440/db" },
     };
     expect(getDatabaseUrl(env)).toBe("postgresql://vps:5440/db");
+  });
+});
+
+describe("withTenant", () => {
+  it("rejeita tenantId que não é UUID", async () => {
+    const begin = vi.fn();
+    const sql = Object.assign(vi.fn(), { begin, end: vi.fn() }) as unknown as ReturnType<
+      typeof import("./db").getSql
+    >;
+    await expect(withTenant(sql, "not-a-uuid", async () => "ok")).rejects.toThrow(
+      "tenantId inválido",
+    );
+    expect(begin).not.toHaveBeenCalled();
   });
 });
 

@@ -1,5 +1,6 @@
 import { healthHandler, jsonResponse } from "./lib";
-import { handleLogin, handleMe } from "./routes/auth";
+import { handleLogin, handleMe, handleRefresh, handleLogout } from "./routes/auth";
+import { handleCreateTenant } from "./routes/admin-tenants";
 import { handleCatalogCategories, handleCatalogProducts } from "./routes/catalog";
 import {
   handleAdminCreateCategory,
@@ -27,25 +28,50 @@ import { requireAuth } from "./middleware/auth";
 import { isOutboxFlushAuthorized } from "./lib/outbox-dispatch";
 import { flushPendingOutbox } from "./lib/outbox-replay";
 import { checkStackHealth } from "./routes/health-stack";
+import { ConfigError, isOriginAllowed, parseAllowedOrigins } from "./lib/config";
 
 import type { GatewayEnv } from "./types/env";
 
 export interface Env extends GatewayEnv {}
 
-const CORS_HEADERS = {
-  "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT, OPTIONS",
-  "access-control-allow-headers": "Content-Type, Authorization, Idempotency-Key, X-Requested-With",
-};
+const CORS_METHODS = "GET, POST, PATCH, DELETE, PUT, OPTIONS";
+const CORS_ALLOW_HEADERS = "Content-Type, Authorization, Idempotency-Key, X-Requested-With";
 
-function withCors(response: Response): Response {
+/** Aplica cabeçalhos CORS ecoando apenas origens permitidas. */
+function applyCors(response: Response, request: Request, env: Env): Response {
   const headers = new Headers(response.headers);
-  for (const [k, v] of Object.entries(CORS_HEADERS)) headers.set(k, v);
+  const origin = request.headers.get("origin");
+  if (origin && isOriginAllowed(origin, parseAllowedOrigins(env))) {
+    headers.set("access-control-allow-origin", origin);
+    headers.set("vary", "origin");
+    headers.set("access-control-allow-methods", CORS_METHODS);
+    headers.set("access-control-allow-headers", CORS_ALLOW_HEADERS);
+  }
   return new Response(response.body, { status: response.status, headers });
 }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    try {
+      return await route(request, env);
+    } catch (err) {
+      if (err instanceof ConfigError) {
+        console.error("server_misconfigured", err.message);
+        return applyCors(jsonResponse({ error: "server_misconfigured" }, 500), request, env);
+      }
+      console.error("unhandled_error", err);
+      return applyCors(jsonResponse({ error: "internal_error" }, 500), request, env);
+    }
+  },
+
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(flushPendingOutbox(env));
+  },
+};
+
+async function route(request: Request, env: Env): Promise<Response> {
+  const withCors = (response: Response): Response => applyCors(response, request, env);
+  {
     if (request.method === "OPTIONS") {
       return withCors(new Response(null, { status: 204 }));
     }
@@ -91,6 +117,20 @@ export default {
 
     if (path === "/api/v1/auth/me" && request.method === "GET") {
       return withCors(await handleMe(request, env));
+    }
+
+    if (path === "/api/v1/auth/refresh" && request.method === "POST") {
+      return withCors(await handleRefresh(request, env));
+    }
+
+    if (path === "/api/v1/auth/logout" && request.method === "POST") {
+      return withCors(await handleLogout(request, env));
+    }
+
+    if (path === "/api/v1/admin/tenants" && request.method === "POST") {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      return withCors(await handleCreateTenant(request, env, auth.user));
     }
 
     if (path.startsWith("/media/") && (request.method === "GET" || request.method === "HEAD")) {
@@ -231,9 +271,5 @@ export default {
     }
 
     return withCors(jsonResponse({ error: "not_found", path }, 404));
-  },
-
-  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
-    ctx.waitUntil(flushPendingOutbox(env));
-  },
-};
+  }
+}

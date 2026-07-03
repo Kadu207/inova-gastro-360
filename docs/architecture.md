@@ -61,4 +61,13 @@ Sem dependência circular: API nunca chama HTTP público de outro Worker.
 
 ## Agentes embarcados (runtime)
 
-EMB-01 Order State Guardian … EMB-15 Dead Letter Recovery — implementação Onda 3+.
+Automações determinísticas que rodam por intervalo no node-server do api-gateway
+(`AGENTS_ENABLED=1` default, `AGENTS_INTERVAL_MS=300000`). Código: `apps/workers/api-gateway/src/lib/agents.ts`.
+
+| Agente | Status | Função |
+|--------|--------|--------|
+| EMB-01 Order State Guardian | ✅ implementado (spec 015) | Detecta pedidos presos >30min em `pending`/`preparing` e emite `order.stuck` no outbox (idempotente por janela horária) |
+| EMB-02 Session Sweeper | ✅ implementado (spec 015) | Remove sessões expiradas (higiene de refresh tokens) |
+| EMB-03 Trial Expiry Notifier | ✅ implementado (spec 015) | Assinaturas em trial expirando em ≤3 dias emitem `subscription.trial_expiring` |
+| EMB-04 Outbox Replayer | ✅ implementado (spec 011) | Republica eventos `outbox_events` não publicados (`flushPendingOutbox`) |
+| EMB-05 … EMB-15 | planejados | Reconciliação billing, alertas SLA, dead letter recovery — Onda 3+ |

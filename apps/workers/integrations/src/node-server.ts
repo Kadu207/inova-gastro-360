@@ -7,6 +7,7 @@ function buildEnv(): Env {
     ENVIRONMENT: process.env.ENVIRONMENT ?? "production",
     N8N_WEBHOOK_URL: process.env.N8N_WEBHOOK_URL,
     CHATWOOT_WEBHOOK_URL: process.env.CHATWOOT_WEBHOOK_URL,
+    INTERNAL_SHARED_SECRET: process.env.INTERNAL_SHARED_SECRET,
   };
 }
 

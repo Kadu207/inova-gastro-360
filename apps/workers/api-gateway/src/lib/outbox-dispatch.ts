@@ -12,9 +12,11 @@ export async function dispatchOutboxEvent(env: GatewayEnv, row: OutboxRow): Prom
   if (!env.MESSAGING_SERVICE) return false;
 
   try {
+    const headers: Record<string, string> = { "content-type": "application/json" };
+    if (env.INTERNAL_SHARED_SECRET) headers["x-internal-secret"] = env.INTERNAL_SHARED_SECRET;
     const res = await env.MESSAGING_SERVICE.fetch("http://internal/internal/publish", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers,
       body: JSON.stringify({ type: row.event_type, payload: row.payload }),
     });
     if (!res.ok) {
@@ -30,11 +32,8 @@ export async function dispatchOutboxEvent(env: GatewayEnv, row: OutboxRow): Prom
 
 export function isOutboxFlushAuthorized(request: Request, env: GatewayEnv): boolean {
   const secret = env.OUTBOX_FLUSH_SECRET;
-  if (secret) {
-    return request.headers.get("x-outbox-flush-secret") === secret;
-  }
-  // Produção CF: sem DATABASE_URL local — exige secret via wrangler secret put
-  return Boolean(env.DATABASE_URL);
+  if (!secret) return false;
+  return request.headers.get("x-outbox-flush-secret") === secret;
 }
 
 export async function markOutboxPublished(

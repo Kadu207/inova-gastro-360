@@ -2,9 +2,11 @@ import { describe, it, expect } from "vitest";
 import {
   buildProductImageObjectKey,
   buildPublicObjectUrl,
+  detectImageContentTypeFromBuffer,
   isAllowedImageContentType,
   isPublicCatalogObjectKey,
   parseMediaPath,
+  validateImageBuffer,
   MAX_CATALOG_IMAGE_BYTES,
 } from "./image-policy";
 
@@ -45,5 +47,21 @@ describe("image-policy", () => {
       "inova-gastro-360",
     );
     expect(key).toContain("tenants/");
+  });
+
+  it("detecta JPEG pelos magic bytes", () => {
+    const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00]);
+    expect(detectImageContentTypeFromBuffer(jpeg)).toBe("image/jpeg");
+  });
+
+  it("detecta PNG pelos magic bytes", () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    expect(detectImageContentTypeFromBuffer(png)).toBe("image/png");
+  });
+
+  it("rejeita MIME declarado que não bate com conteúdo", () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    expect(validateImageBuffer(png, "image/jpeg").ok).toBe(false);
+    expect(validateImageBuffer(png, "image/png").ok).toBe(true);
   });
 });

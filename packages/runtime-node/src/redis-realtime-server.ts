@@ -1,6 +1,7 @@
 import http from "node:http";
 import { createClient, type RedisClientType } from "redis";
 import { WebSocketServer, type WebSocket } from "ws";
+import { verifyAccessToken } from "@inova-gastro-360/auth";
 import { resolveBindHost } from "./bind-host.js";
 
 export interface RedisRealtimeServer {
@@ -12,8 +13,12 @@ export async function createRedisRealtimeServer(options: {
   port: number;
   redisUrl: string;
   serviceName?: string;
+  /** Segredo interno exigido no POST /broadcast (quando definido). */
+  internalSecret?: string;
+  /** Segredo JWT para autenticar conexões WebSocket (quando definido). */
+  jwtSecret?: string;
 }): Promise<RedisRealtimeServer> {
-  const { port, redisUrl, serviceName = "realtime-hub" } = options;
+  const { port, redisUrl, serviceName = "realtime-hub", internalSecret, jwtSecret } = options;
   const sockets = new Map<string, Set<WebSocket>>();
 
   const pub: RedisClientType = createClient({ url: redisUrl });
@@ -74,6 +79,11 @@ export async function createRedisRealtimeServer(options: {
     }
 
     if (url.pathname === "/broadcast" && req.method === "POST") {
+      if (internalSecret && req.headers["x-internal-secret"] !== internalSecret) {
+        res.writeHead(403, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "forbidden" }));
+        return;
+      }
       const branchId = url.searchParams.get("branchId") ?? "default";
       const chunks: Buffer[] = [];
       for await (const chunk of req) chunks.push(chunk as Buffer);
@@ -96,9 +106,23 @@ export async function createRedisRealtimeServer(options: {
       return;
     }
     const branchId = url.searchParams.get("branchId") ?? "default";
-    wss.handleUpgrade(req, socket, head, (ws) => {
-      trackSocket(branchId, ws);
-    });
+
+    const authorizeAndTrack = async () => {
+      if (jwtSecret) {
+        const token = url.searchParams.get("token") ?? "";
+        const payload = token ? await verifyAccessToken(token, jwtSecret) : null;
+        if (!payload || !payload.branches.includes(branchId)) {
+          socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+          socket.destroy();
+          return;
+        }
+      }
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        trackSocket(branchId, ws);
+      });
+    };
+
+    void authorizeAndTrack();
   });
 
   const bindHost = resolveBindHost();

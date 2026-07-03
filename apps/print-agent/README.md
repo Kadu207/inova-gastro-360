@@ -8,7 +8,7 @@ Poll de `print_jobs` na API, impressão ESC/POS (cozinha/balcão) e marcação `
 docker compose up -d
 cp apps/workers/api-gateway/.dev.vars.example apps/workers/api-gateway/.dev.vars
 npm run dev:api          # terminal 1 — porta 8792
-export PRINT_AGENT_PASSWORD='InovaGastro360!'
+export PRINT_AGENT_PASSWORD='<senha do admin — mesma do seed (SEED_ADMIN_PASSWORD)>'
 npm run print-agent:dev  # terminal 2 — modo log (PRINTER_TYPE=none)
 ```
 

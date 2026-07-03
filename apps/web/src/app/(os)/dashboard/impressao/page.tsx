@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE, DEMO_BRANCH_ID, getToken } from "@/lib/api";
+import { API_BASE, getActiveBranchId, getToken } from "@/lib/api";
 
 interface PrintJob {
   id: string;
@@ -22,7 +22,7 @@ export default function ImpressaoPage() {
     setLoading(true);
     try {
       const q = new URLSearchParams({
-        branchId: DEMO_BRANCH_ID,
+        branchId: getActiveBranchId(),
         status: "failed",
       });
       const res = await fetch(`${API_BASE}/api/v1/print-jobs?${q}`, {

@@ -156,7 +156,7 @@ npm run deploy:workers
 curl https://inovagastro360-api.inovatitech.com.br/health
 curl -X POST https://inovagastro360-api.inovatitech.com.br/api/v1/auth/login \
   -H "content-type: application/json" \
-  -d "{\"email\":\"admin@inovagastro360.local\",\"password\":\"InovaGastro360!\",\"tenantSlug\":\"demo-burger\"}"
+  -d "{\"email\":\"admin@inovagastro360.local\",\"password\":\"$SEED_ADMIN_PASSWORD\",\"tenantSlug\":\"demo-burger\"}"
 ```
 
 Se login retornar 500 com erro de banco:
@@ -187,7 +187,7 @@ npx wrangler tail inova-gastro-360-api-gateway
 
 ```
 DATABASE_URL=postgresql://inova_gastro:inova_gastro_dev@127.0.0.1:5440/inova_gastro_360
-JWT_SECRET=dev-secret-change-in-production-32chars-min
+JWT_SECRET=<gerar valor forte — ex.: openssl rand -base64 32>
 ```
 
 Hyperdrive **não** é usado em `wrangler dev` local — só o binding em deploy.

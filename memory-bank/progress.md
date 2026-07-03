@@ -39,3 +39,24 @@ Adiado (spec 005)
 - [x] T023 audit_logs em writes catálogo
 - [x] T024 memory-bank + tasks entregues
 - [x] T027 prep R2 (docs + configure-r2-env-vps.sh; cutover CF pendente)
+
+## Spec 015 security-hardening — implementado (branch feat/015-security-hardening)
+- [x] P0: JWT fail-fast, CORS allowlist, rate limit login, OUTBOX_FLUSH_SECRET obrigatório
+- [x] P0: senha demo fora do repo (SEED_ADMIN_PASSWORD / SMOKE_PASSWORD / rotate script)
+- [x] P1: /auth/refresh com rotação + /auth/logout + refresh transparente no web
+- [x] P1: RLS via migration 20260702160000 + withTenant; role inova_gastro_app NOLOGIN
+- [x] P1: INTERNAL_SHARED_SECRET entre workers; WebSocket com JWT + branch membership
+- [x] P2: RBAC (requireRole + roles de gestão no catálogo); onboarding POST /api/v1/admin/tenants
+- [x] P2: billing foundation (subscription_plans/subscriptions + trial 14d no provisioning)
+- [x] Web: branch ativa do usuário logado (getActiveBranchId) no lugar do hardcode demo
+- [x] EMB-01 Order State Guardian + EMB-02 Session Sweeper + EMB-03 Trial Expiry Notifier
+- [x] P2 extra: magic bytes upload, rate limit pedidos guest, withTenant na criação de pedidos
+- [x] Testes auth (refresh/logout/rate limit) + configure-security-env-vps.sh + setup-app-db-role-vps.sh
+- [x] docs/infoproduto/primeiro-post-build-in-public.md
+- [x] Operacional VPS: T050–T052 (configure-security-env, migrate, rotate senha) — 2026-07-03
+- [ ] T053 opcional: `setup-app-db-role-vps.sh` (RLS defense-in-depth com `inova_gastro_app`)
+- [ ] Fix outbox dispatch Node (`duplex` em Service Binding fetch)
+- [ ] PR merge `feat/015-security-hardening` → `master`
+
+## Infoproduto (estratégia D→A→B)
+- [x] docs/infoproduto: estrategia.md, calendario-conteudo.md (12 semanas), ementa-curso.md

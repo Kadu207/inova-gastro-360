@@ -11,6 +11,7 @@ describe("print-agent config", () => {
       PRINT_AGENT_BRANCH_ID: "00000000-0000-4000-8000-000000000002",
       PRINT_AGENT_SECTOR: "cozinha",
       PRINT_AGENT_POLL_MS: "5000",
+      PRINT_AGENT_PASSWORD: "senha-de-teste",
     })
     expect(cfg.apiBase).toBe("http://127.0.0.1:8792")
     expect(cfg.sector).toBe("cozinha")
@@ -51,7 +52,11 @@ describe("print-agent poller", () => {
 
   it("modo none faz log do payload sem enviar bytes", async () => {
     const logs: string[] = []
-    const cfg = loadConfig({ PRINT_AGENT_POLL_MS: "5000", PRINTER_TYPE: "none" })
+    const cfg = loadConfig({
+      PRINT_AGENT_POLL_MS: "5000",
+      PRINTER_TYPE: "none",
+      PRINT_AGENT_PASSWORD: "senha-de-teste",
+    })
     const sink = createPrintSink(cfg.printer)
     const ok = await printJobTicket(
       {
