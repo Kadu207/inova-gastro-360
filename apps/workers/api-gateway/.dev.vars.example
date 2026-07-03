@@ -1,4 +1,11 @@
 # Criado automaticamente no `npm run dev` (scripts/ensure-dev-vars.mjs)
 # Wrangler Hyperdrive local usa localConnectionString em wrangler.jsonc (5440)
 DATABASE_URL=postgresql://inova_gastro:inova_gastro_dev@127.0.0.1:5440/inova_gastro_360?schema=public
-JWT_SECRET=dev-secret-change-in-production-32chars-min
+# Gere segredos fortes (>=32 chars). Ex.: openssl rand -base64 32
+JWT_SECRET=dev-only-secret-please-generate-a-strong-value
+# Obrigatório para autorizar o replay do outbox
+OUTBOX_FLUSH_SECRET=dev-only-outbox-secret-generate-value
+# Compartilhado entre workers para autenticar rotas internas
+INTERNAL_SHARED_SECRET=dev-only-internal-secret-generate-value
+# Origens permitidas em CORS (CSV). Vazio em dev = libera localhost.
+CORS_ALLOWED_ORIGINS=

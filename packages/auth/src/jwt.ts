@@ -47,6 +47,19 @@ export async function verifyAccessToken(
   }
 }
 
+export async function verifyRefreshToken(
+  token: string,
+  secret: string,
+): Promise<{ sub: string } | null> {
+  try {
+    const { payload } = await jwtVerify(token, getSecret(secret));
+    if (payload.type !== "refresh" || !payload.sub) return null;
+    return { sub: String(payload.sub) };
+  } catch {
+    return null;
+  }
+}
+
 export function accessTokenExpiresInSeconds(): number {
   return 15 * 60;
 }

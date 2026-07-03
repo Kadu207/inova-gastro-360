@@ -39,5 +39,5 @@ if echo "$(docker exec inova-gastro-360-api printenv DATABASE_URL 2>/dev/null)" 
   exit 1
 fi
 
-echo "OK — teste login:"
-echo '  curl -s -X POST https://inovagastro360.inovatitech.com.br/api/v1/auth/login -H "content-type: application/json" -d '"'"'{"email":"admin@inovagastro360.local","password":"InovaGastro360!"}'"'"
+echo "OK — teste login (defina a senha via variável):"
+echo '  curl -s -X POST https://inovagastro360.inovatitech.com.br/api/v1/auth/login -H "content-type: application/json" -d "{\"email\":\"admin@inovagastro360.local\",\"password\":\"$SEED_ADMIN_PASSWORD\"}"'

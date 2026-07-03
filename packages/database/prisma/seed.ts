@@ -1,7 +1,22 @@
+import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { prisma } from "../src/index";
 
-const DEMO_PASSWORD = "InovaGastro360!";
+/**
+ * Senha do admin demo. Nunca versionada:
+ * - CI usa SEED_ADMIN_PASSWORD (secret) ou um valor determinístico só de teste.
+ * - Local/produção: definir SEED_ADMIN_PASSWORD; senão gera aleatória e imprime.
+ */
+function resolveDemoPassword(): string {
+  if (process.env.SEED_ADMIN_PASSWORD) return process.env.SEED_ADMIN_PASSWORD;
+  if (process.env.CI) return "ci-seed-password-not-for-prod";
+  const generated = randomBytes(9).toString("base64url");
+  console.log("\n[seed] SEED_ADMIN_PASSWORD não definido — senha gerada (guarde agora):");
+  console.log(`[seed] senha admin demo: ${generated}\n`);
+  return generated;
+}
+
+const DEMO_PASSWORD = resolveDemoPassword();
 
 async function main() {
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12);
@@ -64,6 +79,44 @@ async function main() {
       tenantId: tenant.id,
     },
   });
+
+  const superAdmin = await prisma.user.upsert({
+    where: {
+      tenantId_email: { tenantId: tenant.id, email: "superadmin@inovagastro360.local" },
+    },
+    update: { passwordHash, role: "super_admin" },
+    create: {
+      tenantId: tenant.id,
+      email: "superadmin@inovagastro360.local",
+      name: "Super Admin",
+      passwordHash,
+      role: "super_admin",
+    },
+  });
+
+  await prisma.userBranchAccess.upsert({
+    where: { userId_branchId: { userId: superAdmin.id, branchId: branch.id } },
+    update: {},
+    create: { userId: superAdmin.id, branchId: branch.id, tenantId: tenant.id },
+  });
+
+  const starterPlan = await prisma.subscriptionPlan.upsert({
+    where: { code: "starter" },
+    update: {},
+    create: { code: "starter", name: "Starter", priceCents: 0, maxBranches: 1, maxProducts: 50 },
+  });
+
+  const existingSub = await prisma.subscription.findFirst({ where: { tenantId: tenant.id } });
+  if (!existingSub) {
+    await prisma.subscription.create({
+      data: {
+        tenantId: tenant.id,
+        planId: starterPlan.id,
+        status: "trialing",
+        trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      },
+    });
+  }
 
   const burgers = await prisma.productCategory.upsert({
     where: { id: "00000000-0000-4000-8000-000000000010" },
@@ -144,7 +197,10 @@ async function main() {
 
   console.log("Seed OK — tenant:", tenant.slug);
   console.log("Branch ID:", branch.id);
-  console.log("Login: admin@inovagastro360.local /", DEMO_PASSWORD);
+  console.log("Usuários: admin@inovagastro360.local (admin_cliente), superadmin@inovagastro360.local (super_admin)");
+  if (!process.env.SEED_ADMIN_PASSWORD && !process.env.CI) {
+    console.log("(senha exibida acima — defina SEED_ADMIN_PASSWORD para fixá-la)");
+  }
 }
 
 main()

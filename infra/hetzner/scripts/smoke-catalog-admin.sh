@@ -7,7 +7,7 @@ BASE="${SMOKE_BASE:-https://inovagastro360.inovatitech.com.br}"
 LOCAL_API="${SMOKE_LOCAL_API:-http://127.0.0.1:8792}"
 BRANCH_ID="${SMOKE_BRANCH_ID:-00000000-0000-4000-8000-000000000002}"
 EMAIL="${SMOKE_EMAIL:-admin@inovagastro360.local}"
-PASSWORD="${SMOKE_PASSWORD:-InovaGastro360!}"
+PASSWORD="${SMOKE_PASSWORD:?defina SMOKE_PASSWORD (não versionar senha)}"
 
 echo "==> Smoke catálogo @ $BASE"
 

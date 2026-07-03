@@ -2,6 +2,7 @@ import { createServiceFetcher, serveFetchWorker } from "@inova-gastro-360/runtim
 import worker from "./index";
 import type { Env } from "./index";
 import { flushPendingOutbox } from "./lib/outbox-replay";
+import { runOrderStateGuardian, runSessionSweeper, runTrialExpiryNotifier } from "./lib/agents";
 
 function buildEnv(): Env {
   const messagingUrl = process.env.MESSAGING_URL ?? "http://127.0.0.1:8789";
@@ -11,6 +12,8 @@ function buildEnv(): Env {
     DATABASE_SSL_INSECURE: process.env.DATABASE_SSL_INSECURE,
     JWT_SECRET: process.env.JWT_SECRET,
     OUTBOX_FLUSH_SECRET: process.env.OUTBOX_FLUSH_SECRET,
+    INTERNAL_SHARED_SECRET: process.env.INTERNAL_SHARED_SECRET,
+    CORS_ALLOWED_ORIGINS: process.env.CORS_ALLOWED_ORIGINS,
     MESSAGING_SERVICE: createServiceFetcher(messagingUrl),
     STORAGE_PROVIDER: process.env.STORAGE_PROVIDER as Env["STORAGE_PROVIDER"],
     S3_ENDPOINT: process.env.S3_ENDPOINT,
@@ -35,4 +38,21 @@ if (flushMs > 0) {
       }
     });
   }, flushMs);
+}
+
+// Agentes runtime embarcados (EMB). Desligar com AGENTS_ENABLED=0.
+const agentsEnabled = process.env.AGENTS_ENABLED !== "0";
+const agentsIntervalMs = Number.parseInt(process.env.AGENTS_INTERVAL_MS ?? "300000", 10);
+if (agentsEnabled && agentsIntervalMs > 0) {
+  setInterval(() => {
+    void runOrderStateGuardian(env).then((r) => {
+      if (r.flagged > 0) console.log(`[EMB-01] order-state-guardian flagged=${r.flagged}`);
+    });
+    void runSessionSweeper(env).then((r) => {
+      if (r.removed > 0) console.log(`[EMB-02] session-sweeper removed=${r.removed}`);
+    });
+    void runTrialExpiryNotifier(env).then((r) => {
+      if (r.notified > 0) console.log(`[EMB-03] trial-expiry-notifier notified=${r.notified}`);
+    });
+  }, agentsIntervalMs);
 }

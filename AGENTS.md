@@ -49,7 +49,19 @@ Matriz completa: `docs/cursor-tooling.md`
 Atualizar `memory-bank/activeContext.md` e `memory-bank/progress.md`
 
 ## Agentes runtime embarcados (pós go-live)
-EMB-01 a EMB-15 — ver docs/architecture.md
+
+Automações determinísticas no `node-server` do api-gateway (`AGENTS_ENABLED=1`, intervalo `AGENTS_INTERVAL_MS=300000`). Código: `apps/workers/api-gateway/src/lib/agents.ts`.
+
+| Agente | Função |
+|--------|--------|
+| **EMB-01** Order State Guardian | Pedidos presos >30min → evento `order.stuck` |
+| **EMB-02** Session Sweeper | Limpa sessões expiradas |
+| **EMB-03** Trial Expiry Notifier | Trial expirando em ≤3 dias → `subscription.trial_expiring` |
+| **EMB-04** Outbox Replayer | `flushPendingOutbox` (intervalo `OUTBOX_FLUSH_INTERVAL_MS`) |
+
+Desligar agentes: `AGENTS_ENABLED=0` no `.env.production`.
+
+Documentação completa: `docs/architecture.md` (EMB-05…15 planejados).
 
 ## Feature ativa (Spec Kit)
 
@@ -58,7 +70,7 @@ EMB-01 a EMB-15 — ver docs/architecture.md
 ## Feature ativa (Spec Kit)
 
 <!-- speckit:active-feature:start -->
-- **Diretório:** `specs/014-catalog-admin`
+- **Diretório:** `specs/015-security-hardening`
 - **Spec:** `spec.md` | **Plan:** `plan.md` | **Tasks:** `tasks.md`
-- **Atualizado:** 2026-06-29
+- **Atualizado:** 2026-07-02
 <!-- speckit:active-feature:end -->

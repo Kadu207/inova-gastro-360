@@ -30,7 +30,7 @@ curl -I https://inovagastro360.inovatitech.com.br/login
 # title deve ser "Inova Gastro 360", não Excellence Dental
 ```
 
-Login demo: `admin@inovagastro360.local` / `InovaGastro360!` / tenant `demo-burger`
+Login demo: `admin@inovagastro360.local` / senha definida em `SEED_ADMIN_PASSWORD` / tenant `demo-burger`
 
 ## Alternativa: token com DNS Edit
 

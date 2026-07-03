@@ -29,6 +29,14 @@ export const CreateTenantSchema = z.object({
     .min(2)
     .max(100)
     .regex(/^[a-z0-9-]+$/, "Slug deve conter apenas letras minúsculas, números e hífens"),
+  tradeName: z.string().min(2).max(255).optional(),
+  branchName: z.string().min(2).max(255).default("Filial Principal"),
+  admin: z.object({
+    name: z.string().min(2).max(255),
+    email: z.string().email(),
+    password: z.string().min(8).max(200),
+  }),
+  planCode: z.string().min(2).max(50).default("starter"),
 });
 
 export type CreateTenantInput = z.infer<typeof CreateTenantSchema>;

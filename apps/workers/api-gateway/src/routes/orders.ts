@@ -1,8 +1,9 @@
 import { z } from "zod";
 import type { JSONValue } from "postgres";
-import { jsonResponse } from "../lib";
-import { getSql } from "../lib/db";
+import { jsonResponse, parseJsonBody, clientIp } from "../lib";
+import { getSql, withTenant } from "../lib/db";
 import { publishOutboxEvent, EVENT_TYPES } from "../lib/outbox";
+import { hitRateLimit } from "../lib/rate-limit";
 import type { GatewayEnv } from "../types/env";
 import type { JwtPayload } from "@inova-gastro-360/auth";
 
@@ -47,16 +48,6 @@ type OrderSummary = {
   status: string;
   total_cents: number;
 };
-
-async function parseJsonBody(request: Request): Promise<unknown | null> {
-  try {
-    const text = await request.text();
-    if (!text.trim()) return null;
-    return JSON.parse(text) as unknown;
-  } catch {
-    return null;
-  }
-}
 
 export function parseIdempotencyKey(
   request: Request,
@@ -169,6 +160,23 @@ export async function handleCreateOrder(request: Request, env: GatewayEnv, user?
   }
 
   const { branchId, channel, customerName, customerPhone, notes, items } = parsed.data;
+
+  if (!user) {
+    const guestRl = hitRateLimit(`order-guest:${clientIp(request)}:${branchId}`, Date.now(), 20);
+    if (!guestRl.allowed) {
+      return new Response(
+        JSON.stringify({ error: "too_many_requests", message: "Limite de pedidos atingido. Tente mais tarde." }),
+        {
+          status: 429,
+          headers: {
+            "content-type": "application/json; charset=utf-8",
+            "retry-after": String(guestRl.retryAfterSeconds),
+          },
+        },
+      );
+    }
+  }
+
   const sql = getSql(env);
 
   try {
@@ -221,22 +229,48 @@ export async function handleCreateOrder(request: Request, env: GatewayEnv, user?
     let order: { id: string; order_number: number; status: string; total_cents: number };
 
     try {
-      const [inserted] = await sql<{ id: string; order_number: number; status: string; total_cents: number }[]>`
-        WITH next_num AS (
-          SELECT COALESCE(MAX(order_number), 1000) + 1 AS num
-          FROM orders WHERE branch_id = ${branchId}::uuid
-        )
-        INSERT INTO orders (
-          id, tenant_id, branch_id, order_number, channel, status,
-          customer_name, customer_phone, notes, total_cents, idempotency_key, updated_at
-        )
-        SELECT gen_random_uuid(), ${tenantId}::uuid, ${branchId}::uuid, next_num.num, ${channel}, 'pending',
-               ${customerName ?? null}, ${customerPhone ?? null}, ${notes ?? null}, ${totalCents},
-               ${idempotency.key}, NOW()
-        FROM next_num
-        RETURNING id, order_number, status, total_cents
-      `;
-      order = inserted;
+      order = await withTenant(sql, tenantId, async (tx) => {
+        const [inserted] = await tx<{ id: string; order_number: number; status: string; total_cents: number }[]>`
+          WITH next_num AS (
+            SELECT COALESCE(MAX(order_number), 1000) + 1 AS num
+            FROM orders WHERE branch_id = ${branchId}::uuid
+          )
+          INSERT INTO orders (
+            id, tenant_id, branch_id, order_number, channel, status,
+            customer_name, customer_phone, notes, total_cents, idempotency_key, updated_at
+          )
+          SELECT gen_random_uuid(), ${tenantId}::uuid, ${branchId}::uuid, next_num.num, ${channel}, 'pending',
+                 ${customerName ?? null}, ${customerPhone ?? null}, ${notes ?? null}, ${totalCents},
+                 ${idempotency.key}, NOW()
+          FROM next_num
+          RETURNING id, order_number, status, total_cents
+        `;
+
+        for (const item of lineItems) {
+          await tx`
+            INSERT INTO order_items (id, tenant_id, order_id, product_id, quantity, unit_cents, total_cents, notes)
+            VALUES (gen_random_uuid(), ${tenantId}::uuid, ${inserted.id}::uuid, ${item.productId}::uuid,
+                    ${item.quantity}, ${item.unitCents}, ${item.totalCents}, ${item.notes ?? null})
+          `;
+        }
+
+        await tx`
+          INSERT INTO order_status_history (id, tenant_id, order_id, status, changed_by)
+          VALUES (gen_random_uuid(), ${tenantId}::uuid, ${inserted.id}::uuid, 'pending', ${user?.sub ?? null}::uuid)
+        `;
+
+        await tx`
+          INSERT INTO print_jobs (id, tenant_id, branch_id, order_id, sector, status, payload, updated_at)
+          VALUES (
+            gen_random_uuid(), ${tenantId}::uuid, ${branchId}::uuid, ${inserted.id}::uuid,
+            'cozinha', 'pending',
+            ${tx.json({ orderNumber: inserted.order_number, items: lineItems } as JSONValue)},
+            NOW()
+          )
+        `;
+
+        return inserted;
+      });
     } catch (err) {
       const pgCode = (err as { code?: string }).code;
       if (pgCode === "23505" && idempotency.key) {
@@ -246,19 +280,6 @@ export async function handleCreateOrder(request: Request, env: GatewayEnv, user?
       throw err;
     }
 
-    for (const item of lineItems) {
-      await sql`
-        INSERT INTO order_items (id, tenant_id, order_id, product_id, quantity, unit_cents, total_cents, notes)
-        VALUES (gen_random_uuid(), ${tenantId}::uuid, ${order.id}::uuid, ${item.productId}::uuid,
-                ${item.quantity}, ${item.unitCents}, ${item.totalCents}, ${item.notes ?? null})
-      `;
-    }
-
-    await sql`
-      INSERT INTO order_status_history (id, tenant_id, order_id, status, changed_by)
-      VALUES (gen_random_uuid(), ${tenantId}::uuid, ${order.id}::uuid, 'pending', ${user?.sub ?? null}::uuid)
-    `;
-
     await publishOutboxEvent(
       env,
       tenantId,
@@ -266,16 +287,6 @@ export async function handleCreateOrder(request: Request, env: GatewayEnv, user?
       { orderId: order.id, branchId, channel, totalCents, orderNumber: order.order_number },
       `order-created-${order.id}`,
     );
-
-    await sql`
-      INSERT INTO print_jobs (id, tenant_id, branch_id, order_id, sector, status, payload, updated_at)
-      VALUES (
-        gen_random_uuid(), ${tenantId}::uuid, ${branchId}::uuid, ${order.id}::uuid,
-        'cozinha', 'pending',
-        ${sql.json({ orderNumber: order.order_number, items: lineItems } as JSONValue)},
-        NOW()
-      )
-    `;
 
     await publishOutboxEvent(
       env,

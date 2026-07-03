@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import CatalogProductThumb from "@/components/catalog/CatalogProductThumb";
 import ImageUploader from "@/components/catalog/ImageUploader";
-import { API_BASE, DEMO_BRANCH_ID, formatBRL, getToken } from "@/lib/api";
+import { API_BASE, formatBRL, getActiveBranchId, getToken } from "@/lib/api";
 
 interface Category {
   id: string;
@@ -24,7 +24,8 @@ interface Product {
   is_available: boolean;
 }
 
-const branchBase = `${API_BASE}/api/v1/branches/${DEMO_BRANCH_ID}/catalog/admin`;
+// Avaliado no load do módulo no browser (após login, com activeBranchId no storage)
+const branchBase = `${API_BASE}/api/v1/branches/${getActiveBranchId()}/catalog/admin`;
 const categoriesUrl = `${branchBase}/categories`;
 const productsUrl = `${branchBase}/products`;
 

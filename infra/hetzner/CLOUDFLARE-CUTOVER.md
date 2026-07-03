@@ -129,7 +129,7 @@ echo "HTTPS:" $(curl -s https://inovagastro360.inovatitech.com.br/login | grep -
 
 curl -sS -o /dev/null -w "POST HTTPS: %{http_code}\n" -X POST https://inovagastro360.inovatitech.com.br/api/v1/auth/login \
   -H "content-type: application/json" \
-  -d '{"email":"admin@inovagastro360.local","password":"InovaGastro360!","tenantSlug":"demo-burger"}'
+  -d "{\"email\":\"admin@inovagastro360.local\",\"password\":\"$SEED_ADMIN_PASSWORD\",\"tenantSlug\":\"demo-burger\"}"
 ```
 
 Esperado: mesmo chunk nos dois (`page-6958148aa0624d11.js`) e **POST HTTPS: 200**.
@@ -142,7 +142,7 @@ cd $env:TEMP
   Select-String -Pattern 'page-[a-f0-9]+\.js' -AllMatches |
   ForEach-Object { $_.Matches.Value } | Select-Object -First 1
 
-'{"email":"admin@inovagastro360.local","password":"InovaGastro360!","tenantSlug":"demo-burger"}' |
+"{`"email`":`"admin@inovagastro360.local`",`"password`":`"$env:SEED_ADMIN_PASSWORD`",`"tenantSlug`":`"demo-burger`"}" |
   Set-Content -Encoding utf8 body.json
 curl.exe -sS -w "`nHTTP:%{http_code}`n" -X POST "https://inovagastro360.inovatitech.com.br/api/v1/auth/login" `
   -H "content-type: application/json" --data-binary "@body.json"
@@ -150,7 +150,7 @@ curl.exe -sS -w "`nHTTP:%{http_code}`n" -X POST "https://inovagastro360.inovatit
 
 **Atenção:** no PowerShell, `curl` é alias de `Invoke-WebRequest`. Use sempre **`curl.exe`**.
 
-Login demo: `admin@inovagastro360.local` / `InovaGastro360!` / tenant `demo-burger`
+Login demo: `admin@inovagastro360.local` / senha definida em `SEED_ADMIN_PASSWORD` / tenant `demo-burger`
 
 ## Não fazer durante cutover VPS
 

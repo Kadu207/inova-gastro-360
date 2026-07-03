@@ -48,7 +48,7 @@ export function loadPrinterConfig(env: NodeJS.ProcessEnv = process.env): Printer
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): PrintAgentConfig {
   const apiBase = env.PRINT_AGENT_API_BASE ?? "http://127.0.0.1:8792"
   const email = env.PRINT_AGENT_EMAIL ?? "admin@inovagastro360.local"
-  const password = env.PRINT_AGENT_PASSWORD ?? "InovaGastro360!"
+  const password = env.PRINT_AGENT_PASSWORD ?? ""
   const tenantSlug = env.PRINT_AGENT_TENANT_SLUG ?? "demo-burger"
   const branchId = env.PRINT_AGENT_BRANCH_ID ?? "00000000-0000-4000-8000-000000000002"
   const sector = env.PRINT_AGENT_SECTOR ?? "cozinha"
@@ -61,6 +61,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PrintAgentConf
   }
   if (!Number.isFinite(maxRetries) || maxRetries < 1) {
     throw new Error("PRINT_AGENT_MAX_RETRIES inválido (mínimo 1)")
+  }
+  if (!dryRun && !password) {
+    throw new Error("PRINT_AGENT_PASSWORD é obrigatório (defina a variável de ambiente)")
   }
 
   return {

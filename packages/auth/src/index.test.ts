@@ -1,12 +1,41 @@
 import { describe, it, expect } from "vitest";
 import { hashPassword, verifyPassword } from "./password";
-import { signAccessToken, verifyAccessToken, accessTokenExpiresInSeconds } from "./jwt";
+import {
+  signAccessToken,
+  signRefreshToken,
+  verifyAccessToken,
+  verifyRefreshToken,
+  accessTokenExpiresInSeconds,
+} from "./jwt";
 
 describe("auth password", () => {
   it("hashes and verifies", async () => {
-    const hash = await hashPassword("InovaGastro360!");
-    expect(await verifyPassword("InovaGastro360!", hash)).toBe(true);
+    const hash = await hashPassword("uma-senha-de-teste-123");
+    expect(await verifyPassword("uma-senha-de-teste-123", hash)).toBe(true);
     expect(await verifyPassword("wrong", hash)).toBe(false);
+  });
+});
+
+describe("refresh token", () => {
+  const secret = "test-secret-min-32-characters-long";
+
+  it("assina e valida refresh token", async () => {
+    const token = await signRefreshToken("user-1", secret);
+    const decoded = await verifyRefreshToken(token, secret);
+    expect(decoded?.sub).toBe("user-1");
+  });
+
+  it("rejeita access token no fluxo de refresh", async () => {
+    const access = await signAccessToken(
+      { sub: "u", tid: "t", email: "a@b.com", role: "admin_cliente", branches: [] },
+      secret,
+    );
+    expect(await verifyRefreshToken(access, secret)).toBeNull();
+  });
+
+  it("rejeita refresh token com secret errado", async () => {
+    const token = await signRefreshToken("user-1", secret);
+    expect(await verifyRefreshToken(token, "outro-secret-com-32-caracteres!!")).toBeNull();
   });
 });
 

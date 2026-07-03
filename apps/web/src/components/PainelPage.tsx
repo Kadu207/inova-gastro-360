@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE, DEMO_BRANCH_ID, formatBRL, getToken, realtimeWsUrl } from "@/lib/api";
+import { API_BASE, formatBRL, getActiveBranchId, getToken, realtimeWsUrl } from "@/lib/api";
 import {
   buildOrdersQueryParams,
   CHANNEL_LABELS,
@@ -76,7 +76,7 @@ export default function PainelPage({
     setLoading(true);
     try {
       const qs = buildOrdersQueryParams({
-        branchId: DEMO_BRANCH_ID,
+        branchId: getActiveBranchId(),
         page,
         limit: PAGE_LIMIT,
         status: filter || undefined,
@@ -100,7 +100,7 @@ export default function PainelPage({
 
     let ws: WebSocket | null = null;
     try {
-      ws = new WebSocket(realtimeWsUrl(DEMO_BRANCH_ID));
+      ws = new WebSocket(realtimeWsUrl(getActiveBranchId()));
       ws.onmessage = () => load();
     } catch {
       /* realtime offline — polling continua */

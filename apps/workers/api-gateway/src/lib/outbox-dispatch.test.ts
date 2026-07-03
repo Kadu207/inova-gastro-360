@@ -42,12 +42,12 @@ describe("dispatchOutboxEvent", () => {
 });
 
 describe("isOutboxFlushAuthorized", () => {
-  it("permite flush em dev local com DATABASE_URL", () => {
+  it("nega flush sem secret configurado (mesmo com DATABASE_URL)", () => {
     const env = { ENVIRONMENT: "production", DATABASE_URL: "postgresql://local" } as GatewayEnv;
-    expect(isOutboxFlushAuthorized(new Request("http://x/internal/outbox/flush"), env)).toBe(true);
+    expect(isOutboxFlushAuthorized(new Request("http://x/internal/outbox/flush"), env)).toBe(false);
   });
 
-  it("exige secret em produção sem DATABASE_URL", () => {
+  it("exige header com secret correto", () => {
     const env = { ENVIRONMENT: "production", OUTBOX_FLUSH_SECRET: "s3cret" } as GatewayEnv;
     const noHeader = new Request("http://x/internal/outbox/flush", { method: "POST" });
     expect(isOutboxFlushAuthorized(noHeader, env)).toBe(false);

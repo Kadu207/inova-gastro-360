@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import CatalogProductThumb from "@/components/catalog/CatalogProductThumb";
-import { API_BASE, DEMO_BRANCH_ID, formatBRL, getToken } from "@/lib/api";
+import { API_BASE, formatBRL, getActiveBranchId, getToken } from "@/lib/api";
 import {
   addToCartItem,
   cartTotalCents,
@@ -36,7 +36,7 @@ export default function CardapioPage() {
   const total = cartTotalCents(cart);
 
   useEffect(() => {
-    const base = `${API_BASE}/api/v1/branches/${DEMO_BRANCH_ID}/catalog`;
+    const base = `${API_BASE}/api/v1/branches/${getActiveBranchId()}/catalog`;
     Promise.all([
       fetch(`${base}/categories`).then((r) => r.json()),
       fetch(`${base}/products`).then((r) => r.json()),
@@ -72,7 +72,7 @@ export default function CardapioPage() {
         method: "POST",
         headers,
         body: JSON.stringify({
-          branchId: DEMO_BRANCH_ID,
+          branchId: getActiveBranchId(),
           channel: channel === "delivery" ? "delivery" : "web",
           customerName: token ? undefined : customerName.trim(),
           customerPhone: token ? undefined : customerPhone.trim(),

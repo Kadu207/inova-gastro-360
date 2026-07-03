@@ -1,25 +1,15 @@
 import type { JwtPayload } from "@inova-gastro-360/auth";
 import { PresignInputSchema } from "@inova-gastro-360/validation";
-import { jsonResponse } from "../lib";
+import { jsonResponse, parseJsonBody } from "../lib";
 import { writeCatalogAuditLog } from "../lib/audit-log";
 import { assertCatalogBranchAccess } from "../lib/catalog-access";
 import { getSql } from "../lib/db";
 import {
-  isAllowedImageContentType,
   MAX_CATALOG_IMAGE_BYTES,
+  validateImageBuffer,
 } from "../lib/storage/image-policy";
 import { presignProductImageUpload, uploadProductImage } from "../lib/storage/s3-client";
 import type { GatewayEnv } from "../types/env";
-
-async function parseJsonBody(request: Request): Promise<unknown | null> {
-  try {
-    const text = await request.text();
-    if (!text.trim()) return null;
-    return JSON.parse(text) as unknown;
-  } catch {
-    return null;
-  }
-}
 
 async function assertProductAccess(
   env: GatewayEnv,
@@ -119,12 +109,17 @@ export async function handleAdminUploadProductImage(
     return jsonResponse({ error: "invalid_image", message: "Arquivo acima de 5MB" }, 400);
   }
 
-  const contentType = (file as File).type || "application/octet-stream";
-  if (!isAllowedImageContentType(contentType)) {
-    return jsonResponse({ error: "invalid_image", message: "MIME não permitido" }, 400);
-  }
-
+  const declaredType = (file as File).type || "application/octet-stream";
   const buffer = new Uint8Array(await file.arrayBuffer());
+  const imageCheck = validateImageBuffer(buffer, declaredType);
+  if (!imageCheck.ok) {
+    return jsonResponse(
+      { error: "invalid_image", message: "Arquivo não é uma imagem válida (jpeg/png/webp)" },
+      400,
+    );
+  }
+  const contentType = imageCheck.contentType;
+
   const uploaded = await uploadProductImage(env, {
     tenantId: access.tenantId,
     branchId,

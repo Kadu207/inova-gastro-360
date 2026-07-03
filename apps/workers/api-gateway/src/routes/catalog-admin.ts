@@ -5,7 +5,7 @@ import {
   ProductInputSchema,
   ProductPatchSchema,
 } from "@inova-gastro-360/validation";
-import { jsonResponse } from "../lib";
+import { jsonResponse, parseJsonBody } from "../lib";
 import { writeCatalogAuditLog } from "../lib/audit-log";
 import { assertCatalogBranchAccess } from "../lib/catalog-access";
 import { getSql } from "../lib/db";
@@ -21,16 +21,6 @@ type ProductRow = {
   category_name: string;
   is_available: boolean;
 };
-
-async function parseJsonBody(request: Request): Promise<unknown | null> {
-  try {
-    const text = await request.text();
-    if (!text.trim()) return null;
-    return JSON.parse(text) as unknown;
-  } catch {
-    return null;
-  }
-}
 
 export async function handleAdminListCategories(
   request: Request,

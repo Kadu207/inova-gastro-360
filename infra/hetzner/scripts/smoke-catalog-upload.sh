@@ -7,7 +7,8 @@ BASE="${SMOKE_BASE:-https://inovagastro360.inovatitech.com.br}"
 LOCAL_API="${SMOKE_LOCAL_API:-http://127.0.0.1:8792}"
 BRANCH_ID="${SMOKE_BRANCH_ID:-00000000-0000-4000-8000-000000000002}"
 EMAIL="${SMOKE_EMAIL:-admin@inovagastro360.local}"
-PASSWORD="${SMOKE_PASSWORD:-InovaGastro360!}"
+TENANT_SLUG="${SMOKE_TENANT_SLUG:-demo-burger}"
+PASSWORD="${SMOKE_PASSWORD:?defina SMOKE_PASSWORD (não versionar senha)}"
 PRODUCT_ID="${SMOKE_PRODUCT_ID:-}"
 
 echo "==> Smoke upload foto @ $BASE"
@@ -15,7 +16,7 @@ echo "==> Smoke upload foto @ $BASE"
 login_tmp="$(mktemp)"
 login_code=$(curl -sS -o "$login_tmp" -w "%{http_code}" -X POST "$BASE/api/v1/auth/login" \
   -H "content-type: application/json" \
-  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}") || login_code="000"
+  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\",\"tenantSlug\":\"$TENANT_SLUG\"}") || login_code="000"
 
 if [[ "$login_code" != "200" ]]; then
   echo "    Login falhou: HTTP $login_code"

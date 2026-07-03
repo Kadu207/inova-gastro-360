@@ -4,6 +4,12 @@ export interface Env {
   ENVIRONMENT?: string;
   N8N_WEBHOOK_URL?: string;
   CHATWOOT_WEBHOOK_URL?: string;
+  INTERNAL_SHARED_SECRET?: string;
+}
+
+function internalAuthorized(request: Request, env: Env): boolean {
+  if (!env.INTERNAL_SHARED_SECRET) return true;
+  return request.headers.get("x-internal-secret") === env.INTERNAL_SHARED_SECRET;
 }
 
 async function forwardWebhook(url: string | undefined, body: unknown): Promise<void> {
@@ -24,6 +30,7 @@ export default {
     }
 
     if (url.pathname === "/internal/notify" && request.method === "POST") {
+      if (!internalAuthorized(request, env)) return jsonResponse({ error: "forbidden" }, 403);
       const body = (await request.json()) as { type: string; payload: unknown };
       ctx.waitUntil(
         Promise.all([

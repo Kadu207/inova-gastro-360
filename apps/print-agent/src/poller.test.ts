@@ -44,6 +44,7 @@ describe("processPendingJobs — retry (T014)", () => {
       PRINT_AGENT_MAX_RETRIES: "2",
       PRINTER_TYPE: "file",
       PRINTER_DEVICE: "/invalid/no-such-device",
+      PRINT_AGENT_PASSWORD: "senha-de-teste",
     });
     const client = mockClient([sampleJob]);
     const sink = createPrintSink(cfg.printer);
@@ -61,7 +62,11 @@ describe("processPendingJobs — retry (T014)", () => {
   });
 
   it("marca printed em sucesso (modo none)", async () => {
-    const cfg = loadConfig({ PRINT_AGENT_POLL_MS: "5000", PRINTER_TYPE: "none" });
+    const cfg = loadConfig({
+      PRINT_AGENT_POLL_MS: "5000",
+      PRINTER_TYPE: "none",
+      PRINT_AGENT_PASSWORD: "senha-de-teste",
+    });
     const client = mockClient([sampleJob]);
     const sink = createPrintSink(cfg.printer);
     const failures = new Map<string, number>();

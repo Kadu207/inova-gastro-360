@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { jsonResponse } from "../lib";
+import { jsonResponse, parseJsonBody } from "../lib";
 import { getSql } from "../lib/db";
 import type { GatewayEnv } from "../types/env";
 import type { JwtPayload } from "@inova-gastro-360/auth";
@@ -9,16 +9,6 @@ const UpdatePrintJobStatusSchema = z.object({
 });
 
 const VALID_LIST_STATUSES = ["pending", "printed", "failed"] as const;
-
-async function parseJsonBody(request: Request): Promise<unknown | null> {
-  try {
-    const text = await request.text();
-    if (!text.trim()) return null;
-    return JSON.parse(text) as unknown;
-  } catch {
-    return null;
-  }
-}
 
 export async function handleListPrintJobs(
   request: Request,
