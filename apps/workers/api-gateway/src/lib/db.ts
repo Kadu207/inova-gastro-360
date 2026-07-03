@@ -53,6 +53,17 @@ export async function withTenant<T>(
   }) as Promise<T>;
 }
 
+/** Define contexto RLS na sessão atual (handlers autenticados com inova_gastro_app). */
+export async function setTenantContext(
+  sql: ReturnType<typeof getSql>,
+  tenantId: string,
+): Promise<void> {
+  if (!UUID_RE.test(tenantId)) {
+    throw new Error("tenantId inválido para contexto RLS");
+  }
+  await sql`SELECT set_config('app.current_tenant_id', ${tenantId}, true)`;
+}
+
 /**
  * Abre conexão, executa `fn` com contexto RLS do tenant e encerra a conexão.
  * Preferir em handlers que fazem apenas operações tenant-scoped.

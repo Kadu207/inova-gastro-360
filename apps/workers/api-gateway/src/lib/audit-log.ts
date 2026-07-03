@@ -1,6 +1,6 @@
 import type { JSONValue } from "postgres";
 import type { GatewayEnv } from "../types/env";
-import { getSql, hasDatabase } from "./db";
+import { getSql, hasDatabase, setTenantContext } from "./db";
 
 export type CatalogAuditAction =
   | "catalog.category.create"
@@ -26,6 +26,7 @@ export async function writeCatalogAuditLog(
 
   const sql = getSql(env);
   try {
+    await setTenantContext(sql, params.tenantId);
     await sql`
       INSERT INTO audit_logs (id, tenant_id, user_id, action, resource, metadata)
       VALUES (

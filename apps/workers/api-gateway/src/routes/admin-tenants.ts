@@ -51,6 +51,8 @@ export async function handleCreateTenant(
         RETURNING id
       `;
 
+      await tx`SELECT set_config('app.current_tenant_id', ${tenant.id}, true)`;
+
       const [company] = await tx<{ id: string }[]>`
         INSERT INTO companies (id, tenant_id, trade_name, legal_name, updated_at)
         VALUES (gen_random_uuid(), ${tenant.id}::uuid, ${tradeName ?? name}, ${tradeName ?? name}, NOW())

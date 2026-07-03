@@ -10,7 +10,7 @@ import {
   type AuthUser,
 } from "@inova-gastro-360/auth";
 import { jsonResponse, parseJsonBody, clientIp } from "../lib";
-import { getSql } from "../lib/db";
+import { getSql, withTenant } from "../lib/db";
 import { getJwtSecret } from "../lib/config";
 import { hitRateLimit, clearRateLimit } from "../lib/rate-limit";
 
@@ -105,11 +105,11 @@ export async function handleLogin(request: Request, env: GatewayEnv): Promise<Re
     const users = tenantId
       ? await sql<DbUserRow[]>`
           SELECT id, tenant_id, email, name, role, password_hash, is_active
-          FROM users WHERE email = ${email} AND tenant_id = ${tenantId}::uuid LIMIT 1
+          FROM app_find_users_for_login(${email}, ${tenantId}::uuid)
         `
       : await sql<DbUserRow[]>`
           SELECT id, tenant_id, email, name, role, password_hash, is_active
-          FROM users WHERE email = ${email} ORDER BY created_at ASC LIMIT 2
+          FROM app_find_users_for_login(${email}, NULL)
         `;
 
     if (!tenantId && users.length > 1) {
@@ -128,7 +128,7 @@ export async function handleLogin(request: Request, env: GatewayEnv): Promise<Re
     if (!valid) return jsonResponse({ error: "invalid_credentials" }, 401);
 
     clearRateLimit(rlKey);
-    const session = await issueSession(sql, user, jwtSecret);
+    const session = await withTenant(sql, user.tenant_id, (tx) => issueSession(tx, user, jwtSecret));
     return jsonResponse(session);
   } catch (err) {
     console.error("login_error", err);
@@ -149,32 +149,33 @@ export async function handleRefresh(request: Request, env: GatewayEnv): Promise<
 
   const sql = getSql(env);
   try {
-    const sessions = await sql<{ id: string; refresh_token_hash: string }[]>`
-      SELECT id, refresh_token_hash FROM sessions
-      WHERE user_id = ${decoded.sub}::uuid AND expires_at > NOW()
-      ORDER BY created_at DESC
-    `;
-
-    let matched: string | undefined;
-    for (const s of sessions) {
-      if (await verifyPassword(token, s.refresh_token_hash)) {
-        matched = s.id;
-        break;
-      }
-    }
-    if (!matched) return jsonResponse({ error: "unauthorized" }, 401);
-
-    const rows = await sql<DbUserRow[]>`
+    const users = await sql<DbUserRow[]>`
       SELECT id, tenant_id, email, name, role, password_hash, is_active
-      FROM users WHERE id = ${decoded.sub}::uuid AND is_active = true LIMIT 1
+      FROM app_find_active_user_by_id(${decoded.sub}::uuid)
     `;
-    const user = rows[0];
+    const user = users[0];
     if (!user) return jsonResponse({ error: "unauthorized" }, 401);
 
-    // Rotação: remove a sessão usada antes de emitir uma nova.
-    await sql`DELETE FROM sessions WHERE id = ${matched}::uuid`;
-    const session = await issueSession(sql, user, jwtSecret);
-    return jsonResponse(session);
+    return await withTenant(sql, user.tenant_id, async (tx) => {
+      const sessions = await tx<{ id: string; refresh_token_hash: string }[]>`
+        SELECT id, refresh_token_hash FROM sessions
+        WHERE user_id = ${decoded.sub}::uuid AND expires_at > NOW()
+        ORDER BY created_at DESC
+      `;
+
+      let matched: string | undefined;
+      for (const s of sessions) {
+        if (await verifyPassword(token, s.refresh_token_hash)) {
+          matched = s.id;
+          break;
+        }
+      }
+      if (!matched) return jsonResponse({ error: "unauthorized" }, 401);
+
+      await tx`DELETE FROM sessions WHERE id = ${matched}::uuid`;
+      const session = await issueSession(tx, user, jwtSecret);
+      return jsonResponse(session);
+    });
   } catch (err) {
     console.error("refresh_error", err);
     return jsonResponse({ error: "internal_error" }, 500);
@@ -194,15 +195,23 @@ export async function handleLogout(request: Request, env: GatewayEnv): Promise<R
 
   const sql = getSql(env);
   try {
-    const sessions = await sql<{ id: string; refresh_token_hash: string }[]>`
-      SELECT id, refresh_token_hash FROM sessions WHERE user_id = ${decoded.sub}::uuid
+    const users = await sql<{ tenant_id: string }[]>`
+      SELECT tenant_id FROM app_find_active_user_by_id(${decoded.sub}::uuid)
     `;
-    for (const s of sessions) {
-      if (await verifyPassword(token, s.refresh_token_hash)) {
-        await sql`DELETE FROM sessions WHERE id = ${s.id}::uuid`;
-        break;
+    const tenantId = users[0]?.tenant_id;
+    if (!tenantId) return jsonResponse({ ok: true });
+
+    await withTenant(sql, tenantId, async (tx) => {
+      const sessions = await tx<{ id: string; refresh_token_hash: string }[]>`
+        SELECT id, refresh_token_hash FROM sessions WHERE user_id = ${decoded.sub}::uuid
+      `;
+      for (const s of sessions) {
+        if (await verifyPassword(token, s.refresh_token_hash)) {
+          await tx`DELETE FROM sessions WHERE id = ${s.id}::uuid`;
+          break;
+        }
       }
-    }
+    });
     return jsonResponse({ ok: true });
   } finally {
     await sql.end();

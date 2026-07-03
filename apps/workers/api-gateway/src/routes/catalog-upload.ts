@@ -3,7 +3,7 @@ import { PresignInputSchema } from "@inova-gastro-360/validation";
 import { jsonResponse, parseJsonBody } from "../lib";
 import { writeCatalogAuditLog } from "../lib/audit-log";
 import { assertCatalogBranchAccess } from "../lib/catalog-access";
-import { getSql } from "../lib/db";
+import { getSql, setTenantContext } from "../lib/db";
 import {
   MAX_CATALOG_IMAGE_BYTES,
   validateImageBuffer,
@@ -25,6 +25,7 @@ async function assertProductAccess(
 
   const sql = getSql(env);
   try {
+    await setTenantContext(sql, access.tenantId);
     const rows = await sql<{ id: string }[]>`
       SELECT id FROM products
       WHERE id = ${productId}::uuid
@@ -134,6 +135,7 @@ export async function handleAdminUploadProductImage(
 
   const sql = getSql(env);
   try {
+    await setTenantContext(sql, access.tenantId);
     const rows = await sql<
       {
         id: string;

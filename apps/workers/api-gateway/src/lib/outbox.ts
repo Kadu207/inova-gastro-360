@@ -1,7 +1,7 @@
 import type { JSONValue } from "postgres";
 import { EVENT_TYPES } from "@inova-gastro-360/contracts";
 import type { GatewayEnv } from "../types/env";
-import { getSql, hasDatabase } from "./db";
+import { getSql, hasDatabase, setTenantContext } from "./db";
 import { dispatchOutboxEvent, markOutboxPublished } from "./outbox-dispatch";
 
 export async function publishOutboxEvent(
@@ -15,6 +15,7 @@ export async function publishOutboxEvent(
 
   const sql = getSql(env);
   try {
+    await setTenantContext(sql, tenantId);
     const [inserted] = await sql<
       { id: string; tenant_id: string; event_type: string; payload: Record<string, unknown> }[]
     >`
