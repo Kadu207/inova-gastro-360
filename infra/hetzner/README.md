@@ -48,8 +48,16 @@ RLS defense-in-depth (role `inova_gastro_app`):
 
 ```bash
 APP_DB_PASSWORD='<senha>' bash infra/hetzner/scripts/setup-app-db-role-vps.sh
-npx prisma migrate deploy   # se ainda não aplicou migration 20260702160000
+# Preserva MIGRATION_DATABASE_URL (owner inova_gastro) — migrations NÃO usam inova_gastro_app
+bash infra/hetzner/scripts/migrate-deploy-vps.sh
 bash infra/hetzner/scripts/recreate-api-vps.sh
+```
+
+Se `migrate deploy` falhar com `permission denied for schema public`:
+
+```bash
+bash infra/hetzner/scripts/fix-migration-url-vps.sh   # restaura MIGRATION_DATABASE_URL do backup
+bash infra/hetzner/scripts/migrate-deploy-vps.sh      # auto-resolve migration falha + redeploy
 ```
 
 ## 3. Postgres + Redis (se ainda não rodando)

@@ -10,7 +10,7 @@ NEW_PASSWORD="${NEW_PASSWORD:?defina NEW_PASSWORD com a nova senha (não version
 # shellcheck source=lib/db-url-vps.sh
 source "$ROOT/infra/hetzner/scripts/lib/db-url-vps.sh"
 
-DB_URL="$(resolve_vps_host_database_url "$ENV_FILE")"
+DB_URL="$(resolve_vps_migration_database_url "$ENV_FILE")"
 
 echo "==> Gerando hash bcrypt e atualizando ${EMAIL}..."
 docker run --rm -v "$ROOT:/app" -w /app --network host \
