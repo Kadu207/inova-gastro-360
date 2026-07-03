@@ -4,12 +4,13 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-CONTAINER="${POSTGRES_CONTAINER:-inova-gastro-360-postgres}"
+ENV_FILE="$ROOT/infra/hetzner/.env.production"
 EMAIL="${ROTATE_EMAIL:-admin@inovagastro360.local}"
 NEW_PASSWORD="${NEW_PASSWORD:?defina NEW_PASSWORD com a nova senha (não versionar)}"
+# shellcheck source=lib/db-url-vps.sh
+source "$ROOT/infra/hetzner/scripts/lib/db-url-vps.sh"
 
-PW="$(docker exec "$CONTAINER" printenv POSTGRES_PASSWORD)"
-DB_URL="postgresql://inova_gastro:${PW}@127.0.0.1:5440/inova_gastro_360?sslmode=require"
+DB_URL="$(resolve_vps_host_database_url "$ENV_FILE")"
 
 echo "==> Gerando hash bcrypt e atualizando ${EMAIL}..."
 docker run --rm -v "$ROOT:/app" -w /app --network host \
@@ -29,10 +30,11 @@ docker run --rm -v "$ROOT:/app" -w /app --network host \
         \"UPDATE users SET password_hash = \$1, updated_at = NOW() WHERE email = \$2 RETURNING id\",
         [hash, process.env.ROTATE_EMAIL],
       );
+      if (r.rowCount === 0) throw new Error(\"Usuário não encontrado: \" + process.env.ROTATE_EMAIL);
       await client.query(\"DELETE FROM sessions WHERE user_id = ANY(\$1::uuid[])\", [r.rows.map((x) => x.id)]);
       console.log(\"Atualizado:\", r.rowCount, \"usuário(s); sessões revogadas.\");
       await client.end();
     })().catch((e) => { console.error(e); process.exit(1); });
   '"
 
-echo "==> Senha rotacionada. Atualize SEED_ADMIN_PASSWORD/SMOKE_PASSWORD nos ambientes que usam."
+echo "==> Senha rotacionada. Use a mesma senha em SMOKE_PASSWORD nos smokes."

@@ -19,30 +19,33 @@ NEW_PASSWORD="${NEW_PASSWORD:?defina NEW_PASSWORD (senha nova do admin demo)}"
 SMOKE_PASSWORD="${SMOKE_PASSWORD:-$NEW_PASSWORD}"
 export SMOKE_PASSWORD
 
-echo "==> [1/7] Segredos (.env.production)"
+echo "==> [1/8] Teste conexão DB"
+bash infra/hetzner/scripts/smoke-db-vps.sh
+
+echo "==> [2/8] Segredos (.env.production)"
 bash infra/hetzner/scripts/configure-security-env-vps.sh
 
-echo "==> [2/7] Migrations (RLS + billing)"
+echo "==> [3/8] Migrations (RLS + billing)"
 bash infra/hetzner/scripts/migrate-deploy-vps.sh
 
-echo "==> [3/7] Rotacionar senha admin"
+echo "==> [4/8] Rotacionar senha admin"
 NEW_PASSWORD="$NEW_PASSWORD" bash infra/hetzner/scripts/rotate-admin-password-vps.sh
 
 if [[ -n "${APP_DB_PASSWORD:-}" ]]; then
-  echo "==> [4/7] Role inova_gastro_app (RLS)"
+  echo "==> [5/8] Role inova_gastro_app (RLS)"
   APP_DB_PASSWORD="$APP_DB_PASSWORD" bash infra/hetzner/scripts/setup-app-db-role-vps.sh
 else
-  echo "==> [4/7] Pulando setup-app-db-role (defina APP_DB_PASSWORD para RLS defense-in-depth)"
+  echo "==> [5/8] Pulando setup-app-db-role (defina APP_DB_PASSWORD para RLS defense-in-depth)"
 fi
 
-echo "==> [5/7] npm ci + build web"
+echo "==> [6/8] npm ci + build web"
 bash infra/hetzner/scripts/npm-ci-vps.sh
 bash infra/hetzner/scripts/build-web-vps.sh
 
-echo "==> [6/7] Recriar api-gateway"
+echo "==> [7/8] Recriar api-gateway"
 bash infra/hetzner/scripts/recreate-api-vps.sh
 
-echo "==> [7/7] Smokes"
+echo "==> [8/8] Smokes"
 bash infra/hetzner/scripts/smoke-orders-vps.sh
 bash infra/hetzner/scripts/smoke-catalog-upload.sh
 

@@ -1,15 +1,21 @@
 #!/usr/bin/env bash
 # Aplica migrations Prisma na VPS (Docker — host sem npx/node).
+# Usa DATABASE_URL de infra/hetzner/.env.production (user inova_gastro).
 # Uso: bash infra/hetzner/scripts/migrate-deploy-vps.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-CONTAINER="${POSTGRES_CONTAINER:-inova-gastro-360-postgres}"
+ENV_FILE="$ROOT/infra/hetzner/.env.production"
+# shellcheck source=lib/db-url-vps.sh
+source "$ROOT/infra/hetzner/scripts/lib/db-url-vps.sh"
 
 cd "$ROOT"
 
-PW="$(docker exec "$CONTAINER" printenv POSTGRES_PASSWORD)"
-DB_URL="postgresql://inova_gastro:${PW}@127.0.0.1:5440/inova_gastro_360?sslmode=require"
+DB_URL="$(resolve_vps_host_database_url "$ENV_FILE")"
+
+echo "==> Teste conexão Postgres (host)..."
+docker run --rm --network host postgres:16-alpine \
+  psql "$DB_URL" -c 'SELECT 1 AS ok' >/dev/null
 
 echo "==> prisma migrate deploy (Docker)..."
 docker run --rm -v "$ROOT:/app" -w /app --network host \
