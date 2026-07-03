@@ -8,7 +8,7 @@ import {
 import { jsonResponse, parseJsonBody } from "../lib";
 import { writeCatalogAuditLog } from "../lib/audit-log";
 import { assertCatalogBranchAccess } from "../lib/catalog-access";
-import { getSql } from "../lib/db";
+import { getSql, setTenantContext } from "../lib/db";
 import type { GatewayEnv } from "../types/env";
 
 type ProductRow = {
@@ -34,6 +34,7 @@ export async function handleAdminListCategories(
   const includeInactive = new URL(request.url).searchParams.get("includeInactive") === "1";
   const sql = getSql(env);
   try {
+    await setTenantContext(sql, user.tid);
     const rows = includeInactive
       ? await sql`
           SELECT id, name, sort_order, is_active, created_at, updated_at
@@ -69,6 +70,7 @@ export async function handleAdminCreateCategory(
 
   const sql = getSql(env);
   try {
+    await setTenantContext(sql, user.tid);
     const rows = await sql<
       { id: string; name: string; sort_order: number; is_active: boolean }[]
     >`
@@ -116,6 +118,7 @@ export async function handleAdminUpdateCategory(
   const { name, sortOrder, isActive } = parsed.data;
   const sql = getSql(env);
   try {
+    await setTenantContext(sql, user.tid);
     const existing = await sql<{ id: string }[]>`
       SELECT id FROM product_categories
       WHERE id = ${categoryId}::uuid AND tenant_id = ${access.tenantId}::uuid AND branch_id = ${branchId}::uuid
@@ -159,6 +162,7 @@ export async function handleAdminDeleteCategory(
 
   const sql = getSql(env);
   try {
+    await setTenantContext(sql, user.tid);
     const [{ count }] = await sql<{ count: number }[]>`
       SELECT COUNT(*)::int AS count FROM products
       WHERE category_id = ${categoryId}::uuid AND tenant_id = ${access.tenantId}::uuid
@@ -232,6 +236,7 @@ export async function handleAdminListProducts(
   const includeUnavailable = new URL(request.url).searchParams.get("includeUnavailable") === "1";
   const sql = getSql(env);
   try {
+    await setTenantContext(sql, user.tid);
     const rows = includeUnavailable
       ? await sql<ProductRow[]>`
           SELECT
@@ -275,6 +280,7 @@ export async function handleAdminCreateProduct(
 
   const sql = getSql(env);
   try {
+    await setTenantContext(sql, user.tid);
     if (!(await categoryBelongsToBranch(sql, access.tenantId, branchId, parsed.data.categoryId))) {
       return jsonResponse({ error: "not_found", field: "categoryId" }, 404);
     }
@@ -332,6 +338,7 @@ export async function handleAdminUpdateProduct(
   const { categoryId, name, description, priceCents, isAvailable, imageUrl } = parsed.data;
   const sql = getSql(env);
   try {
+    await setTenantContext(sql, user.tid);
     const existing = await findAdminProduct(sql, access.tenantId, branchId, productId);
     if (!existing) return jsonResponse({ error: "not_found" }, 404);
 
@@ -400,6 +407,7 @@ export async function handleAdminDeleteProduct(
 
   const sql = getSql(env);
   try {
+    await setTenantContext(sql, user.tid);
     const existing = await findAdminProduct(sql, access.tenantId, branchId, productId);
     if (!existing) return jsonResponse({ error: "not_found" }, 404);
 

@@ -15,6 +15,10 @@ vi.mock("../lib/db", () => ({
     );
     return tag;
   },
+  withTenant: async (_sql: unknown, _tid: string, fn: (tx: unknown) => Promise<unknown>) =>
+    fn(
+      Object.assign((...args: unknown[]) => mockSql(...args), { end: mockEnd }),
+    ),
 }));
 
 describe("auth routes", () => {
@@ -88,7 +92,6 @@ describe("auth routes", () => {
     const refreshHash = await hashPassword(refreshToken);
 
     mockSql
-      .mockResolvedValueOnce([{ id: "sess-1", refresh_token_hash: refreshHash }])
       .mockResolvedValueOnce([
         {
           id: userId,
@@ -100,6 +103,7 @@ describe("auth routes", () => {
           is_active: true,
         },
       ])
+      .mockResolvedValueOnce([{ id: "sess-1", refresh_token_hash: refreshHash }])
       .mockResolvedValueOnce(undefined)
       .mockResolvedValueOnce([{ branch_id: "branch-1" }])
       .mockResolvedValueOnce(undefined);

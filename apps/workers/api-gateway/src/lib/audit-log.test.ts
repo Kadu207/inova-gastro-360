@@ -10,6 +10,7 @@ const mockSql = Object.assign(tag, {
 vi.mock("./db", () => ({
   hasDatabase: vi.fn(() => true),
   getSql: vi.fn(() => mockSql),
+  setTenantContext: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { writeCatalogAuditLog } from "./audit-log";

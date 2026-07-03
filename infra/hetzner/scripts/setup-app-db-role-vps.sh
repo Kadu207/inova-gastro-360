@@ -27,5 +27,6 @@ if [[ -f "$ENV_FILE" ]]; then
   fi
 fi
 
-echo "==> Role configurada. Recrie o api-gateway:"
+echo "==> Role configurada. Aplique migrations e recrie o api-gateway:"
+echo "    bash infra/hetzner/scripts/migrate-deploy-vps.sh"
 echo "    bash infra/hetzner/scripts/recreate-api-vps.sh"

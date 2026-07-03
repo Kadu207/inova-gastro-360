@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { JSONValue } from "postgres";
 import { jsonResponse, parseJsonBody, clientIp } from "../lib";
-import { getSql, withTenant } from "../lib/db";
+import { getSql, withTenant, setTenantContext } from "../lib/db";
 import { publishOutboxEvent, EVENT_TYPES } from "../lib/outbox";
 import { hitRateLimit } from "../lib/rate-limit";
 import type { GatewayEnv } from "../types/env";
@@ -178,8 +178,10 @@ export async function handleCreateOrder(request: Request, env: GatewayEnv, user?
   }
 
   const sql = getSql(env);
-
   try {
+    if (user?.tid) {
+      await setTenantContext(sql, user.tid);
+    }
     let tenantId = user?.tid;
     if (!tenantId) {
       if (!customerName?.trim() || !customerPhone?.trim()) {
@@ -195,6 +197,7 @@ export async function handleCreateOrder(request: Request, env: GatewayEnv, user?
       `;
       if (!branch) return jsonResponse({ error: "branch_not_found" }, 404);
       tenantId = branch.tenant_id;
+      await setTenantContext(sql, tenantId);
     }
     if (idempotency.key) {
       const existing = await findOrderByIdempotencyKey(sql, tenantId, idempotency.key);
@@ -323,6 +326,7 @@ export async function handleListOrders(request: Request, env: GatewayEnv, user: 
 
   const sql = getSql(env);
   try {
+    await setTenantContext(sql, user.tid);
     const [{ count }] = await sql<{ count: number }[]>`
       SELECT COUNT(*)::int AS count FROM orders
       WHERE tenant_id = ${user.tid}::uuid AND branch_id = ${branchId}::uuid
@@ -386,6 +390,7 @@ export async function handleUpdateOrderStatus(
 
   const sql = getSql(env);
   try {
+    await setTenantContext(sql, user.tid);
     const updated = await sql<{ id: string; branch_id: string; status: string }[]>`
       UPDATE orders SET status = ${parsed.data.status}, updated_at = NOW()
       WHERE id = ${orderId}::uuid AND tenant_id = ${user.tid}::uuid
@@ -421,6 +426,7 @@ export async function handleGetOrder(
 ): Promise<Response> {
   const sql = getSql(env);
   try {
+    await setTenantContext(sql, user.tid);
     const orders = await sql`
       SELECT * FROM orders WHERE id = ${orderId}::uuid AND tenant_id = ${user.tid}::uuid LIMIT 1
     `;

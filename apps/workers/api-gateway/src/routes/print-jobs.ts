@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { jsonResponse, parseJsonBody } from "../lib";
-import { getSql } from "../lib/db";
+import { getSql, setTenantContext } from "../lib/db";
 import type { GatewayEnv } from "../types/env";
 import type { JwtPayload } from "@inova-gastro-360/auth";
 
@@ -27,6 +27,7 @@ export async function handleListPrintJobs(
 
   const sql = getSql(env);
   try {
+    await setTenantContext(sql, user.tid);
     const jobs = sector
       ? await sql`
           SELECT id, branch_id, order_id, sector, status, payload, created_at, updated_at
@@ -68,6 +69,7 @@ export async function handleUpdatePrintJobStatus(
 
   const sql = getSql(env);
   try {
+    await setTenantContext(sql, user.tid);
     const updated = await sql<{ id: string; status: string; sector: string; order_id: string }[]>`
       UPDATE print_jobs
       SET status = ${parsed.data.status}, updated_at = NOW()
