@@ -21,6 +21,11 @@ APP_URL="postgresql://inova_gastro_app:${APP_DB_PASSWORD}@host.docker.internal:5
 if [[ -f "$ENV_FILE" ]]; then
   if grep -q '^DATABASE_URL=' "$ENV_FILE"; then
     cp "$ENV_FILE" "${ENV_FILE}.bak.$(date +%Y%m%d%H%M%S)"
+    CURRENT_URL="$(grep '^DATABASE_URL=' "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'")"
+    if ! grep -q '^MIGRATION_DATABASE_URL=' "$ENV_FILE" && [[ "$CURRENT_URL" != *inova_gastro_app* ]]; then
+      echo "MIGRATION_DATABASE_URL=\"${CURRENT_URL}\"" >>"$ENV_FILE"
+      echo "==> MIGRATION_DATABASE_URL preservada (owner inova_gastro para prisma migrate)"
+    fi
     sed -i "s|^DATABASE_URL=.*|DATABASE_URL=\"${APP_URL}\"|" "$ENV_FILE"
     echo "==> DATABASE_URL atualizado para inova_gastro_app em $ENV_FILE"
     echo "    Backup: ${ENV_FILE}.bak.*"
