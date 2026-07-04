@@ -53,7 +53,7 @@ export async function withTenant<T>(
   }) as Promise<T>;
 }
 
-/** Define contexto RLS na sessão atual (handlers autenticados com inova_gastro_app). */
+/** Define contexto RLS na sessão postgres.js (mesma conexão até sql.end()). */
 export async function setTenantContext(
   sql: ReturnType<typeof getSql>,
   tenantId: string,
@@ -61,7 +61,8 @@ export async function setTenantContext(
   if (!UUID_RE.test(tenantId)) {
     throw new Error("tenantId inválido para contexto RLS");
   }
-  await sql`SELECT set_config('app.current_tenant_id', ${tenantId}, true)`;
+  // is_local=false — persiste na sessão (max:1 por handler). true só vale na txn atual.
+  await sql`SELECT set_config('app.current_tenant_id', ${tenantId}, false)`;
 }
 
 /**
