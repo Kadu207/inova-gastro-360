@@ -1,0 +1,10 @@
+# Criado automaticamente no `npm run dev` (scripts/ensure-dev-vars.mjs)
+ENVIRONMENT=development
+INTERNAL_SHARED_SECRET=dev-only-internal-secret-generate-value
+N8N_WEBHOOK_URL=
+CHATWOOT_WEBHOOK_URL=
+# Webhooks de pagamento (spec 007)
+MERCADOPAGO_WEBHOOK_SECRET=your-mercadopago-webhook-secret
+STRIPE_WEBHOOK_SECRET=whsec_your_stripe_webhook_secret
+# URL interna do api-gateway (Node stack local)
+API_GATEWAY_URL=http://127.0.0.1:8792

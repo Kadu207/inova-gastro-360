@@ -10,6 +10,7 @@ export const MAIN_NAV: NavItem[] = [
   { href: "/painel/delivery", label: "Pedidos", icon: "◎" },
   { href: "/painel/balcao", label: "Balcão", icon: "▣" },
   { href: "/dashboard/catalogo", label: "Gestão cardápio", icon: "✎" },
+  { href: "/dashboard/billing", label: "Assinatura", icon: "◆" },
   { href: "/cardapio", label: "Cardápio público", icon: "☰" },
   { href: "/painel/cozinha", label: "Cozinha (KDS)", icon: "◫" },
   { href: "/dashboard/impressao", label: "Impressão", icon: "⎙" },

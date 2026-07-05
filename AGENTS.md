@@ -70,7 +70,7 @@ Documentação completa: `docs/architecture.md` (EMB-05…15 planejados).
 ## Feature ativa (Spec Kit)
 
 <!-- speckit:active-feature:start -->
-- **Diretório:** `specs/015-security-hardening`
-- **Spec:** `spec.md` | **Plan:** `plan.md` | **Tasks:** `tasks.md`
-- **Atualizado:** 2026-07-02
+- **Diretório:** `specs/007-pagamentos`
+- **Spec:** `spec.md` | **Plan:** `plan.md` (atualizar via `/speckit-plan`) | **Tasks:** `tasks.md`
+- **Atualizado:** 2026-07-04 (T001–T061 implementados)
 <!-- speckit:active-feature:end -->

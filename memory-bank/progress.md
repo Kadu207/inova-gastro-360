@@ -57,6 +57,18 @@ Adiado (spec 005)
 - [x] PR merge `feat/015-security-hardening` → `master` (PR #17, CI pipeline pass)
 - [x] Fix outbox dispatch Node (`duplex` em Service Binding fetch)
 - [x] T053 VPS: role `inova_gastro_app` (DATABASE_URL na VPS)
+- [x] Hotfixes VPS RLS: #18 bootstrap, #19 MIGRATION_DATABASE_URL, #20 setTenantContext session
+- [x] Smokes finais VPS 2026-07-03: pedidos #1006 + upload OK com `inova_gastro_app`
+
+## Spec 007 pagamentos — implementado (branch feat/007-pagamentos)
+- [x] `/speckit-specify` — `specs/007-pagamentos/spec.md` + checklist
+- [x] `/speckit-plan` — Mercado Pago (PIX P1) + Stripe Billing (SaaS P1)
+- [x] `/speckit-tasks` — 61 tasks TDD
+- [x] `/speckit-implement` — T001–T061 (PIX + Stripe + cartão + polish)
+- [x] Testes: 108 api-gateway, integrations webhooks, payment-expiry
+- [ ] Deploy VPS: configure-payments-env + webhooks + smoke-payments-vps
 
 ## Infoproduto (estratégia D→A→B)
 - [x] docs/infoproduto: estrategia.md, calendario-conteudo.md (12 semanas), ementa-curso.md
+- [x] Post #1 aprovado (LinkedIn + thread X): `docs/infoproduto/rascunhos/post-01-auditoria-spec015.md`
+- [x] Lead magnet PDF: `docs/infoproduto/checklists/checklist-p0-p1-auditoria-saas.pdf`

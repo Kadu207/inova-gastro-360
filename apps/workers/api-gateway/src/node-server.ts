@@ -2,7 +2,8 @@ import { createServiceFetcher, serveFetchWorker } from "@inova-gastro-360/runtim
 import worker from "./index";
 import type { Env } from "./index";
 import { flushPendingOutbox } from "./lib/outbox-replay";
-import { runOrderStateGuardian, runSessionSweeper, runTrialExpiryNotifier } from "./lib/agents";
+import { runOrderStateGuardian, runSessionSweeper, runTrialExpiryNotifier, runPastDueNotifier } from "./lib/agents";
+import { runPaymentExpiryJob } from "./lib/payment-expiry";
 
 function buildEnv(): Env {
   const messagingUrl = process.env.MESSAGING_URL ?? "http://127.0.0.1:8789";
@@ -22,6 +23,14 @@ function buildEnv(): Env {
     S3_ACCESS_KEY: process.env.S3_ACCESS_KEY,
     S3_SECRET_KEY: process.env.S3_SECRET_KEY,
     S3_PUBLIC_BASE_URL: process.env.S3_PUBLIC_BASE_URL,
+    MERCADOPAGO_ACCESS_TOKEN: process.env.MERCADOPAGO_ACCESS_TOKEN,
+    MERCADOPAGO_WEBHOOK_SECRET: process.env.MERCADOPAGO_WEBHOOK_SECRET,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    PAYMENTS_SANDBOX: process.env.PAYMENTS_SANDBOX,
+    PIX_EXPIRATION_MINUTES: process.env.PIX_EXPIRATION_MINUTES,
+    PAYMENTS_ENABLED: process.env.PAYMENTS_ENABLED,
+    PAYMENTS_PUBLIC_BASE_URL: process.env.PAYMENTS_PUBLIC_BASE_URL,
   };
 }
 
@@ -53,6 +62,12 @@ if (agentsEnabled && agentsIntervalMs > 0) {
     });
     void runTrialExpiryNotifier(env).then((r) => {
       if (r.notified > 0) console.log(`[EMB-03] trial-expiry-notifier notified=${r.notified}`);
+    });
+    void runPastDueNotifier(env).then((r) => {
+      if (r.notified > 0) console.log(`[EMB-03] past-due-notifier notified=${r.notified}`);
+    });
+    void runPaymentExpiryJob(env).then((r) => {
+      if (r.expired > 0) console.log(`[payments] expiry expired=${r.expired}`);
     });
   }, agentsIntervalMs);
 }

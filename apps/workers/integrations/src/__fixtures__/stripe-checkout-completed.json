@@ -1,0 +1,19 @@
+{
+  "id": "evt_test_checkout_completed",
+  "object": "event",
+  "type": "checkout.session.completed",
+  "livemode": false,
+  "data": {
+    "object": {
+      "id": "cs_test_session",
+      "object": "checkout.session",
+      "mode": "subscription",
+      "subscription": "sub_test_123",
+      "customer": "cus_test_123",
+      "metadata": {
+        "tenant_id": "00000000-0000-4000-8000-000000000001",
+        "plan_code": "pro"
+      }
+    }
+  }
+}
