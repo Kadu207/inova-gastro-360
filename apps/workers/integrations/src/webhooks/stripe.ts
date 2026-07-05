@@ -22,6 +22,31 @@ type StripeEvent = {
   data: { object: Record<string, unknown> };
 };
 
+function objectMetadata(obj: Record<string, unknown>): Record<string, unknown> {
+  const meta = obj.metadata;
+  if (meta && typeof meta === "object" && !Array.isArray(meta)) {
+    return meta as Record<string, unknown>;
+  }
+  return {};
+}
+
+function metaString(obj: Record<string, unknown>, key: string): string {
+  const v = objectMetadata(obj)[key];
+  return v != null ? String(v) : "";
+}
+
+function invoiceSubscriptionTenantId(obj: Record<string, unknown>): string {
+  const details = obj.subscription_details;
+  if (details && typeof details === "object" && !Array.isArray(details)) {
+    const meta = (details as Record<string, unknown>).metadata;
+    if (meta && typeof meta === "object" && !Array.isArray(meta)) {
+      const tenantId = (meta as Record<string, unknown>).tenant_id;
+      if (tenantId != null) return String(tenantId);
+    }
+  }
+  return metaString(obj, "tenant_id");
+}
+
 function gracePeriodEndsAt(days = 7): string {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 }
@@ -33,8 +58,8 @@ export async function processStripeEvent(
   const obj = event.data.object;
 
   if (event.type === "checkout.session.completed") {
-    const tenantId = String(obj.metadata?.tenant_id ?? "");
-    const planCode = String(obj.metadata?.plan_code ?? "");
+    const tenantId = metaString(obj, "tenant_id");
+    const planCode = metaString(obj, "plan_code");
     const subscriptionId = String(obj.subscription ?? "");
     const customerId = String(obj.customer ?? "");
     if (!tenantId || !subscriptionId) return;
@@ -52,7 +77,7 @@ export async function processStripeEvent(
   }
 
   if (event.type === "customer.subscription.updated") {
-    const tenantId = String(obj.metadata?.tenant_id ?? "");
+    const tenantId = metaString(obj, "tenant_id");
     const subscriptionId = String(obj.id ?? "");
     const statusRaw = String(obj.status ?? "active");
     const status =
@@ -82,7 +107,7 @@ export async function processStripeEvent(
   }
 
   if (event.type === "customer.subscription.deleted") {
-    const tenantId = String(obj.metadata?.tenant_id ?? "");
+    const tenantId = metaString(obj, "tenant_id");
     if (!tenantId) return;
     await callApplySubscription(env, {
       provider: "stripe",
@@ -95,8 +120,7 @@ export async function processStripeEvent(
   }
 
   if (event.type === "invoice.payment_failed") {
-    const subscriptionDetails = obj.subscription_details as { metadata?: Record<string, string> } | undefined;
-    const tenantId = String(subscriptionDetails?.metadata?.tenant_id ?? obj.metadata?.tenant_id ?? "");
+    const tenantId = invoiceSubscriptionTenantId(obj);
     const subId = String(obj.subscription ?? "");
     if (!tenantId) return;
     await callApplySubscription(env, {
@@ -125,7 +149,11 @@ export async function handleStripeWebhook(
   try {
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(env.STRIPE_SECRET_KEY);
-    event = stripe.webhooks.constructEvent(rawBody, sig ?? "", env.STRIPE_WEBHOOK_SECRET) as StripeEvent;
+    event = stripe.webhooks.constructEvent(
+      rawBody,
+      sig ?? "",
+      env.STRIPE_WEBHOOK_SECRET,
+    ) as unknown as StripeEvent;
   } catch (err) {
     console.error("stripe_webhook_verify_failed", err);
     return new Response(JSON.stringify({ error: "invalid_signature" }), { status: 400 });

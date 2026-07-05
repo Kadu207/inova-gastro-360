@@ -13,12 +13,10 @@
 - **US4 TEF:** stub 501 + research P3
 - **Polish:** scripts VPS (`configure-payments-env-vps.sh`, `smoke-payments-vps.sh`), runbook webhooks
 
-### Pendente (somente deploy VPS)
-1. Merge/push `feat/007-pagamentos` → `master`
-2. `configure-payments-env-vps.sh` com credenciais MP + Stripe (sandbox ou prod)
-3. `migrate-deploy-vps.sh` + rebuild stack
-4. Registrar webhooks MP/Stripe → worker integrations (ver `docs/runbooks/payments-webhooks.md`)
-5. `smoke-payments-vps.sh`
+### Pendente (pós-deploy VPS 2026-07-04)
+1. **Merge PR** `feat/007-pagamentos` → `master` (CI verde + typecheck)
+2. Na venda: `configure-payments-env-vps.sh` com credenciais MP + Stripe
+3. Cadastrar webhooks nos painéis MP/Stripe (URLs já validadas — HTTP 401)
 
 ## Spec 015 — Security hardening ✅ produção VPS
 
