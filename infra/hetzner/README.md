@@ -97,13 +97,10 @@ cd ~/inova-gastro-360
 bash infra/hetzner/scripts/prepare-payments-vps.sh
 ```
 
-**Após venda — inserir credenciais:**
+**Após venda — inserir credenciais reais** (ver `docs/runbooks/payments-go-live.md`; o script recusa `...` e placeholders):
 
 ```bash
 cd ~/inova-gastro-360
-MERCADOPAGO_ACCESS_TOKEN=TEST-... \
-STRIPE_SECRET_KEY=sk_test_... \
-STRIPE_WEBHOOK_SECRET=whsec_... \
 bash infra/hetzner/scripts/configure-payments-env-vps.sh
 ```
 

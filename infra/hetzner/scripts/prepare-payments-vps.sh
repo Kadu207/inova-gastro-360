@@ -77,7 +77,7 @@ elif [[ "$code_pub" == "404" ]]; then
   echo "  NÃO use inovagastro360-api.inovatitech.com.br para webhooks (é só api-gateway)."
 fi
 echo
-echo "Quando vender o produto, rode:"
-echo "  MERCADOPAGO_ACCESS_TOKEN=TEST-... STRIPE_SECRET_KEY=sk_test_... \\"
-echo "  STRIPE_WEBHOOK_SECRET=whsec_... bash infra/hetzner/scripts/configure-payments-env-vps.sh"
+echo "Quando vender o produto, exporte credenciais REAIS (copiadas dos painéis MP/Stripe) e rode:"
+echo "  bash infra/hetzner/scripts/configure-payments-env-vps.sh"
+echo "  (ver docs/runbooks/payments-go-live.md — não use ... nem tokens de exemplo)"
 echo "OK — prepare-payments-vps concluído."
