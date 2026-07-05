@@ -66,13 +66,15 @@ Obtenha os segredos (MP Developers + Stripe Dashboard) e rode:
 ```bash
 cd ~/inova-gastro-360
 
-MERCADOPAGO_ACCESS_TOKEN=TEST-... \
-MERCADOPAGO_WEBHOOK_SECRET=sua-assinatura-mp \
-STRIPE_SECRET_KEY=sk_test_... \
-STRIPE_WEBHOOK_SECRET=whsec_... \
-STRIPE_PRICE_STARTER=price_... \
-STRIPE_PRICE_PRO=price_... \
-PAYMENTS_SANDBOX=true \
+# Credenciais REAIS — strings completas, sem reticências. O script recusa placeholders.
+export MERCADOPAGO_ACCESS_TOKEN='cole-o-token-completo-do-painel-mp'
+export MERCADOPAGO_WEBHOOK_SECRET='opcional-assinatura-mp'
+export STRIPE_SECRET_KEY='cole-sk_test_ou_sk_live_completo'
+export STRIPE_WEBHOOK_SECRET='cole-whsec_completo'
+export STRIPE_PRICE_STARTER='cole-price_id_starter'
+export STRIPE_PRICE_PRO='cole-price_id_pro'
+export PAYMENTS_SANDBOX=true
+
 bash infra/hetzner/scripts/configure-payments-env-vps.sh
 
 docker compose -f infra/hetzner/docker-compose.app.yml \
