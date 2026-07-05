@@ -27,6 +27,7 @@ export function testEnv(overrides: Partial<GatewayEnv> = {}): GatewayEnv {
     JWT_SECRET: TEST_JWT_SECRET,
     DATABASE_URL: testDatabaseUrl(),
     ENVIRONMENT: "test",
+    INTERNAL_SHARED_SECRET: "test-internal-secret-min-32-chars",
     ...overrides,
   };
 }

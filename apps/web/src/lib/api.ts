@@ -129,3 +129,91 @@ export async function logout(): Promise<void> {
   clearSession();
   if (typeof window !== "undefined") window.location.href = "/login";
 }
+
+export interface OrderPaymentResponse {
+  paymentIntentId: string;
+  method: string;
+  status: string;
+  amountCents: number;
+  expiresAt: string | null;
+  pix?: { qrCodeBase64: string | null; copyPaste: string | null };
+  card?: { redirectUrl: string };
+}
+
+export async function createOrderPayment(
+  branchId: string,
+  orderId: string,
+  method: "pix" | "card",
+): Promise<OrderPaymentResponse> {
+  const res = await fetch(`${API_BASE}/api/v1/branches/${branchId}/orders/${orderId}/pay`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ method }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message ?? data.error ?? "payment_failed");
+  return data as OrderPaymentResponse;
+}
+
+export async function getOrderPaymentStatus(
+  branchId: string,
+  orderId: string,
+): Promise<{ paymentStatus: string; paidAt: string | null; expiresAt: string | null }> {
+  const res = await fetch(`${API_BASE}/api/v1/branches/${branchId}/orders/${orderId}/payment`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "payment_status_failed");
+  return data;
+}
+
+export interface BillingSubscription {
+  status: string;
+  plan: { code: string; name: string; priceCents: number } | null;
+  trialEndsAt: string | null;
+  gracePeriodEndsAt: string | null;
+}
+
+export async function fetchBillingSubscription(): Promise<BillingSubscription> {
+  const res = await apiFetch("/api/v1/billing/subscription");
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "subscription_fetch_failed");
+  return data;
+}
+
+export async function fetchBillingPlans(): Promise<
+  { code: string; name: string; price_cents: number; max_branches: number }[]
+> {
+  const res = await fetch(`${API_BASE}/api/v1/billing/plans`);
+  const data = await res.json();
+  return data.plans ?? [];
+}
+
+export interface PaymentsStatus {
+  enabled: boolean;
+  mercadoPago: boolean;
+  stripe: boolean;
+  deliveryOnlinePayment: boolean;
+  saasBilling: boolean;
+  message?: string;
+}
+
+export async function fetchPaymentsStatus(): Promise<PaymentsStatus> {
+  const res = await fetch(`${API_BASE}/api/v1/payments/status`);
+  const data = await res.json();
+  return data as PaymentsStatus;
+}
+
+export async function startBillingCheckout(planCode: string): Promise<string> {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const res = await apiFetch("/api/v1/billing/checkout", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      planCode,
+      successUrl: `${origin}/dashboard/billing?success=1`,
+      cancelUrl: `${origin}/dashboard/billing?cancel=1`,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "checkout_failed");
+  return data.checkoutUrl as string;
+}

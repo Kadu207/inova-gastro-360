@@ -85,7 +85,29 @@ bash infra/hetzner/scripts/deploy-vps.sh           # stack completo (primeira ve
 # Smoke pós-deploy
 bash infra/hetzner/scripts/smoke-catalog-admin.sh
 bash infra/hetzner/scripts/smoke-orders-vps.sh      # spec 003 pedidos
+bash infra/hetzner/scripts/smoke-payments-vps.sh   # spec 007 pagamentos
 ```
+
+### Pagamentos (spec 007)
+
+**Pré-venda (infra pronta, sem credenciais):**
+
+```bash
+cd ~/inova-gastro-360
+bash infra/hetzner/scripts/prepare-payments-vps.sh
+```
+
+**Após venda — inserir credenciais:**
+
+```bash
+cd ~/inova-gastro-360
+MERCADOPAGO_ACCESS_TOKEN=TEST-... \
+STRIPE_SECRET_KEY=sk_test_... \
+STRIPE_WEBHOOK_SECRET=whsec_... \
+bash infra/hetzner/scripts/configure-payments-env-vps.sh
+```
+
+Runbooks: `docs/runbooks/payments-go-live.md`, `docs/runbooks/payments-webhooks.md`
 
 ## 5. Nginx + TLS + firewall
 

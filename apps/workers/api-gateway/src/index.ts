@@ -24,6 +24,22 @@ import {
   handleGetOrder,
 } from "./routes/orders";
 import { handleListPrintJobs, handleUpdatePrintJobStatus } from "./routes/print-jobs";
+import {
+  handleApplyOrderPayment,
+  handleApplySubscriptionPayment,
+} from "./routes/internal-payments";
+import {
+  handlePayOrder,
+  handleGetOrderPayment,
+  handlePayInPerson,
+} from "./routes/order-payments";
+import {
+  handleGetSubscription,
+  handleListPlans,
+  handleBillingCheckout,
+  handleBillingPortal,
+} from "./routes/billing";
+import { handlePaymentsStatus } from "./routes/payments-status";
 import { requireAuth } from "./middleware/auth";
 import { isOutboxFlushAuthorized } from "./lib/outbox-dispatch";
 import { flushPendingOutbox } from "./lib/outbox-replay";
@@ -223,6 +239,66 @@ async function route(request: Request, env: Env): Promise<Response> {
       }
     }
 
+    if (path === "/api/v1/billing/plans" && request.method === "GET") {
+      return withCors(await handleListPlans(request, env));
+    }
+
+    if (path === "/api/v1/payments/status" && request.method === "GET") {
+      return withCors(await handlePaymentsStatus(request, env));
+    }
+
+    if (path.startsWith("/api/v1/billing")) {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+
+      if (path === "/api/v1/billing/subscription" && request.method === "GET") {
+        return withCors(await handleGetSubscription(request, env, auth.user));
+      }
+      if (path === "/api/v1/billing/checkout" && request.method === "POST") {
+        return withCors(await handleBillingCheckout(request, env, auth.user));
+      }
+      if (path === "/api/v1/billing/portal" && request.method === "POST") {
+        return withCors(await handleBillingPortal(request, env, auth.user));
+      }
+    }
+
+    const branchOrderPayMatch = path.match(
+      /^\/api\/v1\/branches\/([^/]+)\/orders\/([^/]+)\/pay$/,
+    );
+    if (branchOrderPayMatch && request.method === "POST") {
+      return withCors(
+        await handlePayOrder(request, env, branchOrderPayMatch[1], branchOrderPayMatch[2]),
+      );
+    }
+
+    const branchOrderPaymentMatch = path.match(
+      /^\/api\/v1\/branches\/([^/]+)\/orders\/([^/]+)\/payment$/,
+    );
+    if (branchOrderPaymentMatch && request.method === "GET") {
+      return withCors(
+        await handleGetOrderPayment(
+          request,
+          env,
+          branchOrderPaymentMatch[1],
+          branchOrderPaymentMatch[2],
+        ),
+      );
+    }
+
+    const branchPayInPersonMatch = path.match(
+      /^\/api\/v1\/branches\/([^/]+)\/orders\/([^/]+)\/pay-in-person$/,
+    );
+    if (branchPayInPersonMatch && request.method === "POST") {
+      return withCors(
+        await handlePayInPerson(
+          request,
+          env,
+          branchPayInPersonMatch[1],
+          branchPayInPersonMatch[2],
+        ),
+      );
+    }
+
     if (path === "/api/v1/orders" && request.method === "GET") {
       const auth = await requireAuth(request, env);
       if (!auth.ok) return withCors(auth.response);
@@ -268,6 +344,14 @@ async function route(request: Request, env: Env): Promise<Response> {
       }
       const result = await flushPendingOutbox(env);
       return withCors(jsonResponse({ ok: true, ...result }));
+    }
+
+    if (path === "/internal/payments/apply-order" && request.method === "POST") {
+      return withCors(await handleApplyOrderPayment(request, env));
+    }
+
+    if (path === "/internal/payments/apply-subscription" && request.method === "POST") {
+      return withCors(await handleApplySubscriptionPayment(request, env));
     }
 
     return withCors(jsonResponse({ error: "not_found", path }, 404));

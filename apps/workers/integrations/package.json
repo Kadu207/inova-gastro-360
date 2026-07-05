@@ -12,7 +12,8 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@inova-gastro-360/runtime-node": "*"
+    "@inova-gastro-360/runtime-node": "*",
+    "stripe": "^18.3.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "4.20250613.0",

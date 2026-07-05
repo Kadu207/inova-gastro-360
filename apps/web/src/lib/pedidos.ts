@@ -30,6 +30,15 @@ export const CHANNEL_LABELS: Record<OrderChannel, string> = {
   delivery: "Delivery",
 };
 
+export const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  unpaid: "Não pago",
+  pending: "Aguardando PIX",
+  paid: "Pago",
+  expired: "PIX expirado",
+  failed: "Falhou",
+  refunded: "Estornado",
+};
+
 export function buildOrdersQueryParams(params: {
   branchId: string;
   page: number;

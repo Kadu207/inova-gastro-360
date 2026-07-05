@@ -1,14 +1,12 @@
 import { healthHandler, jsonResponse } from "./lib";
+import type { IntegrationsEnv } from "./env";
+import { handleMercadoPagoWebhook } from "./webhooks/mercadopago";
+import { handleStripeWebhook } from "./webhooks/stripe";
 
-export interface Env {
-  ENVIRONMENT?: string;
-  N8N_WEBHOOK_URL?: string;
-  CHATWOOT_WEBHOOK_URL?: string;
-  INTERNAL_SHARED_SECRET?: string;
-}
+export type Env = IntegrationsEnv;
 
 function internalAuthorized(request: Request, env: Env): boolean {
-  if (!env.INTERNAL_SHARED_SECRET) return true;
+  if (!env.INTERNAL_SHARED_SECRET) return env.ENVIRONMENT !== "production";
   return request.headers.get("x-internal-secret") === env.INTERNAL_SHARED_SECRET;
 }
 
@@ -27,6 +25,14 @@ export default {
 
     if (url.pathname === "/health") {
       return healthHandler("integrations");
+    }
+
+    if (url.pathname === "/webhooks/mercadopago" && request.method === "POST") {
+      return handleMercadoPagoWebhook(request, env);
+    }
+
+    if (url.pathname === "/webhooks/stripe" && request.method === "POST") {
+      return handleStripeWebhook(request, env);
     }
 
     if (url.pathname === "/internal/notify" && request.method === "POST") {

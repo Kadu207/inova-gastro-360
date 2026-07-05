@@ -20,6 +20,20 @@ export interface GatewayEnv {
   S3_ACCESS_KEY?: string;
   S3_SECRET_KEY?: string;
   S3_PUBLIC_BASE_URL?: string;
+  /** Mercado Pago — PIX/cartão pedidos (sandbox ou produção) */
+  MERCADOPAGO_ACCESS_TOKEN?: string;
+  MERCADOPAGO_WEBHOOK_SECRET?: string;
+  /** Stripe Billing — assinatura SaaS */
+  STRIPE_SECRET_KEY?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
+  /** Força modo sandbox nos gateways de pagamento */
+  PAYMENTS_SANDBOX?: string;
+  /** TTL do QR PIX em minutos (default 30) */
+  PIX_EXPIRATION_MINUTES?: string;
+  /** false = infra pronta, credenciais inseridas após venda do produto */
+  PAYMENTS_ENABLED?: string;
+  /** Base pública para URLs de webhook (default: CORS_ALLOWED_ORIGINS) */
+  PAYMENTS_PUBLIC_BASE_URL?: string;
 }
 
 interface Hyperdrive {

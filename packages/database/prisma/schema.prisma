@@ -144,23 +144,44 @@ model SubscriptionPlan {
   maxBranches  Int      @default(1) @map("max_branches")
   maxProducts  Int      @default(50) @map("max_products")
   isActive     Boolean  @default(true) @map("is_active")
+  stripePriceId String? @map("stripe_price_id")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   subscriptions Subscription[]
+  checkouts     SubscriptionCheckout[]
 
   @@map("subscription_plans")
 }
 
+model SubscriptionCheckout {
+  id                      String   @id @default(uuid()) @db.Uuid
+  tenantId                String   @map("tenant_id") @db.Uuid
+  planId                  String   @map("plan_id") @db.Uuid
+  stripeCheckoutSessionId String   @unique @map("stripe_checkout_session_id")
+  stripeCustomerId        String?  @map("stripe_customer_id")
+  status                  String   @default("open")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  plan SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@index([tenantId])
+  @@map("subscription_checkouts")
+}
+
 model Subscription {
-  id           String    @id @default(uuid()) @db.Uuid
-  tenantId     String    @map("tenant_id") @db.Uuid
-  planId       String?   @map("plan_id") @db.Uuid
-  status       String    @default("trialing")
-  trialEndsAt  DateTime? @map("trial_ends_at")
-  currentPeriodEnd DateTime? @map("current_period_end")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  id                   String    @id @default(uuid()) @db.Uuid
+  tenantId             String    @map("tenant_id") @db.Uuid
+  planId               String?   @map("plan_id") @db.Uuid
+  status               String    @default("trialing")
+  trialEndsAt          DateTime? @map("trial_ends_at")
+  currentPeriodEnd     DateTime? @map("current_period_end")
+  stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
+  stripeCustomerId     String?   @map("stripe_customer_id")
+  gracePeriodEndsAt    DateTime? @map("grace_period_ends_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
 
   plan SubscriptionPlan? @relation(fields: [planId], references: [id])
 
@@ -218,6 +239,9 @@ model Order {
   customerPhone String?  @map("customer_phone")
   notes         String?
   totalCents    Int      @default(0) @map("total_cents")
+  paymentStatus String   @default("unpaid") @map("payment_status")
+  paymentMethod String?  @map("payment_method")
+  paidAt        DateTime? @map("paid_at")
   idempotencyKey String? @map("idempotency_key")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
@@ -225,6 +249,7 @@ model Order {
   branch        Branch              @relation(fields: [branchId], references: [id], onDelete: Cascade)
   items         OrderItem[]
   statusHistory OrderStatusHistory[]
+  paymentIntents PaymentIntent[]
 
   @@unique([tenantId, idempotencyKey])
   @@unique([branchId, orderNumber])
@@ -261,6 +286,50 @@ model OrderStatusHistory {
 
   @@index([orderId])
   @@map("order_status_history")
+}
+
+model PaymentIntent {
+  id                String    @id @default(uuid()) @db.Uuid
+  tenantId          String    @map("tenant_id") @db.Uuid
+  branchId          String    @map("branch_id") @db.Uuid
+  orderId           String    @map("order_id") @db.Uuid
+  provider          String    @default("mercadopago")
+  method            String
+  amountCents       Int       @map("amount_cents")
+  currency          String    @default("BRL")
+  status            String    @default("created")
+  externalId        String?   @map("external_id")
+  externalReference String    @map("external_reference")
+  pixQrCode         String?   @map("pix_qr_code") @db.Text
+  pixCopyPaste      String?   @map("pix_copy_paste") @db.Text
+  expiresAt         DateTime? @map("expires_at")
+  metadata          Json?
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, orderId])
+  @@index([externalId])
+  @@index([status, expiresAt])
+  @@map("payment_intents")
+}
+
+model PaymentEvent {
+  id              String    @id @default(uuid()) @db.Uuid
+  tenantId        String?   @map("tenant_id") @db.Uuid
+  provider        String
+  externalEventId String    @map("external_event_id")
+  eventType       String    @map("event_type")
+  payload         Json
+  processedAt     DateTime? @map("processed_at")
+  result          String?
+  errorMessage    String?   @map("error_message")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@unique([provider, externalEventId])
+  @@index([tenantId, createdAt])
+  @@map("payment_events")
 }
 
 model PrintJob {

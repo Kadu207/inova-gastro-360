@@ -4,6 +4,7 @@ import { jsonResponse, parseJsonBody, clientIp } from "../lib";
 import { getSql, withTenant, setTenantContext } from "../lib/db";
 import { publishOutboxEvent, EVENT_TYPES } from "../lib/outbox";
 import { hitRateLimit } from "../lib/rate-limit";
+import { checkSubscriptionAllowsWrites } from "../middleware/subscription-guard";
 import type { GatewayEnv } from "../types/env";
 import type { JwtPayload } from "@inova-gastro-360/auth";
 
@@ -199,6 +200,10 @@ export async function handleCreateOrder(request: Request, env: GatewayEnv, user?
       tenantId = branch.tenant_id;
       await setTenantContext(sql, tenantId);
     }
+
+    const subBlock = await checkSubscriptionAllowsWrites(env, tenantId);
+    if (subBlock.blocked) return subBlock.response;
+
     if (idempotency.key) {
       const existing = await findOrderByIdempotencyKey(sql, tenantId, idempotency.key);
       if (existing) {
@@ -345,7 +350,8 @@ export async function handleListOrders(request: Request, env: GatewayEnv, user: 
     const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
 
     const orders = await sql`
-      SELECT id, order_number, channel, status, customer_name, customer_phone, total_cents, created_at
+      SELECT id, order_number, channel, status, customer_name, customer_phone,
+             total_cents, payment_status, payment_method, paid_at, created_at
       FROM orders
       WHERE tenant_id = ${user.tid}::uuid AND branch_id = ${branchId}::uuid
         ${status ? sql`AND status = ${status}` : sql``}

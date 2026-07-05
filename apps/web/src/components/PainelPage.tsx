@@ -10,6 +10,7 @@ import {
   ORDER_CHANNELS,
   ORDER_STATUSES,
   STATUS_LABELS,
+  PAYMENT_STATUS_LABELS,
   type OrderChannel,
   type OrderStatus,
 } from "@/lib/pedidos";
@@ -22,6 +23,7 @@ interface Order {
   customer_name: string | null;
   customer_phone: string | null;
   total_cents: number;
+  payment_status?: string;
   created_at: string;
 }
 
@@ -202,6 +204,11 @@ export default function PainelPage({
                 <span className={`order-badge order-badge--status order-badge--${o.status}`}>
                   {STATUS_LABELS[o.status as OrderStatus] ?? o.status}
                 </span>
+                {o.payment_status && o.payment_status !== "unpaid" && (
+                  <span className="order-badge order-badge--payment">
+                    {PAYMENT_STATUS_LABELS[o.payment_status] ?? o.payment_status}
+                  </span>
+                )}
               </p>
               <p className="order-customer">{o.customer_name ?? "Cliente balcão/web"}</p>
               {o.customer_phone && <p className="order-phone">{o.customer_phone}</p>}

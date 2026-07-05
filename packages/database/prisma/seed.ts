@@ -102,8 +102,47 @@ async function main() {
 
   const starterPlan = await prisma.subscriptionPlan.upsert({
     where: { code: "starter" },
-    update: {},
-    create: { code: "starter", name: "Starter", priceCents: 0, maxBranches: 1, maxProducts: 50 },
+    update: {
+      stripePriceId: process.env.STRIPE_PRICE_STARTER ?? "price_test_starter",
+    },
+    create: {
+      code: "starter",
+      name: "Starter",
+      priceCents: 0,
+      maxBranches: 1,
+      maxProducts: 50,
+      stripePriceId: process.env.STRIPE_PRICE_STARTER ?? "price_test_starter",
+    },
+  });
+
+  await prisma.subscriptionPlan.upsert({
+    where: { code: "pro" },
+    update: {
+      stripePriceId: process.env.STRIPE_PRICE_PRO ?? "price_test_pro",
+    },
+    create: {
+      code: "pro",
+      name: "Pro",
+      priceCents: 14900,
+      maxBranches: 3,
+      maxProducts: 500,
+      stripePriceId: process.env.STRIPE_PRICE_PRO ?? "price_test_pro",
+    },
+  });
+
+  await prisma.subscriptionPlan.upsert({
+    where: { code: "enterprise" },
+    update: {
+      stripePriceId: process.env.STRIPE_PRICE_ENTERPRISE ?? "price_test_enterprise",
+    },
+    create: {
+      code: "enterprise",
+      name: "Enterprise",
+      priceCents: 49900,
+      maxBranches: 50,
+      maxProducts: 5000,
+      stripePriceId: process.env.STRIPE_PRICE_ENTERPRISE ?? "price_test_enterprise",
+    },
   });
 
   const existingSub = await prisma.subscription.findFirst({ where: { tenantId: tenant.id } });

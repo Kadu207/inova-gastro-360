@@ -133,3 +133,52 @@ export async function runTrialExpiryNotifier(
     await sql.end();
   }
 }
+
+interface PastDueRow {
+  id: string;
+  tenant_id: string;
+  grace_period_ends_at: Date | null;
+}
+
+/** EMB-03 extensão — alerta assinaturas past_due (idempotente por dia). */
+export async function runPastDueNotifier(
+  env: GatewayEnv,
+  now: Date = new Date(),
+): Promise<{ notified: number }> {
+  if (!hasDatabase(env)) return { notified: 0 };
+
+  const sql = getSql(env);
+  try {
+    const rows = await sql<PastDueRow[]>`
+      SELECT id, tenant_id, grace_period_ends_at
+      FROM subscriptions
+      WHERE status = 'past_due'
+      LIMIT 100
+    `;
+
+    const dayKey = `${now.getUTCFullYear()}${now.getUTCMonth()}${now.getUTCDate()}`;
+    for (const row of rows) {
+      await publishOutboxEvent(
+        env,
+        row.tenant_id,
+        EVENT_TYPES.SUBSCRIPTION_PAST_DUE,
+        {
+          subscriptionId: row.id,
+          gracePeriodEndsAt: row.grace_period_ends_at?.toISOString() ?? null,
+        },
+        `past-due-${row.id}-${dayKey}`,
+      );
+
+      if (row.grace_period_ends_at && row.grace_period_ends_at <= now) {
+        await sql`
+          UPDATE subscriptions SET status = 'restricted', updated_at = NOW()
+          WHERE id = ${row.id}::uuid AND status = 'past_due'
+        `;
+      }
+    }
+
+    return { notified: rows.length };
+  } finally {
+    await sql.end();
+  }
+}
