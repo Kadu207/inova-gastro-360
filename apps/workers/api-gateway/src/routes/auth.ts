@@ -12,7 +12,7 @@ import {
 import { jsonResponse, parseJsonBody, clientIp } from "../lib";
 import { getSql, withTenant } from "../lib/db";
 import { getJwtSecret } from "../lib/config";
-import { hitRateLimit, clearRateLimit } from "../lib/rate-limit";
+import { hitRateLimitAsync, clearRateLimitAsync } from "../lib/rate-limit";
 
 import type { GatewayEnv } from "../types/env";
 
@@ -74,7 +74,7 @@ export async function handleLogin(request: Request, env: GatewayEnv): Promise<Re
   const { email, password, tenantSlug } = body.data;
 
   const rlKey = `login:${clientIp(request)}:${email.toLowerCase()}`;
-  const rl = hitRateLimit(rlKey);
+  const rl = await hitRateLimitAsync(rlKey);
   if (!rl.allowed) {
     return new Response(
       JSON.stringify({ error: "too_many_attempts", message: "Muitas tentativas. Tente mais tarde." }),
@@ -127,7 +127,7 @@ export async function handleLogin(request: Request, env: GatewayEnv): Promise<Re
     const valid = await verifyPassword(password, user.password_hash);
     if (!valid) return jsonResponse({ error: "invalid_credentials" }, 401);
 
-    clearRateLimit(rlKey);
+    await clearRateLimitAsync(rlKey);
     const session = await withTenant(sql, user.tenant_id, (tx) => issueSession(tx, user, jwtSecret));
     return jsonResponse(session);
   } catch (err) {

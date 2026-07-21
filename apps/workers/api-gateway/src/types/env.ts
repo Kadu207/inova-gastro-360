@@ -9,6 +9,8 @@ export interface GatewayEnv {
   INTERNAL_SHARED_SECRET?: string;
   /** Lista CSV de origens permitidas em CORS (produção) */
   CORS_ALLOWED_ORIGINS?: string;
+  /** Redis — rate limit compartilhado entre réplicas (VPS) */
+  REDIS_URL?: string;
   MESSAGING_SERVICE?: Fetcher;
   /** Binding Hyperdrive (produção). Local dev usa DATABASE_URL em .dev.vars */
   HYPERDRIVE?: Hyperdrive;
