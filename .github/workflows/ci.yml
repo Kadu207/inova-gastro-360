@@ -49,8 +49,13 @@ jobs:
             echo "ERROR: .env.production tracked no Git" >&2
             exit 1
           fi
-          if git grep -nE 'SEED_ADMIN_PASSWORD=.+' -- ':!.env.example' ':!**/.env.example' ':!**/*.md' ':!**/configure-security-env-vps.sh' 2>/dev/null \
-            | grep -vE 'SEED_ADMIN_PASSWORD=(CHANGE_ME|"\$\{|<.*>|\.\.\.|placeholder|\$SEED)' ; then
+          # Só literals (não "$VAR" / ${VAR} / CHANGE_ME em scripts e examples)
+          hits="$(git grep -nE 'SEED_ADMIN_PASSWORD=[A-Za-z0-9+/=._-]{12,}' \
+            -- ':!**/*.md' ':!**/.env*.example' ':!**/configure-security-env-vps.sh' \
+            ':!.github/**' 2>/dev/null || true)"
+          suspicious="$(printf '%s\n' "$hits" | grep -vE 'CHANGE_ME|placeholder|example' || true)"
+          if [[ -n "${suspicious//[[:space:]]/}" ]]; then
+            echo "$suspicious" >&2
             echo "ERROR: possível senha real versionada (SEED_ADMIN_PASSWORD)" >&2
             exit 1
           fi
