@@ -31,6 +31,14 @@ reviews:
     - "!**/*.pdf"
     - "!**/*.docx"
     - "!**/memory-bank/**/*.bak*"
+    # Cursor skills / agentes — fora do escopo do CodeRabbit
+    - "!**/.cursor/skills/**"
+    - "!**/.cursor/agents/**"
+    - "!**/.cursor/rules/**"
+    - "!**/AGENTS.md"
+    - "!**/.specify/skills/**"
+    - "!**/.specify/workflows/**"
+    - "!**/agent-transcripts/**"
   path_instructions:
     - path: "apps/workers/api-gateway/**"
       instructions: |

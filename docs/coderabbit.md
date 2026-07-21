@@ -8,7 +8,8 @@ Arquivo [`.coderabbit.yaml`](../.coderabbit.yaml) na raiz:
 
 - Idioma pt-BR, perfil `assertive`
 - Path filters (ignora `node_modules`, builds, locks)
-- Path instructions por área (API multitenant, workers internos, web, print-agent, Prisma, infra)
+- **Não revisa** skills/agentes Cursor: `.cursor/skills/**`, `.cursor/agents/**`, `.cursor/rules/**`, `AGENTS.md`, `.specify/skills/**`, `.specify/workflows/**`
+- Path instructions por área de produto (API, workers, web, print-agent, Prisma, infra)
 
 ## Instalação do GitHub App (manual — uma vez)
 
