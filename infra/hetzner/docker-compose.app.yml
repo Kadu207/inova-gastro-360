@@ -91,6 +91,7 @@ services:
       REALTIME_URL: http://realtime-hub:8790
       INTEGRATIONS_URL: http://integrations:8791
       WEB_HEALTH_URL: http://web:3102/login
+      REDIS_URL: redis://redis:6379
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -102,7 +103,10 @@ services:
     ports:
       - "127.0.0.1:8792:8792"
     depends_on:
-      - messaging-bus
+      messaging-bus:
+        condition: service_started
+      redis:
+        condition: service_healthy
 
   web:
     image: node:20-alpine

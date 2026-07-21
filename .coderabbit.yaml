@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "pt-BR"
+early_access: false
+
+reviews:
+  profile: "assertive"
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - master
+      - main
+      - develop
+  path_filters:
+    - "!**/node_modules/**"
+    - "!**/dist/**"
+    - "!**/.next/**"
+    - "!**/out/**"
+    - "!**/.wrangler/**"
+    - "!**/.turbo/**"
+    - "!**/coverage/**"
+    - "!**/package-lock.json"
+    - "!**/*.lock"
+    - "!**/*.png"
+    - "!**/*.PNG"
+    - "!**/*.pdf"
+    - "!**/*.docx"
+    - "!**/memory-bank/**/*.bak*"
+    # Cursor skills / agentes — fora do escopo do CodeRabbit
+    - "!**/.cursor/skills/**"
+    - "!**/.cursor/agents/**"
+    - "!**/.cursor/rules/**"
+    - "!**/AGENTS.md"
+    - "!**/.specify/skills/**"
+    - "!**/.specify/workflows/**"
+    - "!**/agent-transcripts/**"
+  path_instructions:
+    - path: "apps/workers/api-gateway/**"
+      instructions: |
+        Revisar com foco em segurança e multitenant:
+        - Toda query DEVE filtrar por tenant_id (e branch_id quando aplicável).
+        - Preferir withTenant / RLS; rejeitar vazamento cross-tenant.
+        - Rate limit em login e pedidos guest; nunca remover sem alternativa.
+        - Segredos (JWT_SECRET, OUTBOX_FLUSH_SECRET, INTERNAL_SHARED_SECRET) fail-fast — sem fallback hardcoded.
+        - Validação Zod em inputs; uploads com magic bytes.
+        - Não logar tokens, senhas ou connection strings.
+    - path: "apps/workers/messaging-bus/**"
+      instructions: |
+        Rotas /internal/* exigem INTERNAL_SHARED_SECRET.
+        Não expor o serviço publicamente; apenas rede Docker interna.
+    - path: "apps/workers/realtime-hub/**"
+      instructions: |
+        WebSocket deve validar JWT + membership de branch.
+        /broadcast interno exige INTERNAL_SHARED_SECRET.
+    - path: "apps/workers/integrations/**"
+      instructions: |
+        Webhooks e /internal/notify: autenticar com segredo compartilhado quando aplicável.
+        Não vazar URLs de n8n/Chatwoot em logs.
+    - path: "apps/web/**"
+      instructions: |
+        Tokens apenas em storage controlado; refresh transparente em 401.
+        Sem DEMO_BRANCH_ID hardcoded — usar branch do usuário logado.
+        NEXT_PUBLIC_* nunca deve carregar segredos.
+    - path: "apps/print-agent/**"
+      instructions: |
+        PRINT_AGENT_PASSWORD obrigatória fora de dry-run.
+        Não logar accessToken; DRY_RUN não deve PATCH printed.
+    - path: "packages/database/**"
+      instructions: |
+        Migrations com RLS; sem bypass de policies.
+        Seed nunca commitando senhas reais; usar SEED_ADMIN_PASSWORD.
+    - path: "infra/hetzner/**"
+      instructions: |
+        Nunca commitar .env.production, senhas ou chaves.
+        Scripts devem falhar se segredos CHANGE_ME em produção crítica.
+    - path: "specs/**"
+      instructions: |
+        Specs em pt-BR; critérios de aceite testáveis; alinhar à constitution (SDD/TDD/multitenant).
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  opt_out: false

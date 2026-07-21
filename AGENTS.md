@@ -26,6 +26,12 @@ Rules: `.cursor/rules/specify-rules.mdc`, `.cursor/rules/cloudflare-workers.mdc`
 
 **TDD:** `npm run test` MUST passar antes de PR. Testes críticos: auth, multitenant, pedidos (constitution).
 
+## Code review (CodeRabbit + CI)
+
+- PRs em `master`/`main`/`develop` passam por **CI** (lint, typecheck, test, build, audit high, secrets-guard).
+- **CodeRabbit** (GitHub App) usa [`.coderabbit.yaml`](.coderabbit.yaml) — path instructions de segurança/multitenant.
+- Instalação do app e uso: [`docs/coderabbit.md`](docs/coderabbit.md).
+
 ## Arquitetura
 - Cloudflare-first: Workers desacoplados (Service Bindings twist)
 - PostgreSQL multitenant na VPS via Hyperdrive

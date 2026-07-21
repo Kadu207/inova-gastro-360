@@ -42,9 +42,9 @@
 
 - [x] T040 `docs/infoproduto/estrategia.md`, `calendario-conteudo.md`, `ementa-curso.md`, `primeiro-post-build-in-public.md`
 
-## Operacional pós-merge (VPS) — pendente
+## Operacional pós-merge (VPS)
 
-- [ ] T050 `bash infra/hetzner/scripts/configure-security-env-vps.sh`
-- [ ] T051 `npx prisma migrate deploy` (RLS + billing)
-- [ ] T052 Rotacionar senha admin demo (`rotate-admin-password-vps.sh`)
-- [ ] T053 `APP_DB_PASSWORD=... bash infra/hetzner/scripts/setup-app-db-role-vps.sh`
+- [x] T050 `bash infra/hetzner/scripts/configure-security-env-vps.sh` (2026-07-21)
+- [x] T051 `migrate-deploy-vps.sh` — sem pending (2026-07-21)
+- [x] T052 Rotacionar senha admin demo (`rotate-admin-password-vps.sh`)
+- [x] T053 `setup-app-db-role-vps.sh` — role `inova_gastro_app` (2026-07-21)

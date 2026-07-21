@@ -42,6 +42,29 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Secrets guard
+        run: |
+          set -euo pipefail
+          if git ls-files | grep -E '(^|/)\.env\.production$' ; then
+            echo "ERROR: .env.production tracked no Git" >&2
+            exit 1
+          fi
+          # Só literals (não "$VAR" / ${VAR} / CHANGE_ME em scripts e examples)
+          hits="$(git grep -nE 'SEED_ADMIN_PASSWORD=[A-Za-z0-9+/=._-]{12,}' \
+            -- ':!**/*.md' ':!**/.env*.example' ':!**/configure-security-env-vps.sh' \
+            ':!.github/**' 2>/dev/null || true)"
+          suspicious="$(printf '%s\n' "$hits" | grep -vE 'CHANGE_ME|placeholder|example' || true)"
+          if [[ -n "${suspicious//[[:space:]]/}" ]]; then
+            echo "$suspicious" >&2
+            echo "ERROR: possível senha real versionada (SEED_ADMIN_PASSWORD)" >&2
+            exit 1
+          fi
+          echo "secrets-guard OK"
+
+      - name: Security audit (high+)
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
       - name: Prisma generate
         run: npm run db:generate
 

@@ -3,7 +3,7 @@ import type { JSONValue } from "postgres";
 import { jsonResponse, parseJsonBody, clientIp } from "../lib";
 import { getSql, withTenant, setTenantContext } from "../lib/db";
 import { publishOutboxEvent, EVENT_TYPES } from "../lib/outbox";
-import { hitRateLimit } from "../lib/rate-limit";
+import { hitRateLimitAsync } from "../lib/rate-limit";
 import { checkSubscriptionAllowsWrites } from "../middleware/subscription-guard";
 import type { GatewayEnv } from "../types/env";
 import type { JwtPayload } from "@inova-gastro-360/auth";
@@ -163,7 +163,7 @@ export async function handleCreateOrder(request: Request, env: GatewayEnv, user?
   const { branchId, channel, customerName, customerPhone, notes, items } = parsed.data;
 
   if (!user) {
-    const guestRl = hitRateLimit(`order-guest:${clientIp(request)}:${branchId}`, Date.now(), 20);
+    const guestRl = await hitRateLimitAsync(`order-guest:${clientIp(request)}:${branchId}`, Date.now(), 20);
     if (!guestRl.allowed) {
       return new Response(
         JSON.stringify({ error: "too_many_requests", message: "Limite de pedidos atingido. Tente mais tarde." }),
