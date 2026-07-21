@@ -41,24 +41,17 @@ Adiado (spec 005)
 - [x] T027 prep R2 (docs + configure-r2-env-vps.sh; cutover CF pendente)
 
 ## Spec 015 security-hardening — implementado (branch feat/015-security-hardening)
-- [x] P0: JWT fail-fast, CORS allowlist, rate limit login, OUTBOX_FLUSH_SECRET obrigatório
-- [x] P0: senha demo fora do repo (SEED_ADMIN_PASSWORD / SMOKE_PASSWORD / rotate script)
-- [x] P1: /auth/refresh com rotação + /auth/logout + refresh transparente no web
-- [x] P1: RLS via migration 20260702160000 + withTenant; role inova_gastro_app NOLOGIN
-- [x] P1: INTERNAL_SHARED_SECRET entre workers; WebSocket com JWT + branch membership
-- [x] P2: RBAC (requireRole + roles de gestão no catálogo); onboarding POST /api/v1/admin/tenants
-- [x] P2: billing foundation (subscription_plans/subscriptions + trial 14d no provisioning)
-- [x] Web: branch ativa do usuário logado (getActiveBranchId) no lugar do hardcode demo
-- [x] EMB-01 Order State Guardian + EMB-02 Session Sweeper + EMB-03 Trial Expiry Notifier
-- [x] P2 extra: magic bytes upload, rate limit pedidos guest, withTenant na criação de pedidos
-- [x] Testes auth (refresh/logout/rate limit) + configure-security-env-vps.sh + setup-app-db-role-vps.sh
-- [x] docs/infoproduto/primeiro-post-build-in-public.md
-- [x] Operacional VPS: T050–T052 (configure-security-env, migrate, rotate senha) — 2026-07-03
-- [x] PR merge `feat/015-security-hardening` → `master` (PR #17, CI pipeline pass)
-- [x] Fix outbox dispatch Node (`duplex` em Service Binding fetch)
-- [x] T053 VPS: role `inova_gastro_app` (DATABASE_URL na VPS)
-- [x] Hotfixes VPS RLS: #18 bootstrap, #19 MIGRATION_DATABASE_URL, #20 setTenantContext session
-- [x] Smokes finais VPS 2026-07-03: pedidos #1006 + upload OK com `inova_gastro_app`
+- [x] P0–P2 + EMB + ops T050–T053 (VPS revalidado 2026-07-21)
+
+## Spec 016 CodeRabbit + security layers (PR #23)
+- [x] `.coderabbit.yaml` + `docs/coderabbit.md` + nota AGENTS.md
+- [x] Headers Nginx (CSP, XFO, nosniff, Referrer-Policy, Permissions-Policy)
+- [x] Rate-limit Redis com fallback memória + testes
+- [x] CI secrets-guard + npm audit high
+- [x] Cron `tunnel-connect-inova.sh` */5 (user crontab gestaoti)
+- [ ] Merge PR #23 → master
+- [ ] Instalar GitHub App CodeRabbit no repo
+- [ ] Print-agent LAN com impressora física
 
 ## Spec 007 pagamentos — implementado (branch feat/007-pagamentos)
 - [x] `/speckit-specify` — `specs/007-pagamentos/spec.md` + checklist

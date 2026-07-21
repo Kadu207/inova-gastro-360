@@ -1,30 +1,34 @@
 # Contexto ativo — Inova Gastro 360
 
-**Última atualização:** 2026-07-05
+**Última atualização:** 2026-07-21
 
-## Spec 007 — Pagamentos ✅ mergeado e em produção VPS
+## Runtime
+- VPS `gestaoti@128.140.77.31` → `~/inova-gastro-360`
+- Branch deploy: `feat/016-coderabbit-security-layers` (PR #23) — merge pendente em master
+- HTTPS Tunnel → `:9088` (headers CSP/XFO/nosniff ativos)
 
-**PR #21 mergeado** — `master` @ `8dfc10f` (2026-07-05).
+## Segurança
+- Spec **015** ops: T050/T051/T053 feitos na VPS (T052 já ok); role `inova_gastro_app` + migrate deploy
+- Spec **016**: CodeRabbit (`.coderabbit.yaml`), rate-limit Redis, CI secrets-guard/audit
+- Print-agent: `PRINT_AGENT_API_BASE=https://inovagastro360.inovatitech.com.br` (`.env` chmod 600)
 
-**VPS:** deploy completo em `master` — 13 rotas web, migration 007 aplicada, webhooks **401** (infra OK).
+## CodeRabbit
+- Config no repo; **instalar GitHub App** manualmente: https://github.com/apps/coderabbitai → repo `inova-gastro-360`
+- Doc: `docs/coderabbit.md`
 
-**Modo pré-venda:** `PAYMENTS_ENABLED=false` via `prepare-payments-vps.sh`. **Não** rodar `configure-payments-env-vps.sh` com tokens de exemplo do runbook.
+## Próximo
+- Merge PR #23 → master
+- Instalar CodeRabbit App
+- Print-agent LAN com impressora real (`PRINTER_TYPE=network`)
 
-### Na venda comercial
-1. Credenciais reais MP + Stripe no painel de cada provedor
-2. `configure-payments-env-vps.sh` (valores reais, não placeholders)
-3. Recriar `api-gateway` + `integrations`
-4. Cadastrar webhooks: `/webhooks/mercadopago`, `/webhooks/stripe`
+## Comandos
+```powershell
+.\infra\hetzner\scripts\deploy-vps.ps1
+```
+```bash
+cd ~/inova-gastro-360 && bash infra/hetzner/scripts/deploy-vps.sh
+```
 
-**Tunnel:** só Swarm (`cloudflared_cloudflared.*`); nunca `systemctl cloudflared`. Erro **530/1033** = tunnel reconectando — aguardar ou `docker restart` no container Swarm.
-
-## Spec 015 — Security hardening ✅ produção VPS
-
-`master` @ `8dfc10f` — smokes verdes 2026-07-05.
-
-- Demo: `https://inovagastro360.inovatitech.com.br`
-- Admin: `admin@inovagastro360.local` + `tenantSlug: demo-burger`
-
-## Outros focos
-- **Infoproduto** — post #1 aprovado; PDF checklist em `docs/infoproduto/checklists/`
-- Opcional: cutover R2 (`configure-r2-env-vps.sh`)
+## Regras de negócio
+- Core (auth, cardápio, pedidos, painéis, print_jobs, messaging): **sim**
+- Financeiro 005 / LGPD 009: **não** (adiados)
