@@ -351,3 +351,120 @@ model PrintJob {
   @@index([orderId])
   @@map("print_jobs")
 }
+
+/// Spec 009 — LGPD: registro de consentimento de cookies (essencial/analytics/marketing).
+model ConsentRecord {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  branchId   String?  @map("branch_id") @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  /// Identificador do titular no navegador (cookie/localStorage) — permite consulta sem exigir login.
+  subjectId  String   @map("subject_id")
+  essential  Boolean  @default(true)
+  analytics  Boolean  @default(false)
+  marketing  Boolean  @default(false)
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, subjectId])
+  @@index([tenantId, createdAt])
+  @@map("consent_records")
+}
+
+/// Spec 009 — LGPD: workflow de "direito ao esquecimento" (solicitação + status + auditoria).
+model ErasureRequest {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  requestedBy String?   @map("requested_by") @db.Uuid
+  /// E-mail, telefone ou userId do titular alvo da solicitação.
+  subjectId   String    @map("subject_id")
+  subjectType String    @default("user") @map("subject_type")
+  status      String    @default("pending")
+  reason      String?
+  resolvedAt  DateTime? @map("resolved_at")
+  resolvedBy  String?   @map("resolved_by") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([tenantId, status])
+  @@index([tenantId, subjectId])
+  @@map("erasure_requests")
+}
+
+model CashSession {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  branchId     String    @map("branch_id") @db.Uuid
+  openedBy     String?   @map("opened_by") @db.Uuid
+  closedBy     String?   @map("closed_by") @db.Uuid
+  status       String    @default("open")
+  openingCents Int       @default(0) @map("opening_cents")
+  closingCents Int?      @map("closing_cents")
+  openedAt     DateTime  @default(now()) @map("opened_at")
+  closedAt     DateTime? @map("closed_at")
+  notes        String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  ledgerEntries LedgerEntry[]
+
+  @@index([tenantId, branchId, status])
+  @@map("cash_sessions")
+}
+
+model LedgerEntry {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  branchId      String   @map("branch_id") @db.Uuid
+  cashSessionId String?  @map("cash_session_id") @db.Uuid
+  entryType     String   @map("entry_type")
+  amountCents   Int      @map("amount_cents")
+  description   String
+  referenceType String?  @map("reference_type")
+  referenceId   String?  @map("reference_id") @db.Uuid
+  createdBy     String?  @map("created_by") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  cashSession CashSession? @relation(fields: [cashSessionId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, branchId, createdAt])
+  @@index([cashSessionId])
+  @@map("ledger_entries")
+}
+
+model Payable {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  branchId    String?   @map("branch_id") @db.Uuid
+  description String
+  amountCents Int       @map("amount_cents")
+  dueDate     DateTime  @map("due_date")
+  status      String    @default("open")
+  paidAt      DateTime? @map("paid_at")
+  supplier    String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([tenantId, status, dueDate])
+  @@map("payables")
+}
+
+model Receivable {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  branchId    String?   @map("branch_id") @db.Uuid
+  description String
+  amountCents Int       @map("amount_cents")
+  dueDate     DateTime  @map("due_date")
+  status      String    @default("open")
+  paidAt      DateTime? @map("paid_at")
+  customer    String?
+  orderId     String?   @map("order_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([tenantId, status, dueDate])
+  @@index([orderId])
+  @@map("receivables")
+}

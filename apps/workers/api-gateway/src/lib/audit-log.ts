@@ -11,6 +11,36 @@ export type CatalogAuditAction =
   | "catalog.product.delete"
   | "catalog.product.image_upload";
 
+type SqlClient = ReturnType<typeof getSql>;
+
+/** Auditoria com conexão já aberta (não fecha o client). */
+export async function writeAuditLog(
+  sql: SqlClient,
+  params: {
+    tenantId: string;
+    userId: string;
+    action: string;
+    resource: string;
+    metadata?: Record<string, unknown>;
+  },
+): Promise<void> {
+  try {
+    await sql`
+      INSERT INTO audit_logs (id, tenant_id, user_id, action, resource, metadata)
+      VALUES (
+        gen_random_uuid(),
+        ${params.tenantId}::uuid,
+        ${params.userId}::uuid,
+        ${params.action},
+        ${params.resource},
+        ${params.metadata ? sql.json(params.metadata as JSONValue) : null}
+      )
+    `;
+  } catch {
+    // best-effort
+  }
+}
+
 /** Auditoria best-effort — falhas não propagam para o handler principal. */
 export async function writeCatalogAuditLog(
   env: GatewayEnv,
@@ -27,17 +57,7 @@ export async function writeCatalogAuditLog(
   const sql = getSql(env);
   try {
     await setTenantContext(sql, params.tenantId);
-    await sql`
-      INSERT INTO audit_logs (id, tenant_id, user_id, action, resource, metadata)
-      VALUES (
-        gen_random_uuid(),
-        ${params.tenantId}::uuid,
-        ${params.userId}::uuid,
-        ${params.action},
-        ${params.resource},
-        ${params.metadata ? sql.json(params.metadata as JSONValue) : null}
-      )
-    `;
+    await writeAuditLog(sql, params);
   } catch {
     // best-effort
   } finally {

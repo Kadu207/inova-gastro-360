@@ -39,6 +39,19 @@ import {
   handleBillingCheckout,
   handleBillingPortal,
 } from "./routes/billing";
+import {
+  handleOpenCash,
+  handleCloseCash,
+  handleCashSangria,
+  handleCashSuprimento,
+  handleGetOpenCash,
+  handleCreatePayable,
+  handleListPayables,
+  handleCreateReceivable,
+  handleListReceivables,
+  handleFinanceDre,
+  handleFinanceExport,
+} from "./routes/finance";
 import { handlePaymentsStatus } from "./routes/payments-status";
 import { requireAuth } from "./middleware/auth";
 import { isOutboxFlushAuthorized } from "./lib/outbox-dispatch";
@@ -259,6 +272,49 @@ async function route(request: Request, env: Env): Promise<Response> {
       }
       if (path === "/api/v1/billing/portal" && request.method === "POST") {
         return withCors(await handleBillingPortal(request, env, auth.user));
+      }
+    }
+
+    if (path.startsWith("/api/v1/finance")) {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+
+      if (path === "/api/v1/finance/cash/open" && request.method === "POST") {
+        return withCors(await handleOpenCash(request, env, auth.user));
+      }
+      const cashBranch = path.match(/^\/api\/v1\/finance\/cash\/branch\/([^/]+)$/);
+      if (cashBranch && request.method === "GET") {
+        return withCors(await handleGetOpenCash(request, env, auth.user, cashBranch[1]));
+      }
+      const cashClose = path.match(/^\/api\/v1\/finance\/cash\/([^/]+)\/close$/);
+      if (cashClose && request.method === "POST") {
+        return withCors(await handleCloseCash(request, env, auth.user, cashClose[1]));
+      }
+      const cashSangria = path.match(/^\/api\/v1\/finance\/cash\/([^/]+)\/sangria$/);
+      if (cashSangria && request.method === "POST") {
+        return withCors(await handleCashSangria(request, env, auth.user, cashSangria[1]));
+      }
+      const cashSuprimento = path.match(/^\/api\/v1\/finance\/cash\/([^/]+)\/suprimento$/);
+      if (cashSuprimento && request.method === "POST") {
+        return withCors(await handleCashSuprimento(request, env, auth.user, cashSuprimento[1]));
+      }
+      if (path === "/api/v1/finance/payables" && request.method === "GET") {
+        return withCors(await handleListPayables(request, env, auth.user));
+      }
+      if (path === "/api/v1/finance/payables" && request.method === "POST") {
+        return withCors(await handleCreatePayable(request, env, auth.user));
+      }
+      if (path === "/api/v1/finance/receivables" && request.method === "GET") {
+        return withCors(await handleListReceivables(request, env, auth.user));
+      }
+      if (path === "/api/v1/finance/receivables" && request.method === "POST") {
+        return withCors(await handleCreateReceivable(request, env, auth.user));
+      }
+      if (path === "/api/v1/finance/dre" && request.method === "GET") {
+        return withCors(await handleFinanceDre(request, env, auth.user));
+      }
+      if (path === "/api/v1/finance/export" && request.method === "GET") {
+        return withCors(await handleFinanceExport(request, env, auth.user));
       }
     }
 
