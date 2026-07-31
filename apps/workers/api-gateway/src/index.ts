@@ -52,6 +52,13 @@ import {
   handleFinanceDre,
   handleFinanceExport,
 } from "./routes/finance";
+import {
+  handlePostConsent,
+  handleLgpdExport,
+  handleCreateErasureRequest,
+  handleListErasureRequests,
+  handleUpdateErasureRequest,
+} from "./routes/lgpd";
 import { handlePaymentsStatus } from "./routes/payments-status";
 import { requireAuth } from "./middleware/auth";
 import { isOutboxFlushAuthorized } from "./lib/outbox-dispatch";
@@ -272,6 +279,28 @@ async function route(request: Request, env: Env): Promise<Response> {
       }
       if (path === "/api/v1/billing/portal" && request.method === "POST") {
         return withCors(await handleBillingPortal(request, env, auth.user));
+      }
+    }
+
+    if (path === "/api/v1/lgpd/consent" && request.method === "POST") {
+      return withCors(await handlePostConsent(request, env));
+    }
+
+    if (path.startsWith("/api/v1/lgpd")) {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      if (path === "/api/v1/lgpd/export" && request.method === "GET") {
+        return withCors(await handleLgpdExport(request, env, auth.user));
+      }
+      if (path === "/api/v1/lgpd/erasure-requests" && request.method === "GET") {
+        return withCors(await handleListErasureRequests(request, env, auth.user));
+      }
+      if (path === "/api/v1/lgpd/erasure-requests" && request.method === "POST") {
+        return withCors(await handleCreateErasureRequest(request, env, auth.user));
+      }
+      const erasurePatch = path.match(/^\/api\/v1\/lgpd\/erasure-requests\/([^/]+)$/);
+      if (erasurePatch && request.method === "PATCH") {
+        return withCors(await handleUpdateErasureRequest(request, env, auth.user, erasurePatch[1]));
       }
     }
 

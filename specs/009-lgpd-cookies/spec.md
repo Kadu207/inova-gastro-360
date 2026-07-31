@@ -1,8 +1,12 @@
 # Feature Specification: 009-lgpd-cookies
 
-**Status**: Draft — Onda 4  
+**Status**: In Progress — Onda 4  
 **Product**: Inova Gastro 360
 
-## User Story 1 - Consentimento (P1)
+## Entregue Onda 4
 
-Banner cookies, preferências, registro de consentimento, exportação LGPD.
+- Preferências cookies (essencial/analytics/marketing)
+- `consent_records` + API POST
+- Páginas `/privacidade` e `/termos`
+- Exportação titular JSON
+- Workflow admin direito ao esquecimento
