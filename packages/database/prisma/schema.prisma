@@ -144,7 +144,8 @@ model SubscriptionPlan {
   maxBranches  Int      @default(1) @map("max_branches")
   maxProducts  Int      @default(50) @map("max_products")
   isActive     Boolean  @default(true) @map("is_active")
-  stripePriceId String? @map("stripe_price_id")
+  stripePriceId      String? @map("stripe_price_id")
+  asaasPlanValueCents Int?   @map("asaas_plan_value_cents")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -158,8 +159,9 @@ model SubscriptionCheckout {
   id                      String   @id @default(uuid()) @db.Uuid
   tenantId                String   @map("tenant_id") @db.Uuid
   planId                  String   @map("plan_id") @db.Uuid
-  stripeCheckoutSessionId String   @unique @map("stripe_checkout_session_id")
+  stripeCheckoutSessionId String?  @unique @map("stripe_checkout_session_id")
   stripeCustomerId        String?  @map("stripe_customer_id")
+  asaasCheckoutId         String?  @unique @map("asaas_checkout_id")
   status                  String   @default("open")
   createdAt               DateTime @default(now()) @map("created_at")
   updatedAt               DateTime @updatedAt @map("updated_at")
@@ -179,6 +181,8 @@ model Subscription {
   currentPeriodEnd     DateTime? @map("current_period_end")
   stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
   stripeCustomerId     String?   @map("stripe_customer_id")
+  asaasSubscriptionId  String?   @unique @map("asaas_subscription_id")
+  asaasCustomerId      String?   @map("asaas_customer_id")
   gracePeriodEndsAt    DateTime? @map("grace_period_ends_at")
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
@@ -293,7 +297,7 @@ model PaymentIntent {
   tenantId          String    @map("tenant_id") @db.Uuid
   branchId          String    @map("branch_id") @db.Uuid
   orderId           String    @map("order_id") @db.Uuid
-  provider          String    @default("mercadopago")
+  provider          String    @default("asaas")
   method            String
   amountCents       Int       @map("amount_cents")
   currency          String    @default("BRL")

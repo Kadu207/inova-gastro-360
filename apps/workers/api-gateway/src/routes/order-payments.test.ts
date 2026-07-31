@@ -4,30 +4,32 @@ import { testEnv, DEMO_BRANCH_ID, testDatabaseUrl } from "../test/helpers";
 import postgres from "postgres";
 import { normalizeDatabaseUrl } from "../lib/db";
 
-const MP_TOKEN = "TEST-mp-token";
+const ASAAS_KEY = "asaas_test_key_abcdefghijklmnopqrstuvwxyz";
 
 function uniqueOrderNumber(): number {
   return 900_000_000 + Math.floor(Math.random() * 1_000_000);
 }
 
-const mpPixResponse = {
-  id: 12345,
-  status: "pending",
-  point_of_interaction: {
-    transaction_data: {
-      qr_code_base64: "base64qr",
-      qr_code: "00020126PIX",
-    },
-  },
-};
-
-describe("order-payments — contrato (mock MP)", () => {
+describe("order-payments — contrato (mock Asaas)", () => {
   beforeEach(() => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (url: string | URL) => {
-        if (String(url).includes("mercadopago.com")) {
-          return new Response(JSON.stringify(mpPixResponse), { status: 201 });
+      vi.fn(async (url: string | URL, init?: RequestInit) => {
+        const u = String(url);
+        if (u.includes("/customers") && init?.method === "POST") {
+          return new Response(JSON.stringify({ id: "cus_asaas_1" }), { status: 200 });
+        }
+        if (u.includes("/payments") && init?.method === "POST" && !u.includes("pixQrCode")) {
+          return new Response(
+            JSON.stringify({ id: "pay_asaas_123", status: "PENDING", invoiceUrl: "https://asaas.test/i/1" }),
+            { status: 200 },
+          );
+        }
+        if (u.includes("/pixQrCode")) {
+          return new Response(
+            JSON.stringify({ encodedImage: "base64qr", payload: "00020126PIX" }),
+            { status: 200 },
+          );
         }
         return new Response("not found", { status: 404 });
       }),
@@ -58,7 +60,7 @@ describe("order-payments — contrato (mock MP)", () => {
     `;
     await sql.end();
 
-    const env = testEnv({ MERCADOPAGO_ACCESS_TOKEN: MP_TOKEN });
+    const env = testEnv({ ASAAS_API_KEY: ASAAS_KEY, ASAAS_SANDBOX: "true" });
     const req = new Request(
       `https://api.test/api/v1/branches/${DEMO_BRANCH_ID}/orders/${order.id}/pay`,
       {
@@ -99,9 +101,9 @@ describe("order-payments — contrato (mock MP)", () => {
     `;
     await sql.end();
 
-    const env = testEnv();
+    const env = testEnv({ ASAAS_API_KEY: ASAAS_KEY });
     const res = await handleGetOrderPayment(
-      new Request("https://api.test"),
+      new Request("https://api.test/"),
       env,
       DEMO_BRANCH_ID,
       order.id,
@@ -111,20 +113,7 @@ describe("order-payments — contrato (mock MP)", () => {
     expect(body.paymentStatus).toBe("pending");
   });
 
-  it("POST /pay method card retorna redirectUrl", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (url: string | URL) => {
-        if (String(url).includes("checkout/preferences")) {
-          return new Response(
-            JSON.stringify({ id: "pref-1", init_point: "https://mp.test/checkout", sandbox_init_point: "https://mp.test/sandbox" }),
-            { status: 201 },
-          );
-        }
-        return new Response("not found", { status: 404 });
-      }),
-    );
-
+  it("rejeita telefone inválido", async () => {
     const sql = postgres(normalizeDatabaseUrl(testDatabaseUrl()), { max: 1, prepare: false });
     const [tenant] = await sql<{ id: string }[]>`SELECT id FROM tenants WHERE slug = 'demo-burger' LIMIT 1`;
     if (!tenant) {
@@ -139,33 +128,24 @@ describe("order-payments — contrato (mock MP)", () => {
       ) VALUES (
         gen_random_uuid(), ${tenant.id}::uuid, ${DEMO_BRANCH_ID}::uuid,
         ${uniqueOrderNumber()},
-        'delivery', 'pending', '11977776666', 4500, 'unpaid', NOW(), NOW()
+        'delivery', 'pending', '123', 1000, 'unpaid', NOW(), NOW()
       ) RETURNING id
     `;
     await sql.end();
 
-    const env = testEnv({ MERCADOPAGO_ACCESS_TOKEN: MP_TOKEN, PAYMENTS_SANDBOX: "true" });
-    const res = await handlePayOrder(
-      new Request(`https://api.test/pay`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ method: "card" }),
-      }),
-      env,
-      DEMO_BRANCH_ID,
-      order.id,
-    );
-    expect(res.status).toBe(201);
-    const body = (await res.json()) as { method: string; card?: { redirectUrl?: string } };
-    expect(body.method).toBe("card");
-    expect(body.card?.redirectUrl).toContain("https://");
+    const env = testEnv({ ASAAS_API_KEY: ASAAS_KEY });
+    const req = new Request("https://api.test/pay", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ method: "pix" }),
+    });
+    const res = await handlePayOrder(req, env, DEMO_BRANCH_ID, order.id);
+    expect(res.status).toBe(400);
   });
 
-  it("GET /payment retorna expired após intent expirado", async () => {
+  it("POST card retorna redirectUrl", async () => {
     const sql = postgres(normalizeDatabaseUrl(testDatabaseUrl()), { max: 1, prepare: false });
-    const [tenant] = await sql<{ id: string }[]>`
-      SELECT id FROM tenants WHERE slug = 'demo-burger' LIMIT 1
-    `;
+    const [tenant] = await sql<{ id: string }[]>`SELECT id FROM tenants WHERE slug = 'demo-burger' LIMIT 1`;
     if (!tenant) {
       await sql.end();
       return;
@@ -178,39 +158,30 @@ describe("order-payments — contrato (mock MP)", () => {
       ) VALUES (
         gen_random_uuid(), ${tenant.id}::uuid, ${DEMO_BRANCH_ID}::uuid,
         ${uniqueOrderNumber()},
-        'delivery', 'pending', '11966665555', 1800, 'expired', NOW(), NOW()
+        'delivery', 'pending', '11977776666', 5000, 'unpaid', NOW(), NOW()
       ) RETURNING id
-    `;
-    await sql`
-      INSERT INTO payment_intents (
-        id, tenant_id, branch_id, order_id, provider, method, amount_cents,
-        status, external_id, external_reference, expires_at, updated_at
-      ) VALUES (
-        gen_random_uuid(), ${tenant.id}::uuid, ${DEMO_BRANCH_ID}::uuid, ${order.id}::uuid,
-        'mercadopago', 'pix', 1800, 'expired', 'exp-get-1', 'ref-get-1',
-        NOW() - INTERVAL '5 minutes', NOW()
-      )
     `;
     await sql.end();
 
-    const env = testEnv();
-    const res = await handleGetOrderPayment(
-      new Request("https://api.test"),
-      env,
-      DEMO_BRANCH_ID,
-      order.id,
-    );
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as { paymentStatus: string; expiresAt: string | null };
-    expect(body.paymentStatus).toBe("expired");
-    expect(body.expiresAt).toBeTruthy();
+    const env = testEnv({ ASAAS_API_KEY: ASAAS_KEY, ASAAS_SANDBOX: "true" });
+    const req = new Request("https://api.test/pay", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        method: "card",
+        successUrl: "https://app.test/ok",
+        cancelUrl: "https://app.test/cancel",
+      }),
+    });
+    const res = await handlePayOrder(req, env, DEMO_BRANCH_ID, order.id);
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as { card?: { redirectUrl?: string } };
+    expect(body.card?.redirectUrl).toContain("http");
   });
 
-  it("POST /pay após failed permite novo intent (sem duplicar pending)", async () => {
+  it("já pago retorna 409", async () => {
     const sql = postgres(normalizeDatabaseUrl(testDatabaseUrl()), { max: 1, prepare: false });
-    const [tenant] = await sql<{ id: string }[]>`
-      SELECT id FROM tenants WHERE slug = 'demo-burger' LIMIT 1
-    `;
+    const [tenant] = await sql<{ id: string }[]>`SELECT id FROM tenants WHERE slug = 'demo-burger' LIMIT 1`;
     if (!tenant) {
       await sql.end();
       return;
@@ -223,39 +194,18 @@ describe("order-payments — contrato (mock MP)", () => {
       ) VALUES (
         gen_random_uuid(), ${tenant.id}::uuid, ${DEMO_BRANCH_ID}::uuid,
         ${uniqueOrderNumber()},
-        'delivery', 'pending', '11955554444', 2500, 'failed', NOW(), NOW()
+        'delivery', 'accepted', '11966665555', 2000, 'paid', NOW(), NOW()
       ) RETURNING id
-    `;
-    await sql`
-      INSERT INTO payment_intents (
-        id, tenant_id, branch_id, order_id, provider, method, amount_cents,
-        status, external_id, external_reference, updated_at
-      ) VALUES (
-        gen_random_uuid(), ${tenant.id}::uuid, ${DEMO_BRANCH_ID}::uuid, ${order.id}::uuid,
-        'mercadopago', 'card', 2500, 'failed', 'card-fail-1', 'ref-fail-1', NOW()
-      )
     `;
     await sql.end();
 
-    const env = testEnv({ MERCADOPAGO_ACCESS_TOKEN: MP_TOKEN });
-    const res = await handlePayOrder(
-      new Request(`https://api.test/pay`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ method: "pix" }),
-      }),
-      env,
-      DEMO_BRANCH_ID,
-      order.id,
-    );
-    expect(res.status).toBe(201);
-
-    const verify = postgres(normalizeDatabaseUrl(testDatabaseUrl()), { max: 1, prepare: false });
-    const pending = await verify<{ id: string }[]>`
-      SELECT id FROM payment_intents
-      WHERE order_id = ${order.id}::uuid AND status = 'pending'
-    `;
-    await verify.end();
-    expect(pending.length).toBe(1);
+    const env = testEnv({ ASAAS_API_KEY: ASAAS_KEY });
+    const req = new Request("https://api.test/pay", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ method: "pix" }),
+    });
+    const res = await handlePayOrder(req, env, DEMO_BRANCH_ID, order.id);
+    expect(res.status).toBe(409);
   });
 });

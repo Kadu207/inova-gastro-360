@@ -50,3 +50,21 @@ export function verifyStripeSignature(
 ): boolean {
   return false;
 }
+
+/** Asaas envia o token configurado no header `asaas-access-token`. */
+export function verifyAsaasWebhookToken(
+  headers: Headers,
+  expectedToken: string | undefined,
+): boolean {
+  if (!expectedToken) return false;
+  const received = headers.get("asaas-access-token") ?? headers.get("Asaas-Access-Token");
+  if (!received) return false;
+  try {
+    const a = Buffer.from(received);
+    const b = Buffer.from(expectedToken);
+    if (a.length !== b.length) return false;
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}

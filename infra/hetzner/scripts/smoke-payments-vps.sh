@@ -37,8 +37,8 @@ echo "== Payments status =="
 curl -sf "$API_URL/api/v1/payments/status" | head -c 400
 echo
 
-echo "== Webhook MP (esperado 401/400, NÃO 404) =="
-wh_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_URL/webhooks/mercadopago" \
+echo "== Webhook Asaas (esperado 401/400, NÃO 404) =="
+wh_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_URL/webhooks/asaas" \
   -H "content-type: application/json" -d '{}' || echo "000")
 echo "HTTP $wh_code"
 if [[ "$wh_code" == "404" ]]; then
@@ -46,4 +46,4 @@ if [[ "$wh_code" == "404" ]]; then
   exit 1
 fi
 
-echo "Smoke pagamentos OK (sandbox end-to-end manual: cardápio delivery + Stripe checkout)"
+echo "Smoke pagamentos OK (sandbox: cardápio PIX Asaas + billing Asaas/Stripe)"

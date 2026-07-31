@@ -49,8 +49,8 @@ Adiado (spec 005)
 - [x] Rate-limit Redis com fallback memória + testes
 - [x] CI secrets-guard + npm audit high
 - [x] Cron `tunnel-connect-inova.sh` */5 (user crontab gestaoti)
-- [ ] Merge PR #23 → master
-- [ ] Instalar GitHub App CodeRabbit no repo
+- [x] Merge PR #23 → master (`cabd025`, 2026-07-21)
+- [ ] Instalar GitHub App CodeRabbit no repo (manual)
 - [ ] Print-agent LAN com impressora física
 
 ## Spec 007 pagamentos — implementado (branch feat/007-pagamentos)

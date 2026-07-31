@@ -2,6 +2,7 @@ import { healthHandler, jsonResponse } from "./lib";
 import type { IntegrationsEnv } from "./env";
 import { handleMercadoPagoWebhook } from "./webhooks/mercadopago";
 import { handleStripeWebhook } from "./webhooks/stripe";
+import { handleAsaasWebhook } from "./webhooks/asaas";
 
 export type Env = IntegrationsEnv;
 
@@ -25,6 +26,10 @@ export default {
 
     if (url.pathname === "/health") {
       return healthHandler("integrations");
+    }
+
+    if (url.pathname === "/webhooks/asaas" && request.method === "POST") {
+      return handleAsaasWebhook(request, env);
     }
 
     if (url.pathname === "/webhooks/mercadopago" && request.method === "POST") {

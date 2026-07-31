@@ -9,6 +9,13 @@ function isRealSecret(value: string | undefined): boolean {
   return true;
 }
 
+export function isAsaasConfigured(env: GatewayEnv): boolean {
+  const key = env.ASAAS_API_KEY?.trim();
+  if (!isRealSecret(key)) return false;
+  // Tokens Asaas costumam ser longos ($aact_... em versões antigas ou JWT-like)
+  return key!.length >= 20;
+}
+
 export function isMercadoPagoConfigured(env: GatewayEnv): boolean {
   const token = env.MERCADOPAGO_ACCESS_TOKEN?.trim();
   if (!isRealSecret(token)) return false;
@@ -21,15 +28,38 @@ export function isStripeConfigured(env: GatewayEnv): boolean {
   return key!.startsWith("sk_test_") || key!.startsWith("sk_live_");
 }
 
+export function orderPaymentProvider(env: GatewayEnv): "asaas" | "mercadopago" {
+  const v = env.ORDER_PAYMENT_PROVIDER?.trim().toLowerCase();
+  if (v === "mercadopago") return "mercadopago";
+  return "asaas";
+}
+
+export function billingProvider(env: GatewayEnv): "asaas" | "stripe" {
+  const v = env.BILLING_PROVIDER?.trim().toLowerCase();
+  if (v === "stripe") return "stripe";
+  return "asaas";
+}
+
 /** Pagamentos online ativos (PIX/cartão + checkout SaaS). */
 export function isPaymentsEnabled(env: GatewayEnv): boolean {
   const flag = env.PAYMENTS_ENABLED?.trim().toLowerCase();
+  const anyConfigured =
+    isAsaasConfigured(env) || isMercadoPagoConfigured(env) || isStripeConfigured(env);
   if (flag === "false" || flag === "0") return false;
-  if (flag === "true" || flag === "1") {
-    return isMercadoPagoConfigured(env) || isStripeConfigured(env);
-  }
-  // Sem flag explícita: ativo só se houver credencial real
-  return isMercadoPagoConfigured(env) || isStripeConfigured(env);
+  if (flag === "true" || flag === "1") return anyConfigured;
+  return anyConfigured;
+}
+
+export function isOrderPaymentsReady(env: GatewayEnv): boolean {
+  if (!isPaymentsEnabled(env)) return false;
+  return orderPaymentProvider(env) === "asaas"
+    ? isAsaasConfigured(env)
+    : isMercadoPagoConfigured(env);
+}
+
+export function isBillingReady(env: GatewayEnv): boolean {
+  if (!isPaymentsEnabled(env)) return false;
+  return billingProvider(env) === "asaas" ? isAsaasConfigured(env) : isStripeConfigured(env);
 }
 
 export function paymentsPublicBaseUrl(env: GatewayEnv): string {
@@ -42,9 +72,14 @@ export function paymentsPublicBaseUrl(env: GatewayEnv): string {
   return "https://inovagastro360.inovatitech.com.br";
 }
 
-export function webhookUrls(env: GatewayEnv): { mercadopago: string; stripe: string } {
+export function webhookUrls(env: GatewayEnv): {
+  asaas: string;
+  mercadopago: string;
+  stripe: string;
+} {
   const base = paymentsPublicBaseUrl(env);
   return {
+    asaas: `${base}/webhooks/asaas`,
     mercadopago: `${base}/webhooks/mercadopago`,
     stripe: `${base}/webhooks/stripe`,
   };

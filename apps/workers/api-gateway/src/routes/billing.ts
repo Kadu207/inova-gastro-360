@@ -9,6 +9,8 @@ import {
   createPortalSession,
   StripeConfigError,
 } from "../lib/stripe-billing";
+import { createAsaasSubscriptionCheckout, AsaasConfigError } from "../lib/asaas";
+import { billingProvider, isBillingReady } from "../lib/payments-config";
 
 const BILLING_ROLES = ["admin_cliente", "super_admin"] as const;
 
@@ -58,6 +60,7 @@ export async function handleGetSubscription(
       trialEndsAt: sub.trial_ends_at?.toISOString() ?? null,
       currentPeriodEnd: sub.current_period_end?.toISOString() ?? null,
       gracePeriodEndsAt: sub.grace_period_ends_at?.toISOString() ?? null,
+      billingProvider: billingProvider(env),
     });
   } finally {
     await sql.end();
@@ -90,15 +93,69 @@ export async function handleBillingCheckout(
   const parsed = CheckoutSchema.safeParse(await parseJsonBody(request));
   if (!parsed.success) return jsonResponse({ error: "validation_error" }, 400);
 
+  if (!isBillingReady(env)) {
+    return jsonResponse({ error: "payments_not_configured" }, 503);
+  }
+
+  const provider = billingProvider(env);
   const sql = getSql(env);
   try {
     const [plan] = await sql<
-      { id: string; stripe_price_id: string | null }[]
+      {
+        id: string;
+        stripe_price_id: string | null;
+        price_cents: number;
+        asaas_plan_value_cents: number | null;
+      }[]
     >`
-      SELECT id, stripe_price_id FROM subscription_plans
+      SELECT id, stripe_price_id, price_cents, asaas_plan_value_cents
+      FROM subscription_plans
       WHERE code = ${parsed.data.planCode} AND is_active = true LIMIT 1
     `;
-    if (!plan?.stripe_price_id) {
+    if (!plan) {
+      return jsonResponse({ error: "plan_not_available" }, 404);
+    }
+
+    if (provider === "asaas") {
+      const valueCents = plan.asaas_plan_value_cents ?? plan.price_cents;
+      if (!valueCents || valueCents <= 0) {
+        return jsonResponse({ error: "plan_not_available" }, 404);
+      }
+      const session = await createAsaasSubscriptionCheckout(env, {
+        tenantId: user.tid,
+        planCode: parsed.data.planCode,
+        valueCents,
+        cycle: "MONTHLY",
+        customerEmail: user.email,
+        successUrl: parsed.data.successUrl,
+      });
+
+      await setTenantContext(sql, user.tid);
+      await sql`
+        INSERT INTO subscription_checkouts (
+          id, tenant_id, plan_id, asaas_checkout_id, status, updated_at
+        ) VALUES (
+          gen_random_uuid(), ${user.tid}::uuid, ${plan.id}::uuid,
+          ${session.subscriptionId}, 'open', NOW()
+        )
+        ON CONFLICT (asaas_checkout_id) DO NOTHING
+      `;
+      await sql`
+        UPDATE subscriptions
+        SET asaas_customer_id = COALESCE(${session.customerId}, asaas_customer_id),
+            asaas_subscription_id = COALESCE(${session.subscriptionId}, asaas_subscription_id),
+            updated_at = NOW()
+        WHERE tenant_id = ${user.tid}::uuid
+      `;
+
+      return jsonResponse({
+        checkoutUrl: session.checkoutUrl,
+        sessionId: session.subscriptionId,
+        provider: "asaas",
+      });
+    }
+
+    if (!plan.stripe_price_id) {
       return jsonResponse({ error: "plan_not_available" }, 404);
     }
 
@@ -122,9 +179,13 @@ export async function handleBillingCheckout(
       ON CONFLICT (stripe_checkout_session_id) DO NOTHING
     `;
 
-    return jsonResponse({ checkoutUrl: session.checkoutUrl, sessionId: session.sessionId });
+    return jsonResponse({
+      checkoutUrl: session.checkoutUrl,
+      sessionId: session.sessionId,
+      provider: "stripe",
+    });
   } catch (err) {
-    if (err instanceof StripeConfigError) {
+    if (err instanceof StripeConfigError || err instanceof AsaasConfigError) {
       return jsonResponse({ error: "payments_not_configured" }, 503);
     }
     throw err;
@@ -143,6 +204,14 @@ export async function handleBillingPortal(
 
   const parsed = PortalSchema.safeParse(await parseJsonBody(request));
   if (!parsed.success) return jsonResponse({ error: "validation_error" }, 400);
+
+  const provider = billingProvider(env);
+  if (provider === "asaas") {
+    return jsonResponse({
+      error: "portal_not_supported",
+      message: "Portal Asaas: gerencie cobranças no painel Asaas ou suporte Inova TI",
+    }, 501);
+  }
 
   const sql = getSql(env);
   try {
