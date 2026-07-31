@@ -11,14 +11,20 @@ export type CatalogAuditAction =
   | "catalog.product.delete"
   | "catalog.product.image_upload";
 
+export type LgpdAuditAction =
+  | "lgpd.consent.recorded"
+  | "lgpd.export.requested"
+  | "lgpd.erasure.requested"
+  | "lgpd.erasure.status_changed";
+
 type SqlClient = ReturnType<typeof getSql>;
 
-/** Auditoria com conexão já aberta (não fecha o client). */
+/** Auditoria com conexão já aberta (não fecha o client). userId ausente = ator anônimo/sistema. */
 export async function writeAuditLog(
   sql: SqlClient,
   params: {
     tenantId: string;
-    userId: string;
+    userId?: string | null;
     action: string;
     resource: string;
     metadata?: Record<string, unknown>;
@@ -30,7 +36,7 @@ export async function writeAuditLog(
       VALUES (
         gen_random_uuid(),
         ${params.tenantId}::uuid,
-        ${params.userId}::uuid,
+        ${params.userId ? sql`${params.userId}::uuid` : null},
         ${params.action},
         ${params.resource},
         ${params.metadata ? sql.json(params.metadata as JSONValue) : null}
@@ -48,6 +54,30 @@ export async function writeCatalogAuditLog(
     tenantId: string;
     userId: string;
     action: CatalogAuditAction;
+    resource: string;
+    metadata?: Record<string, unknown>;
+  },
+): Promise<void> {
+  if (!hasDatabase(env)) return;
+
+  const sql = getSql(env);
+  try {
+    await setTenantContext(sql, params.tenantId);
+    await writeAuditLog(sql, params);
+  } catch {
+    // best-effort
+  } finally {
+    await sql.end();
+  }
+}
+
+/** Auditoria LGPD — consentimento, exportação de dados e direito ao esquecimento. */
+export async function writeLgpdAuditLog(
+  env: GatewayEnv,
+  params: {
+    tenantId: string;
+    userId?: string | null;
+    action: LgpdAuditAction;
     resource: string;
     metadata?: Record<string, unknown>;
   },
