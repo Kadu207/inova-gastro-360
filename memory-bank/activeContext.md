@@ -4,25 +4,26 @@
 
 ## Runtime
 - VPS `gestaoti@128.140.77.31` → `~/inova-gastro-360`
-- Branch local sync: `master` = `origin/master` (`cabd025` PR #23)
-- Feature em andamento: `feat/017-asaas-pagamentos`
+- `master` local sync: `cabd025` (PR #23)
 - Backup WIP: `wip/local-backup-2026-07-31`
 
-## Segurança
-- Spec **016**: MERGED (PR #23) — CodeRabbit config, rate-limit Redis, CI secrets-guard
-- HTTPS Tunnel → `:9088`
+## PRs abertos (esta sessão)
+- [#25](https://github.com/Kadu207/inova-gastro-360/pull/25) — feat(017) Asaas
+- [#27](https://github.com/Kadu207/inova-gastro-360/pull/27) — feat(005) Financeiro
+- [#26](https://github.com/Kadu207/inova-gastro-360/pull/26) — feat(009) LGPD
 
-## Plano em execução
-1. Sync master ✅
-2. Validar 016 ✅
-3. Asaas BR (pedidos + SaaS; Stripe fallback) — em andamento
-4. VPS payments smoke
-5. Financeiro 005 completo
-6. LGPD 009 + privacidade
-7. Print-agent validação
-8. Cloudflare Queues — adiado
+## Pagamentos
+- Asaas = gateway oficial BR (pedidos + SaaS); Stripe fallback
+- VPS: webhook `/webhooks/asaas` ainda **404** até merge+deploy; MP responde 401
+- SSH VPS: **Permission denied** nesta sessão — configurar `ASAAS_API_KEY` via runbook após acesso
 
-## Regras de negócio
-- Core (auth, cardápio, pedidos, painéis, print_jobs, messaging): **sim**
-- Pagamentos: Asaas oficial BR (substitui MP); Stripe fallback SaaS
-- Financeiro 005 / LGPD 009: em entrega (Onda 4)
+## Print-agent
+- Testes locais verdes (`PRINTER_TYPE=none`)
+- Checklist hardware: `docs/runbooks/print-agent-escpos.md`
+- Impressora física: pendente na LAN
+
+## Adiado
+- Cloudflare Workers Paid + Queues (Fase F)
+
+## Feature Spec Kit
+- Ativa sugerida pós-merge: `specs/017-asaas-pagamentos` / 005 / 009
