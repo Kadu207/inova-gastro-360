@@ -14,6 +14,17 @@ export {
   type PresignInput,
 } from "./catalog";
 
+export {
+  ConsentInputSchema,
+  ErasureRequestInputSchema,
+  ErasureStatusUpdateSchema,
+  ERASURE_SUBJECT_TYPES,
+  ERASURE_STATUSES,
+  type ConsentInput,
+  type ErasureRequestInput,
+  type ErasureStatusUpdate,
+} from "./lgpd";
+
 export const TenantContextSchema = z.object({
   tenantId: z.string().uuid(),
   companyId: z.string().uuid().optional(),
