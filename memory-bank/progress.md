@@ -22,8 +22,14 @@
 ## Onda 4 — Financeiro
 - [x] Spec 005 — caixa/ledger/contas/DRE/export + UI (PR #27)
 
-## Spec 009 LGPD
-- [x] Preferências cookies + consent_records + privacidade/termos + erasure (PR #26)
+## Spec 009 LGPD (branch feat/009-lgpd-privacidade)
+- [x] Modal de preferências (essencial/analytics/marketing) + `consent_records` com RLS multitenant
+- [x] Páginas públicas `/privacidade` e `/termos` (pt-BR, CSS próprio do projeto)
+- [x] `GET /api/v1/lgpd/export` — exportação JSON de dados do titular
+- [x] `erasure_requests` + rotas POST/GET/PATCH (RBAC admin) + `audit_logs`
+- [x] Painel admin `dashboard/lgpd` (exportar dados + gerenciar solicitações)
+- [x] Testes: 8 casos API (`lgpd.test.ts`) + 7 casos front-end (`lgpd.test.ts`) — verdes
+- [x] Docs `specs/009-lgpd-cookies/{spec,plan,tasks}.md` atualizadas (PR #26)
 
 ## Spec 017 Asaas
 - [x] Código + testes + PR #25
