@@ -17,7 +17,7 @@
 2. Validar 016 ✅
 3. Asaas BR (pedidos + SaaS; Stripe fallback) — em andamento
 4. VPS payments smoke
-5. Financeiro 005 completo
+5. Financeiro 005 completo — ✅ implementado em `feat/005-financeiro` (caixa, ledger, contas, DRE, export, UI, TDD)
 6. LGPD 009 + privacidade
 7. Print-agent validação
 8. Cloudflare Queues — adiado
@@ -25,4 +25,6 @@
 ## Regras de negócio
 - Core (auth, cardápio, pedidos, painéis, print_jobs, messaging): **sim**
 - Pagamentos: Asaas oficial BR (substitui MP); Stripe fallback SaaS
-- Financeiro 005 / LGPD 009: em entrega (Onda 4)
+- Financeiro 005: Onda 4 implementada (caixa/filial, sangria/suprimento, payables/receivables,
+  DRE, export CSV/JSON, receivable automático no pagamento de pedido) — branch `feat/005-financeiro`
+- LGPD 009: em entrega (Onda 4)

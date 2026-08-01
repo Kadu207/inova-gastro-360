@@ -202,6 +202,159 @@ export async function fetchPaymentsStatus(): Promise<PaymentsStatus> {
   return data as PaymentsStatus;
 }
 
+export interface CashSession {
+  id: string;
+  status: string;
+  openingCents: number;
+  openedAt: string;
+  ledgerTotalCents: number;
+}
+
+export interface FinanceAccount {
+  id: string;
+  description: string;
+  amount_cents: number;
+  due_date: string;
+  status: string;
+  paid_at: string | null;
+}
+
+export interface FinanceDre {
+  from: string;
+  to: string;
+  revenueCents: number;
+  expensesCents: number;
+  resultCents: number;
+}
+
+async function financeJson<T>(res: Response, fallbackError: string): Promise<T> {
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message ?? data.error ?? fallbackError);
+  return data as T;
+}
+
+export async function fetchCurrentCashSession(branchId: string): Promise<CashSession | null> {
+  const res = await apiFetch(`/api/v1/finance/cash/branch/${branchId}`);
+  const data = await financeJson<{ session: CashSession | null }>(res, "cash_session_fetch_failed");
+  return data.session;
+}
+
+export async function openCashSession(
+  branchId: string,
+  openingCents: number,
+): Promise<{ sessionId: string; status: string; openedAt: string }> {
+  const res = await apiFetch("/api/v1/finance/cash/open", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ branchId, openingCents }),
+  });
+  return financeJson(res, "cash_open_failed");
+}
+
+export async function closeCashSession(sessionId: string, closingCents: number): Promise<void> {
+  const res = await apiFetch(`/api/v1/finance/cash/${sessionId}/close`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ closingCents }),
+  });
+  await financeJson(res, "cash_close_failed");
+}
+
+export async function cashMovement(
+  sessionId: string,
+  kind: "sangria" | "suprimento",
+  amountCents: number,
+  description: string,
+): Promise<void> {
+  const res = await apiFetch(`/api/v1/finance/cash/${sessionId}/${kind}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ amountCents, description }),
+  });
+  await financeJson(res, "cash_movement_failed");
+}
+
+export async function fetchPayables(): Promise<FinanceAccount[]> {
+  const res = await apiFetch("/api/v1/finance/payables");
+  const data = await financeJson<{ payables: FinanceAccount[] }>(res, "payables_fetch_failed");
+  return data.payables;
+}
+
+export async function createPayable(input: {
+  branchId: string;
+  description: string;
+  amountCents: number;
+  dueDate: string;
+  supplier?: string;
+}): Promise<void> {
+  const res = await apiFetch("/api/v1/finance/payables", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  await financeJson(res, "payable_create_failed");
+}
+
+export async function payPayable(id: string): Promise<void> {
+  const res = await apiFetch(`/api/v1/finance/payables/${id}/pay`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: "{}",
+  });
+  await financeJson(res, "payable_pay_failed");
+}
+
+export async function fetchReceivables(): Promise<FinanceAccount[]> {
+  const res = await apiFetch("/api/v1/finance/receivables");
+  const data = await financeJson<{ receivables: FinanceAccount[] }>(res, "receivables_fetch_failed");
+  return data.receivables;
+}
+
+export async function createReceivable(input: {
+  branchId: string;
+  description: string;
+  amountCents: number;
+  dueDate: string;
+  customer?: string;
+}): Promise<void> {
+  const res = await apiFetch("/api/v1/finance/receivables", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  await financeJson(res, "receivable_create_failed");
+}
+
+export async function receiveReceivable(id: string): Promise<void> {
+  const res = await apiFetch(`/api/v1/finance/receivables/${id}/receive`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: "{}",
+  });
+  await financeJson(res, "receivable_receive_failed");
+}
+
+export async function fetchFinanceDre(): Promise<FinanceDre> {
+  const res = await apiFetch("/api/v1/finance/dre");
+  return financeJson(res, "dre_fetch_failed");
+}
+
+/** Baixa o CSV do ledger financeiro autenticado (rota exige Bearer token). */
+export async function downloadFinanceExportCsv(): Promise<void> {
+  const res = await apiFetch("/api/v1/finance/export?format=csv");
+  if (!res.ok) throw new Error("export_failed");
+  const blob = await res.blob();
+  if (typeof window === "undefined") return;
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "financeiro.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export async function startBillingCheckout(planCode: string): Promise<string> {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const res = await apiFetch("/api/v1/billing/checkout", {

@@ -47,8 +47,12 @@ import {
   handleGetOpenCash,
   handleCreatePayable,
   handleListPayables,
+  handleGetPayable,
+  handlePayPayable,
   handleCreateReceivable,
   handleListReceivables,
+  handleGetReceivable,
+  handleReceiveReceivable,
   handleFinanceDre,
   handleFinanceExport,
 } from "./routes/finance";
@@ -304,11 +308,27 @@ async function route(request: Request, env: Env): Promise<Response> {
       if (path === "/api/v1/finance/payables" && request.method === "POST") {
         return withCors(await handleCreatePayable(request, env, auth.user));
       }
+      const payablePayMatch = path.match(/^\/api\/v1\/finance\/payables\/([^/]+)\/pay$/);
+      if (payablePayMatch && request.method === "POST") {
+        return withCors(await handlePayPayable(request, env, auth.user, payablePayMatch[1]));
+      }
+      const payableGetMatch = path.match(/^\/api\/v1\/finance\/payables\/([^/]+)$/);
+      if (payableGetMatch && request.method === "GET") {
+        return withCors(await handleGetPayable(request, env, auth.user, payableGetMatch[1]));
+      }
       if (path === "/api/v1/finance/receivables" && request.method === "GET") {
         return withCors(await handleListReceivables(request, env, auth.user));
       }
       if (path === "/api/v1/finance/receivables" && request.method === "POST") {
         return withCors(await handleCreateReceivable(request, env, auth.user));
+      }
+      const receivableReceiveMatch = path.match(/^\/api\/v1\/finance\/receivables\/([^/]+)\/receive$/);
+      if (receivableReceiveMatch && request.method === "POST") {
+        return withCors(await handleReceiveReceivable(request, env, auth.user, receivableReceiveMatch[1]));
+      }
+      const receivableGetMatch = path.match(/^\/api\/v1\/finance\/receivables\/([^/]+)$/);
+      if (receivableGetMatch && request.method === "GET") {
+        return withCors(await handleGetReceivable(request, env, auth.user, receivableGetMatch[1]));
       }
       if (path === "/api/v1/finance/dre" && request.method === "GET") {
         return withCors(await handleFinanceDre(request, env, auth.user));

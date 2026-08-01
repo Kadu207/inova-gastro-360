@@ -135,9 +135,10 @@ export async function handleApplyOrderPayment(
           payment_status: string;
           branch_id: string;
           tenant_id: string;
+          order_number: number;
         }[]
       >`
-        SELECT id, total_cents, payment_status, branch_id, tenant_id
+        SELECT id, total_cents, payment_status, branch_id, tenant_id, order_number
         FROM orders
         WHERE id = ${body.orderId}::uuid
         LIMIT 1
@@ -177,6 +178,30 @@ export async function handleApplyOrderPayment(
             updated_at = NOW()
         WHERE order_id = ${body.orderId}::uuid
           AND status IN ('created', 'pending')
+      `;
+
+      // Spec 005 — Financeiro: pagamento online já liquidado vira conta a receber
+      // quitada + lançamento de venda no ledger (visibilidade no DRE).
+      await tx`
+        INSERT INTO receivables (
+          id, tenant_id, branch_id, description, amount_cents, due_date,
+          status, paid_at, order_id, updated_at
+        ) VALUES (
+          gen_random_uuid(), ${body.tenantId}::uuid, ${order.branch_id}::uuid,
+          ${`Pedido #${order.order_number}`}, ${body.amountCents}, NOW(),
+          'received', NOW(), ${body.orderId}::uuid, NOW()
+        )
+      `;
+
+      await tx`
+        INSERT INTO ledger_entries (
+          id, tenant_id, branch_id, entry_type, amount_cents, description,
+          reference_type, reference_id
+        ) VALUES (
+          gen_random_uuid(), ${body.tenantId}::uuid, ${order.branch_id}::uuid,
+          'sale', ${body.amountCents}, ${`Venda — pedido #${order.order_number}`},
+          'order', ${body.orderId}::uuid
+        )
       `;
 
       return {

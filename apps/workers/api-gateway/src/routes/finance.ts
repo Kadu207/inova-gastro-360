@@ -41,6 +41,10 @@ const ReceivableSchema = z.object({
   orderId: z.string().uuid().optional(),
 });
 
+const SettleSchema = z.object({
+  amountCents: z.number().int().positive().optional(),
+});
+
 function roleGate(user: JwtPayload) {
   return requireRole(user, ...FINANCE_ROLES);
 }
@@ -362,6 +366,151 @@ export async function handleListReceivables(
   } finally {
     await sql.end();
   }
+}
+
+export async function handleGetPayable(
+  _request: Request,
+  env: GatewayEnv,
+  user: JwtPayload,
+  payableId: string,
+): Promise<Response> {
+  const gate = roleGate(user);
+  if (!gate.ok) return gate.response;
+  const sql = getSql(env);
+  try {
+    await setTenantContext(sql, user.tid);
+    const [payable] = await sql`
+      SELECT id, branch_id, description, amount_cents, due_date, status, supplier, paid_at
+      FROM payables WHERE id = ${payableId}::uuid AND tenant_id = ${user.tid}::uuid LIMIT 1
+    `;
+    if (!payable) return jsonResponse({ error: "not_found" }, 404);
+    return jsonResponse({ payable });
+  } finally {
+    await sql.end();
+  }
+}
+
+export async function handleGetReceivable(
+  _request: Request,
+  env: GatewayEnv,
+  user: JwtPayload,
+  receivableId: string,
+): Promise<Response> {
+  const gate = roleGate(user);
+  if (!gate.ok) return gate.response;
+  const sql = getSql(env);
+  try {
+    await setTenantContext(sql, user.tid);
+    const [receivable] = await sql`
+      SELECT id, branch_id, description, amount_cents, due_date, status, customer, order_id, paid_at
+      FROM receivables WHERE id = ${receivableId}::uuid AND tenant_id = ${user.tid}::uuid LIMIT 1
+    `;
+    if (!receivable) return jsonResponse({ error: "not_found" }, 404);
+    return jsonResponse({ receivable });
+  } finally {
+    await sql.end();
+  }
+}
+
+/** Baixa uma conta a pagar/receber e — quando a conta tem filial — registra o lançamento no ledger. */
+async function settleAccount(
+  request: Request,
+  env: GatewayEnv,
+  user: JwtPayload,
+  accountId: string,
+  table: "payables" | "receivables",
+  settledStatus: "paid" | "received",
+  ledgerEntryType: "payable_payment" | "receivable_payment",
+  ledgerDirection: 1 | -1,
+): Promise<Response> {
+  const gate = roleGate(user);
+  if (!gate.ok) return gate.response;
+  const parsed = SettleSchema.safeParse(await parseJsonBody(request));
+  if (!parsed.success) return jsonResponse({ error: "validation_error" }, 400);
+
+  const sql = getSql(env);
+  try {
+    await setTenantContext(sql, user.tid);
+    const outcome = await withTenant(sql, user.tid, async (tx) => {
+      type AccountRow = { id: string; branch_id: string | null; amount_cents: number; status: string };
+      const rows =
+        table === "payables"
+          ? await tx<AccountRow[]>`
+              SELECT id, branch_id, amount_cents, status FROM payables
+              WHERE id = ${accountId}::uuid AND tenant_id = ${user.tid}::uuid
+              LIMIT 1
+            `
+          : await tx<AccountRow[]>`
+              SELECT id, branch_id, amount_cents, status FROM receivables
+              WHERE id = ${accountId}::uuid AND tenant_id = ${user.tid}::uuid
+              LIMIT 1
+            `;
+      const row = rows[0];
+      if (!row || row.status === settledStatus) return null;
+
+      const settledAmount = parsed.data.amountCents ?? row.amount_cents;
+
+      if (table === "payables") {
+        await tx`
+          UPDATE payables SET status = ${settledStatus}, paid_at = NOW(), updated_at = NOW()
+          WHERE id = ${accountId}::uuid AND tenant_id = ${user.tid}::uuid
+        `;
+      } else {
+        await tx`
+          UPDATE receivables SET status = ${settledStatus}, paid_at = NOW(), updated_at = NOW()
+          WHERE id = ${accountId}::uuid AND tenant_id = ${user.tid}::uuid
+        `;
+      }
+
+      if (row.branch_id) {
+        await tx`
+          INSERT INTO ledger_entries (
+            id, tenant_id, branch_id, entry_type, amount_cents, description,
+            reference_type, reference_id, created_by
+          ) VALUES (
+            gen_random_uuid(), ${user.tid}::uuid, ${row.branch_id}::uuid,
+            ${ledgerEntryType}, ${ledgerDirection * Math.abs(settledAmount)},
+            ${table === "payables" ? "Pagamento de conta a pagar" : "Recebimento de conta a receber"},
+            ${table === "payables" ? "payable" : "receivable"}, ${accountId}::uuid, ${user.sub}::uuid
+          )
+        `;
+      }
+
+      return { id: row.id, settledAmountCents: settledAmount };
+    });
+
+    if (!outcome) return jsonResponse({ error: "account_not_found_or_settled" }, 404);
+
+    await writeAuditLog(sql, {
+      tenantId: user.tid,
+      userId: user.sub,
+      action: `finance.${table === "payables" ? "payable" : "receivable"}.${settledStatus}`,
+      resource: accountId,
+      metadata: { settledAmountCents: outcome.settledAmountCents },
+    });
+
+    return jsonResponse({ id: outcome.id, status: settledStatus, settledAmountCents: outcome.settledAmountCents });
+  } finally {
+    await sql.end();
+  }
+}
+
+export async function handlePayPayable(
+  request: Request,
+  env: GatewayEnv,
+  user: JwtPayload,
+  payableId: string,
+): Promise<Response> {
+  return settleAccount(request, env, user, payableId, "payables", "paid", "payable_payment", -1);
+}
+
+export async function handleReceiveReceivable(
+  request: Request,
+  env: GatewayEnv,
+  user: JwtPayload,
+  receivableId: string,
+): Promise<Response> {
+  return settleAccount(request, env, user, receivableId, "receivables", "received", "receivable_payment", 1);
 }
 
 export async function handleFinanceDre(

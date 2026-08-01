@@ -190,6 +190,29 @@ describe.skipIf(!migrationReady)("internal-payments — idempotência e cross-te
     expect(secondJson.reason).toBe("already_paid");
   });
 
+  it("spec 005: pagamento confirmado gera receivable quitado + lançamento no ledger", async () => {
+    const sql = postgres(normalizeDatabaseUrl(testDatabaseUrl()), { max: 1, prepare: false });
+    const [receivable] = await sql<
+      { id: string; status: string; amount_cents: number; order_id: string }[]
+    >`
+      SELECT id, status, amount_cents, order_id FROM receivables
+      WHERE order_id = ${orderId}::uuid AND tenant_id = ${demoTenantId}::uuid
+      LIMIT 1
+    `;
+    expect(receivable?.status).toBe("received");
+    expect(receivable?.amount_cents).toBe(2500);
+
+    const [ledgerEntry] = await sql<{ entry_type: string; amount_cents: number }[]>`
+      SELECT entry_type, amount_cents FROM ledger_entries
+      WHERE reference_type = 'order' AND reference_id = ${orderId}::uuid
+        AND tenant_id = ${demoTenantId}::uuid
+      LIMIT 1
+    `;
+    expect(ledgerEntry?.entry_type).toBe("sale");
+    expect(ledgerEntry?.amount_cents).toBe(2500);
+    await sql.end();
+  });
+
   it("não aplica pagamento cross-tenant (tenant errado → order_not_found)", async () => {
     const env = testEnv({
       ENVIRONMENT: "test",
