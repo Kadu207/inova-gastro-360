@@ -17,10 +17,12 @@ async function resolvePublicTenantId(
   branchId?: string,
 ): Promise<string | null> {
   if (branchId) {
+    // branchId explícito e inválido não deve cair no fallback demo (evitaria
+    // atribuir consentimento de um tenant real ao tenant de demonstração).
     const [branch] = await sql<{ tenant_id: string }[]>`
       SELECT tenant_id FROM branches WHERE id = ${branchId}::uuid AND is_active = true LIMIT 1
     `;
-    if (branch) return branch.tenant_id;
+    return branch?.tenant_id ?? null;
   }
   const [tenant] = await sql<{ id: string }[]>`
     SELECT id FROM tenants WHERE slug = ${DEMO_TENANT_SLUG} LIMIT 1
