@@ -17,6 +17,7 @@ export const MAIN_NAV: NavItem[] = [
   { href: "/painel/delivery", label: "Delivery", icon: "➤" },
   { href: "#", label: "Clientes", icon: "◌", disabled: true },
   { href: "/dashboard/financeiro", label: "Financeiro", icon: "◈" },
+  { href: "/dashboard/lgpd", label: "Privacidade / LGPD", icon: "🔒" },
   { href: "#", label: "Relatórios", icon: "▤", disabled: true },
   { href: "#", label: "Atendimento", icon: "◍", disabled: true },
   { href: "#", label: "Estoque", icon: "▦", disabled: true },

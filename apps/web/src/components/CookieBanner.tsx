@@ -2,96 +2,97 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-
-const SUBJECT_KEY = "lgpd-subject-id";
-const CONSENT_KEY = "cookie-consent-v2";
-
-type Prefs = { analytics: boolean; marketing: boolean };
-
-function ensureSubjectId(): string {
-  let id = localStorage.getItem(SUBJECT_KEY);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(SUBJECT_KEY, id);
-  }
-  return id;
-}
+import {
+  ACCEPT_ALL_PREFERENCES,
+  DEFAULT_CONSENT_PREFERENCES,
+  LGPD_CONSENT_STORAGE_KEY,
+  ensureSubjectId,
+  parseStoredConsent,
+  serializeConsent,
+  submitConsent,
+  type ConsentPreferences,
+} from "@/lib/lgpd";
 
 export default function CookieBanner() {
   const [visible, setVisible] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
-  const [prefs, setPrefs] = useState<Prefs>({ analytics: false, marketing: false });
+  const [prefs, setPrefs] = useState<ConsentPreferences>(DEFAULT_CONSENT_PREFERENCES);
 
   useEffect(() => {
-    if (!localStorage.getItem(CONSENT_KEY)) setVisible(true);
+    if (!parseStoredConsent(localStorage.getItem(LGPD_CONSENT_STORAGE_KEY))) setVisible(true);
   }, []);
 
-  async function persist(next: Prefs) {
-    const subjectId = ensureSubjectId();
-    localStorage.setItem(CONSENT_KEY, JSON.stringify({ ...next, essential: true, at: Date.now() }));
-    try {
-      await fetch("/api/v1/lgpd/consent", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          subjectId,
-          analytics: next.analytics,
-          marketing: next.marketing,
-        }),
-      });
-    } catch {
-      // banner local ainda vale se API falhar
-    }
+  async function persist(next: ConsentPreferences) {
+    const subjectId = ensureSubjectId(localStorage, () => crypto.randomUUID());
+    localStorage.setItem(LGPD_CONSENT_STORAGE_KEY, serializeConsent(next));
     setVisible(false);
     setPrefsOpen(false);
+    await submitConsent(subjectId, next);
   }
 
   if (!visible) return null;
 
   return (
-    <div className="cookie-banner" role="dialog" aria-label="Consentimento de cookies">
+    <div className="cookie-banner" role="dialog" aria-modal="true" aria-label="Consentimento de cookies">
       {!prefsOpen ? (
-        <>
-          <p>
+        <div className="cookie-banner-row">
+          <p className="cookie-banner-text">
             Usamos cookies essenciais para operar o Inova Gastro 360. Você pode aceitar todos ou
-            escolher preferências. Veja a{" "}
+            escolher suas preferências. Saiba mais na{" "}
             <Link href="/privacidade">política de privacidade</Link>.
           </p>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => void persist({ analytics: true, marketing: true })}>
-              Aceitar todos
-            </button>
-            <button type="button" onClick={() => setPrefsOpen(true)}>
+          <div className="cookie-banner-actions">
+            <button type="button" className="cookie-btn cookie-btn-ghost" onClick={() => setPrefsOpen(true)}>
               Preferências
             </button>
-            <button type="button" onClick={() => void persist({ analytics: false, marketing: false })}>
+            <button
+              type="button"
+              className="cookie-btn cookie-btn-outline"
+              onClick={() => void persist(DEFAULT_CONSENT_PREFERENCES)}
+            >
               Só essenciais
             </button>
+            <button
+              type="button"
+              className="cookie-btn cookie-btn-primary"
+              onClick={() => void persist(ACCEPT_ALL_PREFERENCES)}
+            >
+              Aceitar todos
+            </button>
           </div>
-        </>
+        </div>
       ) : (
-        <>
-          <p>Escolha categorias (essenciais sempre ativos):</p>
-          <label className="flex items-center gap-2 text-sm">
+        <div className="cookie-prefs">
+          <p className="cookie-banner-text">Escolha as categorias (essenciais sempre ativos):</p>
+          <label className="cookie-pref-item">
+            <input type="checkbox" checked disabled />
+            Essenciais — necessários para o funcionamento do site
+          </label>
+          <label className="cookie-pref-item">
             <input
               type="checkbox"
               checked={prefs.analytics}
               onChange={(e) => setPrefs((p) => ({ ...p, analytics: e.target.checked }))}
             />
-            Analytics
+            Analytics — métricas de uso para melhorar o produto
           </label>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="cookie-pref-item">
             <input
               type="checkbox"
               checked={prefs.marketing}
               onChange={(e) => setPrefs((p) => ({ ...p, marketing: e.target.checked }))}
             />
-            Marketing
+            Marketing — comunicação e ofertas personalizadas
           </label>
-          <button type="button" onClick={() => void persist(prefs)}>
-            Salvar preferências
-          </button>
-        </>
+          <div className="cookie-banner-actions">
+            <button type="button" className="cookie-btn cookie-btn-ghost" onClick={() => setPrefsOpen(false)}>
+              Voltar
+            </button>
+            <button type="button" className="cookie-btn cookie-btn-primary" onClick={() => void persist(prefs)}>
+              Salvar preferências
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
