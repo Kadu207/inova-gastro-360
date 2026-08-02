@@ -20,9 +20,39 @@
 - [ ] Workers Paid + Queues (T050–T051)
 
 ## Onda 4 — Financeiro
-Adiado (spec 005)
+- [x] Spec 005 — caixa/ledger/contas/DRE/export + UI (PR #27)
 
-## Spec 002 cardápio online — Fase 2 ✅ (produção)
+## Spec 009 LGPD (branch feat/009-lgpd-privacidade)
+- [x] Modal de preferências (essencial/analytics/marketing) + `consent_records` com RLS multitenant
+- [x] Páginas públicas `/privacidade` e `/termos` (pt-BR, CSS próprio do projeto)
+- [x] `GET /api/v1/lgpd/export` — exportação JSON de dados do titular
+- [x] `erasure_requests` + rotas POST/GET/PATCH (RBAC admin) + `audit_logs`
+- [x] Painel admin `dashboard/lgpd` (exportar dados + gerenciar solicitações)
+- [x] Testes: 8 casos API (`lgpd.test.ts`) + 7 casos front-end (`lgpd.test.ts`) — verdes
+- [x] Docs `specs/009-lgpd-cookies/{spec,plan,tasks}.md` atualizadas (PR #26)
+
+## Spec 017 Asaas
+- [x] Código + testes + PR #25
+- [ ] Merge + migrate VPS + `ASAAS_API_KEY` + smoke-payments
+
+## Spec 016 CodeRabbit + security layers (PR #23)
+- [x] `.coderabbit.yaml` + `docs/coderabbit.md` + nota AGENTS.md
+- [x] Headers Nginx (CSP, XFO, nosniff, Referrer-Policy, Permissions-Policy)
+- [x] Rate-limit Redis com fallback memória + testes
+- [x] CI secrets-guard + npm audit high
+- [x] Cron `tunnel-connect-inova.sh` */5 (user crontab gestaoti)
+- [x] Merge PR #23 → master (`cabd025`, 2026-07-21)
+- [ ] Instalar GitHub App CodeRabbit no repo (manual)
+- [ ] Print-agent LAN com impressora física (checklist em docs/runbooks/print-agent-escpos.md)
+
+## Spec 007 pagamentos — implementado (branch feat/007-pagamentos)
+- [x] `/speckit-specify` — `specs/007-pagamentos/spec.md` + checklist
+- [x] `/speckit-plan` — Mercado Pago (PIX P1) + Stripe Billing (SaaS P1)
+- [x] `/speckit-tasks` — 61 tasks TDD
+- [x] `/speckit-implement` — T001–T061 (PIX + Stripe + cartão + polish)
+- [x] Testes: 108 api-gateway, integrations webhooks, payment-expiry
+- [ ] Deploy VPS: supersedido por **017 Asaas** (configure + smoke com ASAAS_*)
+
 - [x] T009 imagens + lazy load
 - [ ] T010 combos (backlog)
 
