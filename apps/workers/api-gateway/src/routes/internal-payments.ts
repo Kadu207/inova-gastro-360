@@ -16,15 +16,37 @@ const ApplyOrderSchema = z.object({
 });
 
 const ApplySubscriptionSchema = z.object({
-  provider: z.literal("stripe"),
-  eventId: z.string().min(1),
+  provider: z.enum(["stripe", "asaas"]),
+  eventId: z.string().min(1).optional(),
+  externalEventId: z.string().min(1).optional(),
   tenantId: z.string().uuid(),
-  stripeSubscriptionId: z.string().min(1),
+  stripeSubscriptionId: z.string().min(1).optional(),
   stripeCustomerId: z.string().optional(),
+  asaasSubscriptionId: z.string().min(1).optional(),
+  asaasCustomerId: z.string().optional(),
   planCode: z.string().optional(),
-  status: z.enum(["active", "past_due", "cancelled", "trialing", "restricted"]),
+  status: z.enum(["active", "past_due", "cancelled", "canceled", "trialing", "restricted"]),
   currentPeriodEnd: z.string().datetime().optional(),
   gracePeriodEndsAt: z.string().datetime().optional(),
+}).superRefine((data, ctx) => {
+  const eventId = data.eventId ?? data.externalEventId;
+  if (!eventId) {
+    ctx.addIssue({ code: "custom", message: "eventId required", path: ["eventId"] });
+  }
+  if (data.provider === "stripe" && !data.stripeSubscriptionId) {
+    ctx.addIssue({
+      code: "custom",
+      message: "stripeSubscriptionId required",
+      path: ["stripeSubscriptionId"],
+    });
+  }
+  if (data.provider === "asaas" && !data.asaasSubscriptionId) {
+    ctx.addIssue({
+      code: "custom",
+      message: "asaasSubscriptionId required",
+      path: ["asaasSubscriptionId"],
+    });
+  }
 });
 
 export function isInternalAuthorized(request: Request, env: GatewayEnv): boolean {
@@ -232,6 +254,8 @@ export async function handleApplySubscriptionPayment(
   }
 
   const body = parsed.data;
+  const eventId = body.eventId ?? body.externalEventId!;
+  const status = body.status === "canceled" ? "cancelled" : body.status;
   const sql = getSql(env);
 
   try {
@@ -245,7 +269,7 @@ export async function handleApplySubscriptionPayment(
           gen_random_uuid(),
           ${body.tenantId}::uuid,
           ${body.provider},
-          ${body.eventId},
+          ${eventId},
           'subscription.sync',
           ${sql.json(body as unknown as JSONValue)},
           NOW()
@@ -273,9 +297,11 @@ export async function handleApplySubscriptionPayment(
     await withTenant(sql, body.tenantId, async (tx) => {
       const updated = await tx<{ id: string }[]>`
         UPDATE subscriptions
-        SET status = ${body.status},
-            stripe_subscription_id = ${body.stripeSubscriptionId},
+        SET status = ${status},
+            stripe_subscription_id = COALESCE(${body.stripeSubscriptionId ?? null}, stripe_subscription_id),
             stripe_customer_id = COALESCE(${body.stripeCustomerId ?? null}, stripe_customer_id),
+            asaas_subscription_id = COALESCE(${body.asaasSubscriptionId ?? null}, asaas_subscription_id),
+            asaas_customer_id = COALESCE(${body.asaasCustomerId ?? null}, asaas_customer_id),
             plan_id = COALESCE(${planId}::uuid, plan_id),
             current_period_end = COALESCE(${periodEnd}, current_period_end),
             grace_period_ends_at = ${graceEnds},
@@ -291,10 +317,10 @@ export async function handleApplySubscriptionPayment(
     await sql`
       UPDATE payment_events
       SET result = 'applied', processed_at = NOW()
-      WHERE provider = ${body.provider} AND external_event_id = ${body.eventId}
+      WHERE provider = ${body.provider} AND external_event_id = ${eventId}
     `;
 
-    return jsonResponse({ applied: true, status: body.status });
+    return jsonResponse({ applied: true, status });
   } catch (err) {
     if (err instanceof Error && err.message === "subscription_not_found") {
       return jsonResponse({ applied: false, reason: "subscription_not_found" }, 404);

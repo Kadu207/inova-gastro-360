@@ -4,12 +4,20 @@ import { jsonResponse, parseJsonBody } from "../lib";
 import { getSql, withTenant, setTenantContext } from "../lib/db";
 import type { GatewayEnv } from "../types/env";
 import {
-  createPixPayment,
-  createCardCheckout,
+  createPixPayment as createAsaasPix,
+  createCardCheckout as createAsaasCard,
   buildExternalReference,
+  AsaasConfigError,
+} from "../lib/asaas";
+import {
+  createPixPayment as createMpPix,
+  createCardCheckout as createMpCard,
   MercadoPagoConfigError,
 } from "../lib/mercadopago";
-import { isPaymentsEnabled, isMercadoPagoConfigured } from "../lib/payments-config";
+import {
+  isOrderPaymentsReady,
+  orderPaymentProvider,
+} from "../lib/payments-config";
 
 const PayOrderSchema = z.object({
   method: z.enum(["pix", "card"]),
@@ -46,16 +54,17 @@ export async function handlePayOrder(
   if (!parsed.success) {
     return jsonResponse({ error: "validation_error" }, 400);
   }
-  if (!isPaymentsEnabled(env) || !isMercadoPagoConfigured(env)) {
+  if (!isOrderPaymentsReady(env)) {
     return jsonResponse(
       {
         error: "payments_not_configured",
-        message: "Pagamento online ainda não ativado — aguardando credenciais Mercado Pago",
+        message: "Pagamento online ainda não ativado — configure ASAAS_API_KEY (ou legado MP)",
       },
       503,
     );
   }
 
+  const provider = orderPaymentProvider(env);
   const sql = getSql(env);
   try {
     const branchCtx = await resolveBranchTenant(sql, branchId);
@@ -143,12 +152,20 @@ export async function handlePayOrder(
     let redirectUrl: string | undefined;
 
     if (parsed.data.method === "pix") {
-      const pix = await createPixPayment(env, {
-        tenantId,
-        orderId,
-        amountCents: order.total_cents,
-        description,
-      });
+      const pix =
+        provider === "asaas"
+          ? await createAsaasPix(env, {
+              tenantId,
+              orderId,
+              amountCents: order.total_cents,
+              description,
+            })
+          : await createMpPix(env, {
+              tenantId,
+              orderId,
+              amountCents: order.total_cents,
+              description,
+            });
       externalId = pix.externalId;
       externalReference = pix.externalReference;
       pixQr = pix.qrCodeBase64;
@@ -157,14 +174,18 @@ export async function handlePayOrder(
       metadata = pix.raw;
     } else {
       const origin = new URL(request.url).origin.replace(/\/$/, "");
-      const card = await createCardCheckout(env, {
+      const cardInput = {
         tenantId,
         orderId,
         amountCents: order.total_cents,
         description,
         successUrl: parsed.data.successUrl ?? `${origin}/cardapio?paid=1`,
         failureUrl: parsed.data.cancelUrl ?? `${origin}/cardapio?paid=0`,
-      });
+      };
+      const card =
+        provider === "asaas"
+          ? await createAsaasCard(env, cardInput)
+          : await createMpCard(env, cardInput);
       externalId = card.externalId;
       externalReference = card.externalReference;
       expiresAt = card.expiresAt;
@@ -190,7 +211,7 @@ export async function handlePayOrder(
           expires_at, metadata, updated_at
         ) VALUES (
           gen_random_uuid(), ${tenantId}::uuid, ${branchId}::uuid, ${orderId}::uuid,
-          'mercadopago', ${parsed.data.method}, ${order.total_cents}, 'pending',
+          ${provider}, ${parsed.data.method}, ${order.total_cents}, 'pending',
           ${externalId}, ${externalReference}, ${pixQr}, ${pixCopy},
           ${expiresAt}, ${tx.json(metadata as JSONValue)}, NOW()
         )
@@ -202,6 +223,7 @@ export async function handlePayOrder(
       payment_intent_id: intent.id,
       order_id: orderId,
       method: parsed.data.method,
+      provider,
       external_id: externalId,
     });
 
@@ -219,10 +241,13 @@ export async function handlePayOrder(
       201,
     );
   } catch (err) {
-    if (err instanceof MercadoPagoConfigError) {
+    if (err instanceof AsaasConfigError || err instanceof MercadoPagoConfigError) {
       return jsonResponse({ error: "payments_not_configured" }, 503);
     }
-    if (err instanceof Error && err.message.includes("mercadopago")) {
+    if (
+      err instanceof Error &&
+      (err.message.includes("asaas") || err.message.includes("mercadopago"))
+    ) {
       return jsonResponse({ error: "payment_provider_unavailable" }, 502);
     }
     console.error("pay_order_error", err);

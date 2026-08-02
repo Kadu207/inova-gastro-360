@@ -22,10 +22,19 @@ export interface GatewayEnv {
   S3_ACCESS_KEY?: string;
   S3_SECRET_KEY?: string;
   S3_PUBLIC_BASE_URL?: string;
-  /** Mercado Pago — PIX/cartão pedidos (sandbox ou produção) */
+  /** Asaas — gateway oficial BR (PIX/cartão pedidos + SaaS) */
+  ASAAS_API_KEY?: string;
+  ASAAS_WEBHOOK_TOKEN?: string;
+  /** true = sandbox.asaas.com */
+  ASAAS_SANDBOX?: string;
+  /** asaas (default BR) | stripe (fallback/internacional) */
+  BILLING_PROVIDER?: string;
+  /** asaas (default) | mercadopago (legado/rollback) */
+  ORDER_PAYMENT_PROVIDER?: string;
+  /** Mercado Pago — legado / rollback */
   MERCADOPAGO_ACCESS_TOKEN?: string;
   MERCADOPAGO_WEBHOOK_SECRET?: string;
-  /** Stripe Billing — assinatura SaaS */
+  /** Stripe Billing — fallback SaaS */
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
   /** Força modo sandbox nos gateways de pagamento */
