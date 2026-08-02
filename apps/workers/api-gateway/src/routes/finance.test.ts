@@ -40,6 +40,7 @@ describe("finance — caixa", () => {
       tid: tenant.id,
       role: "admin_cliente",
       email: "admin@inovagastro360.local",
+      branches: [DEMO_BRANCH_ID],
     });
 
     const openRes = await handleOpenCash(
@@ -57,6 +58,7 @@ describe("finance — caixa", () => {
         tid: tenant.id,
         role: "admin_cliente",
         email: "admin@inovagastro360.local",
+        branches: [DEMO_BRANCH_ID],
       },
     );
     expect(openRes.status).toBe(201);
@@ -77,6 +79,7 @@ describe("finance — caixa", () => {
         tid: tenant.id,
         role: "admin_cliente",
         email: "admin@inovagastro360.local",
+        branches: [DEMO_BRANCH_ID],
       },
       opened.sessionId,
     );
@@ -92,6 +95,7 @@ describe("finance — caixa", () => {
         tid: tenant.id,
         role: "admin_cliente",
         email: "admin@inovagastro360.local",
+        branches: [DEMO_BRANCH_ID],
       },
       DEMO_BRANCH_ID,
     );
@@ -112,6 +116,7 @@ describe("finance — caixa", () => {
         tid: tenant.id,
         role: "admin_cliente",
         email: "admin@inovagastro360.local",
+        branches: [DEMO_BRANCH_ID],
       },
       opened.sessionId,
     );
@@ -125,6 +130,7 @@ describe("finance — caixa", () => {
       tid: "00000000-0000-4000-8000-00000000b001",
       role: "admin_cliente",
       email: "b@test.local",
+      branches: [] as string[],
     };
     const res = await handleGetOpenCash(
       new Request("https://api.test/"),

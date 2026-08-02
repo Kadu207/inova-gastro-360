@@ -89,7 +89,13 @@ describe.runIf(dbReady)("lgpd — export, erasure e RBAC (DB)", () => {
   it("erasure request exige admin (403 para atendente)", async () => {
     if (!tenantId || !userId) return;
     const env2 = testEnv();
-    const atendente = { sub: userId, tid: tenantId, role: "atendente", email: "atendente@test.local" };
+    const atendente = {
+      sub: userId,
+      tid: tenantId,
+      role: "atendente",
+      email: "atendente@test.local",
+      branches: [] as string[],
+    };
     const token = await bearerToken(atendente);
     const res = await handleCreateErasureRequest(
       authRequest("https://api.test/erasure", token, {
@@ -104,7 +110,13 @@ describe.runIf(dbReady)("lgpd — export, erasure e RBAC (DB)", () => {
 
   it("cria, lista e atualiza solicitação de esquecimento (fluxo admin completo)", async () => {
     if (!tenantId || !userId) return;
-    const admin = { sub: userId, tid: tenantId, role: "admin_cliente", email: "admin@inovagastro360.local" };
+    const admin = {
+      sub: userId,
+      tid: tenantId,
+      role: "admin_cliente",
+      email: "admin@inovagastro360.local",
+      branches: [] as string[],
+    };
     const token = await bearerToken(admin);
 
     const createRes = await handleCreateErasureRequest(
@@ -144,7 +156,13 @@ describe.runIf(dbReady)("lgpd — export, erasure e RBAC (DB)", () => {
 
   it("update de solicitação inexistente retorna 404", async () => {
     if (!tenantId || !userId) return;
-    const admin = { sub: userId, tid: tenantId, role: "admin_cliente", email: "admin@inovagastro360.local" };
+    const admin = {
+      sub: userId,
+      tid: tenantId,
+      role: "admin_cliente",
+      email: "admin@inovagastro360.local",
+      branches: [] as string[],
+    };
     const token = await bearerToken(admin);
     const res = await handleUpdateErasureRequest(
       authRequest("https://api.test/erasure", token, {
@@ -160,7 +178,13 @@ describe.runIf(dbReady)("lgpd — export, erasure e RBAC (DB)", () => {
 
   it("titular exporta os próprios dados (JSON com consents e ordersSample)", async () => {
     if (!tenantId || !userId) return;
-    const admin = { sub: userId, tid: tenantId, role: "admin_cliente", email: "admin@inovagastro360.local" };
+    const admin = {
+      sub: userId,
+      tid: tenantId,
+      role: "admin_cliente",
+      email: "admin@inovagastro360.local",
+      branches: [] as string[],
+    };
     const res = await handleLgpdExport(new Request("https://api.test/api/v1/lgpd/export"), env, admin);
     expect(res.status).toBe(200);
     const body = (await res.json()) as { subject: { id: string }; consents: unknown[]; ordersSample: unknown[] };
@@ -171,7 +195,13 @@ describe.runIf(dbReady)("lgpd — export, erasure e RBAC (DB)", () => {
 
   it("cross-tenant: tenant B não vê solicitações do tenant A (RLS)", async () => {
     if (!tenantId || !userId) return;
-    const admin = { sub: userId, tid: tenantId, role: "admin_cliente", email: "admin@inovagastro360.local" };
+    const admin = {
+      sub: userId,
+      tid: tenantId,
+      role: "admin_cliente",
+      email: "admin@inovagastro360.local",
+      branches: [] as string[],
+    };
     const token = await bearerToken(admin);
     await handleCreateErasureRequest(
       authRequest("https://api.test/erasure", token, {
@@ -187,6 +217,7 @@ describe.runIf(dbReady)("lgpd — export, erasure e RBAC (DB)", () => {
       tid: TENANT_B.tenantId,
       role: "admin_cliente",
       email: "other@test.local",
+      branches: [] as string[],
     };
     const otherToken = await bearerToken(otherAdmin);
     const listRes = await handleListErasureRequests(
