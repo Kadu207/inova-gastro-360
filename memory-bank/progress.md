@@ -19,21 +19,12 @@
 ## Fase F — Cloudflare go-live comercial
 - [ ] Workers Paid + Queues (T050–T051)
 
-## Onda 4 — Financeiro
-- [x] Spec 005 — caixa/ledger/contas/DRE/export + UI (PR #27)
-
-## Spec 009 LGPD (branch feat/009-lgpd-privacidade)
-- [x] Modal de preferências (essencial/analytics/marketing) + `consent_records` com RLS multitenant
-- [x] Páginas públicas `/privacidade` e `/termos` (pt-BR, CSS próprio do projeto)
-- [x] `GET /api/v1/lgpd/export` — exportação JSON de dados do titular
-- [x] `erasure_requests` + rotas POST/GET/PATCH (RBAC admin) + `audit_logs`
-- [x] Painel admin `dashboard/lgpd` (exportar dados + gerenciar solicitações)
-- [x] Testes: 8 casos API (`lgpd.test.ts`) + 7 casos front-end (`lgpd.test.ts`) — verdes
-- [x] Docs `specs/009-lgpd-cookies/{spec,plan,tasks}.md` atualizadas (PR #26)
-
-## Spec 017 Asaas
-- [x] Código + testes + PR #25
-- [ ] Merge + migrate VPS + `ASAAS_API_KEY` + smoke-payments
+## Onda 4 — Financeiro / Pagamentos / LGPD (2026-08-02)
+- [x] Spec 005 — caixa/ledger/contas/DRE/export + UI (merge via PR #26; fix UI #28)
+- [x] Spec 009 LGPD — consent/export/erasure/UI (PR #26 MERGED)
+- [x] Spec 017 Asaas — código + testes (PR #25 MERGED)
+- [x] PR #27 fechado (superseded por #26)
+- [ ] VPS: `git pull` + migrate + `ASAAS_API_KEY` + smoke-payments (SSH bloqueado neste host)
 
 ## Spec 016 CodeRabbit + security layers (PR #23)
 - [x] `.coderabbit.yaml` + `docs/coderabbit.md` + nota AGENTS.md
