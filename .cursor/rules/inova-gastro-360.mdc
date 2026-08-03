@@ -10,26 +10,34 @@ alwaysApply: true
 - Nome: **Inova Gastro 360** (não usar "Inova Food")
 - Domínio: inovagastro360.inovatitech.com.br
 
-## Memória permanente
-No início de cada sessão, ler:
-- `memory-bank/activeContext.md`
-- `memory-bank/projectbrief.md`
-- `AGENTS.md`
-- `.specify/memory/constitution.md`
-- `docs/cursor-tooling.md` (se deploy/MCP/skills)
+## Memória permanente (harness completo)
+No início de cada sessão, ler nesta ordem:
+- memory.md (índice + snapshot + roadmap ondas)
+- memory-bank/activeContext.md
+- memory-bank/projectbrief.md
+- gentes.md (ciclo SK/C/R/EMB + specs 018–027)
+- AGENTS.md
+- .specify/memory/constitution.md
+- .specify/feature.json
+- PORT_REGISTRY.md (antes de bind)
+- docs/cursor-tooling.md (se deploy/MCP/skills)
 
-Ao final, atualizar `memory-bank/activeContext.md` e `progress.md`.
+**Proibido:** feature de produção sem Spec Kit (specify→plan→tasks→implement); merge sem 
+pm run test.
+
+Ao final, atualizar memory-bank/activeContext.md, progress.md, snapshot em memory.md e status de specs em gentes.md se mudou.
 
 ## Spec Kit (SDD)
-- Feature ativa: `.specify/feature.json`
-- Skills: `.cursor/skills/speckit-*` — `/speckit-specify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`
-- Rules: `.cursor/rules/specify-rules.mdc`, `.cursor/rules/cloudflare-workers.mdc`
+- Feature ativa: .specify/feature.json
+- Skills: .cursor/skills/speckit-* — /speckit-specify → /speckit-plan → /speckit-tasks → /speckit-implement
+- Rules: .cursor/rules/specify-rules.mdc, .cursor/rules/cloudflare-workers.mdc
 
 ## Desenvolvimento
 - SDD + TDD + Spec Kit obrigatórios
-- Specs em `specs/` antes de código de produção
-- `npm run test` verde antes de merge
-- Multitenant: sempre `tenant_id` + RLS
+- Specs em specs/ antes de código de produção
+- 
+pm run test verde antes de merge
+- Multitenant: sempre 	enant_id + RLS
 - Event-first: mudanças de estado via filas
 - Workers separados: API, mensageria, realtime, integrações
 

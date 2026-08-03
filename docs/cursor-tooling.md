@@ -1,6 +1,11 @@
 # Cursor — Skills, MCPs e fluxo de engenharia
 
-**Projeto:** Inova Gastro 360 | **Atualizado:** 2026-06-17
+**Projeto:** Inova Gastro 360 | **Atualizado:** 2026-08-03
+
+## Harness completo
+
+Obrigatório em toda feature: [`agentes.md`](../agentes.md) + [`memory.md`](../memory.md) + [`AGENTS.md`](../AGENTS.md).  
+Ciclo: Spec Kit skills → papéis C-* → gates R-* → EMB/MCP → atualizar memory-bank.
 
 ## Metodologia integrada
 
