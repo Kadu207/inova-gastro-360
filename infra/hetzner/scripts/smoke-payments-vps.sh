@@ -10,8 +10,8 @@ source "$ENV_FILE" 2>/dev/null || true
 API_URL="${API_URL:-https://inovagastro360.inovatitech.com.br}"
 INTERNAL_SECRET="${INTERNAL_SHARED_SECRET:?INTERNAL_SHARED_SECRET obrigatório}"
 
-echo "== Health API =="
-curl -sf "$API_URL/health" | head -c 200
+echo "== Health API (local :8792; /health público pode 404 via nginx→web) =="
+curl -sf "http://127.0.0.1:8792/health" | head -c 200
 echo
 
 echo "== Health integrations (via proxy interno se configurado) =="

@@ -59,14 +59,24 @@ validate_stripe_webhook_secret() {
   [[ ${#v} -ge 20 ]] || fail "STRIPE_WEBHOOK_SECRET curto demais (${#v} caracteres)"
 }
 
+# Docker Compose trata `$` em env_file como interpolação → API Key Asaas (`$aact_...`)
+# vira vazia. Gravar `$$` para o container receber um único `$`.
+escape_for_compose() {
+  local val="$1"
+  printf '%s' "${val//\$/\$\$}"
+}
+
 upsert_env() {
   local key="$1"
   local val="$2"
+  local stored
+  stored="$(escape_for_compose "$val")"
   if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
-    sed -i.bak "s|^${key}=.*|${key}=${val}|" "$ENV_FILE"
-  else
-    echo "${key}=${val}" >> "$ENV_FILE"
+    grep -v "^${key}=" "$ENV_FILE" > "${ENV_FILE}.tmp"
+    mv "${ENV_FILE}.tmp" "$ENV_FILE"
   fi
+  # printf evita interpretação de metacaracteres (diferente de sed/echo)
+  printf '%s=%s\n' "$key" "$stored" >> "$ENV_FILE"
 }
 
 : "${ASAAS_API_KEY:?Defina ASAAS_API_KEY (API key sandbox/produção Asaas)}"
@@ -96,4 +106,6 @@ fi
 
 echo "OK — Asaas configurado em $ENV_FILE (PAYMENTS_ENABLED=true)"
 echo "Webhook URL: https://inovagastro360.inovatitech.com.br/webhooks/asaas"
-echo "  docker compose -f infra/hetzner/docker-compose.app.yml --env-file infra/hetzner/.env.production up -d --force-recreate api-gateway integrations"
+echo "IMPORTANTE: não use --env-file no docker compose CLI — a API Key Asaas começa com \$ e o Compose zera o valor."
+echo "  docker compose -f infra/hetzner/docker-compose.app.yml up -d --force-recreate api-gateway integrations"
+echo "  (o service já carrega infra/hetzner/.env.production via env_file)"

@@ -35,8 +35,16 @@ export PAYMENTS_SANDBOX=true
 # opcional: STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET
 
 bash infra/hetzner/scripts/configure-payments-env-vps.sh
+
+# NÃO passar --env-file no CLI: API Key Asaas começa com `$` e o Compose
+# interpreta como variável, zerando a key nos containers.
+# O service já usa env_file: .env.production (relativo a infra/hetzner/).
 docker compose -f infra/hetzner/docker-compose.app.yml \
-  --env-file infra/hetzner/.env.production up -d --force-recreate api-gateway integrations
+  up -d --force-recreate api-gateway integrations
+
+# Conferir se a key chegou no container (só o tamanho; não imprime o segredo)
+docker exec inova-gastro-360-api sh -c 'echo "ASAAS_API_KEY len=${#ASAAS_API_KEY}"'
+
 bash infra/hetzner/scripts/smoke-payments-vps.sh
 ```
 
