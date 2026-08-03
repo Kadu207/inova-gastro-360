@@ -1,6 +1,6 @@
 import type { JwtPayload } from "@inova-gastro-360/auth";
 import { hashPassword } from "@inova-gastro-360/auth";
-import { CreateTenantSchema } from "@inova-gastro-360/validation";
+import { CreateTenantSchema, PatchTenantStatusSchema } from "@inova-gastro-360/validation";
 import { jsonResponse, parseJsonBody } from "../lib";
 import { getSql } from "../lib/db";
 import { requireRole } from "../middleware/auth";
@@ -34,7 +34,17 @@ export async function handleCreateTenant(
     return jsonResponse({ error: "validation_error", details: parsed.error.flatten() }, 400);
   }
 
-  const { name, slug, tradeName, branchName, admin, planCode } = parsed.data;
+  const {
+    name,
+    slug,
+    tradeName,
+    branchName,
+    documentNumber,
+    phone,
+    branchAddress,
+    admin,
+    planCode,
+  } = parsed.data;
   const passwordHash = await hashPassword(admin.password);
   const sql = getSql(env);
 
@@ -54,14 +64,20 @@ export async function handleCreateTenant(
       await tx`SELECT set_config('app.current_tenant_id', ${tenant.id}, true)`;
 
       const [company] = await tx<{ id: string }[]>`
-        INSERT INTO companies (id, tenant_id, trade_name, legal_name, updated_at)
-        VALUES (gen_random_uuid(), ${tenant.id}::uuid, ${tradeName ?? name}, ${tradeName ?? name}, NOW())
+        INSERT INTO companies (id, tenant_id, trade_name, legal_name, document_number, phone, updated_at)
+        VALUES (
+          gen_random_uuid(), ${tenant.id}::uuid, ${tradeName ?? name}, ${tradeName ?? name},
+          ${documentNumber ?? null}, ${phone ?? null}, NOW()
+        )
         RETURNING id
       `;
 
       const [branch] = await tx<{ id: string }[]>`
-        INSERT INTO branches (id, tenant_id, company_id, name, updated_at)
-        VALUES (gen_random_uuid(), ${tenant.id}::uuid, ${company.id}::uuid, ${branchName}, NOW())
+        INSERT INTO branches (id, tenant_id, company_id, name, address, updated_at)
+        VALUES (
+          gen_random_uuid(), ${tenant.id}::uuid, ${company.id}::uuid, ${branchName},
+          ${branchAddress ?? null}, NOW()
+        )
         RETURNING id
       `;
 
@@ -104,6 +120,67 @@ export async function handleCreateTenant(
     if (pgCode === "23505") return jsonResponse({ error: "conflict" }, 409);
     console.error("create_tenant_error", err);
     return jsonResponse({ error: "internal_error" }, 500);
+  } finally {
+    await sql.end();
+  }
+}
+
+export async function handleListTenants(
+  _request: Request,
+  env: GatewayEnv,
+  user: JwtPayload,
+): Promise<Response> {
+  const roleCheck = requireRole(user, "super_admin");
+  if (!roleCheck.ok) return roleCheck.response;
+
+  const sql = getSql(env);
+  try {
+    const rows = await sql<
+      { id: string; name: string; slug: string; status: string; created_at: Date }[]
+    >`
+      SELECT id, name, slug, status, created_at
+      FROM tenants
+      ORDER BY created_at DESC
+    `;
+    return jsonResponse({
+      tenants: rows.map((t) => ({
+        id: t.id,
+        name: t.name,
+        slug: t.slug,
+        status: t.status,
+        createdAt: t.created_at,
+      })),
+    });
+  } finally {
+    await sql.end();
+  }
+}
+
+export async function handlePatchTenant(
+  request: Request,
+  env: GatewayEnv,
+  user: JwtPayload,
+  tenantId: string,
+): Promise<Response> {
+  const roleCheck = requireRole(user, "super_admin");
+  if (!roleCheck.ok) return roleCheck.response;
+
+  const raw = await parseJsonBody(request);
+  if (raw === null) return jsonResponse({ error: "invalid_json" }, 400);
+  const parsed = PatchTenantStatusSchema.safeParse(raw);
+  if (!parsed.success) {
+    return jsonResponse({ error: "validation_error", details: parsed.error.flatten() }, 400);
+  }
+
+  const sql = getSql(env);
+  try {
+    const updated = await sql<{ id: string }[]>`
+      UPDATE tenants SET status = ${parsed.data.status}, updated_at = NOW()
+      WHERE id = ${tenantId}::uuid
+      RETURNING id
+    `;
+    if (!updated[0]) return jsonResponse({ error: "not_found" }, 404);
+    return jsonResponse({ ok: true, status: parsed.data.status });
   } finally {
     await sql.end();
   }

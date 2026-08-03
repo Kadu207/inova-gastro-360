@@ -370,3 +370,163 @@ export async function startBillingCheckout(planCode: string): Promise<string> {
   if (!res.ok) throw new Error(data.error ?? "checkout_failed");
   return data.checkoutUrl as string;
 }
+
+export type SettingsCompany = {
+  id: string;
+  tradeName: string;
+  legalName: string | null;
+  documentNumber: string | null;
+  phone: string | null;
+};
+
+export type SettingsBranch = {
+  id: string;
+  name: string;
+  address: string | null;
+  timezone: string;
+  isActive: boolean;
+};
+
+export type SettingsUser = {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  isActive: boolean;
+  branchIds: string[];
+};
+
+export async function fetchSettingsCompany(): Promise<SettingsCompany> {
+  const res = await apiFetch("/api/v1/settings/company");
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "company_failed");
+  return data.company as SettingsCompany;
+}
+
+export async function patchSettingsCompany(input: Partial<SettingsCompany>): Promise<void> {
+  const res = await apiFetch("/api/v1/settings/company", {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error((data as { error?: string }).error ?? "company_patch_failed");
+  }
+}
+
+export async function fetchSettingsBranches(): Promise<SettingsBranch[]> {
+  const res = await apiFetch("/api/v1/settings/branches");
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "branches_failed");
+  return (data.branches ?? []) as SettingsBranch[];
+}
+
+export async function createSettingsBranch(input: {
+  name: string;
+  address?: string;
+}): Promise<void> {
+  const res = await apiFetch("/api/v1/settings/branches", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error((data as { error?: string }).error ?? "branch_create_failed");
+  }
+}
+
+export async function patchSettingsBranch(
+  id: string,
+  input: { name?: string; address?: string | null; isActive?: boolean },
+): Promise<void> {
+  const res = await apiFetch(`/api/v1/settings/branches/${id}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error((data as { error?: string }).error ?? "branch_patch_failed");
+  }
+}
+
+export async function fetchSettingsUsers(): Promise<SettingsUser[]> {
+  const res = await apiFetch("/api/v1/settings/users");
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "users_failed");
+  return (data.users ?? []) as SettingsUser[];
+}
+
+export async function createSettingsUser(input: {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  branchIds: string[];
+}): Promise<void> {
+  const res = await apiFetch("/api/v1/settings/users", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error((data as { error?: string }).error ?? "user_create_failed");
+  }
+}
+
+export async function patchSettingsUser(
+  id: string,
+  input: { name?: string; role?: string; isActive?: boolean; branchIds?: string[]; password?: string },
+): Promise<void> {
+  const res = await apiFetch(`/api/v1/settings/users/${id}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error((data as { error?: string }).error ?? "user_patch_failed");
+  }
+}
+
+export type AdminTenant = {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  createdAt: string;
+};
+
+export async function fetchAdminTenants(): Promise<AdminTenant[]> {
+  const res = await apiFetch("/api/v1/admin/tenants");
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "tenants_failed");
+  return (data.tenants ?? []) as AdminTenant[];
+}
+
+export async function patchAdminTenantStatus(id: string, status: string): Promise<void> {
+  const res = await apiFetch(`/api/v1/admin/tenants/${id}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error((data as { error?: string }).error ?? "tenant_patch_failed");
+  }
+}
+
+export async function createAdminTenant(input: Record<string, unknown>): Promise<void> {
+  const res = await apiFetch("/api/v1/admin/tenants", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error((data as { error?: string }).error ?? "tenant_create_failed");
+  }
+}

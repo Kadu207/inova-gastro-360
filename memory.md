@@ -1,7 +1,7 @@
 # memory.md — Memória permanente (índice harness)
 
 **Produto:** Inova Gastro 360  
-**Atualizado:** 2026-08-03 (Onda 0 em execução)  
+**Atualizado:** 2026-08-03 (Onda 1 — 018-tenant-admin)  
 **Uso:** ler este índice no início da sessão; detalhes nos arquivos linkados.  
 **Catálogo agentes:** [`agentes.md`](agentes.md)
 
@@ -12,7 +12,7 @@
 | Item | Status |
 |------|--------|
 | Plano | OS Tenants + Asaas (A+B UI; Asaas 1→2→3) |
-| Onda | **0** — harness + fix `(os)` → [PR #33](https://github.com/Kadu207/inova-gastro-360/pull/33); VPS rebuild **após merge** |
+| Onda | **1** em andamento (`018-tenant-admin`) — Onda 0 ✅ smoke VPS chunk/login 200 |
 | Feature Spec Kit ativa | `specs/017-asaas-pagamentos` → **próxima:** `018-tenant-admin` após merge Onda 0 |
 | Harness | `agentes.md` + este arquivo + rules + Spec Kit skills |
 | Chunks web | Sem route group `(os)`; paths `_next/.../app/dashboard/` |

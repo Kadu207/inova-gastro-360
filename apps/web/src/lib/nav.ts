@@ -22,7 +22,8 @@ export const MAIN_NAV: NavItem[] = [
   { href: "#", label: "Atendimento", icon: "◍", disabled: true },
   { href: "#", label: "Estoque", icon: "▦", disabled: true },
   { href: "#", label: "Promoções", icon: "★", disabled: true },
-  { href: "#", label: "Configurações", icon: "⚙", disabled: true },
+  { href: "/dashboard/configuracoes", label: "Configurações", icon: "⚙" },
+  { href: "/dashboard/admin/tenants", label: "Tenants", icon: "⬡" },
 ];
 
 export const FOOTER_FEATURES = [

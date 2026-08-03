@@ -2,23 +2,21 @@
 
 **Última atualização:** 2026-08-03
 
-## Foco: Onda 0 → PR #33
-- Harness completo: [`agentes.md`](../agentes.md), [`memory.md`](../memory.md), `AGENTS.md`, rules
-- Removido `app/(os)/` — layouts em `dashboard/`, `painel/`, `cardapio/` + `OsShellLayout`
-- PR: https://github.com/Kadu207/inova-gastro-360/pull/33
-- Após merge: rebuild web VPS + smoke chunk `app/dashboard/page-*.js` = 200
-- Depois: Spec Kit **018-tenant-admin** (atualizar `.specify/feature.json`)
+## Foco: Onda 1 — `018-tenant-admin` (em implementação)
+- Spec Kit: `specs/018-tenant-admin/` + `.specify/feature.json`
+- Branch: `feat/018-tenant-admin`
+- API settings (company/branches/users) + admin tenants GET/PATCH + UI config/admin + seletor filial
+- Migration: `20260803120000_company_phone_018`
+
+## Onda 0 ✅
+- PR #33 MERGED (`21884d6`)
+- VPS smoke: chunk `app/dashboard/page-*.js` **200**, login **200**, sem `(os)`
 
 ## Runtime
 - VPS `gestaoti@128.140.77.31` → `~/inova-gastro-360`
-- Tunnel → nginx `:9088` → web `:3102` / api `:8792` / integrations `:8791`
-
-## Pagamentos / VPS (já feito)
-- Migrations Asaas/financeiro/LGPD; `ASAAS_API_KEY` com `$$`
-- E2E sandbox Asaas = onda 3 (specs 020/021)
 
 ## Login demo
 - `demo-burger` / `admin@inovagastro360.local` / `SEED_ADMIN_PASSWORD`
 
-## Adiado
-- CF Workers Paid + Queues; CodeRabbit App install; print físico; marketplace Asaas (027)
+## Próximo após 018
+- Onda 2: `019-os-shell-responsive`
