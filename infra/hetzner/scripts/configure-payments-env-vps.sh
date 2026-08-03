@@ -96,4 +96,6 @@ fi
 
 echo "OK — Asaas configurado em $ENV_FILE (PAYMENTS_ENABLED=true)"
 echo "Webhook URL: https://inovagastro360.inovatitech.com.br/webhooks/asaas"
-echo "  docker compose -f infra/hetzner/docker-compose.app.yml --env-file infra/hetzner/.env.production up -d --force-recreate api-gateway integrations"
+echo "IMPORTANTE: não use --env-file no docker compose CLI — a API Key Asaas começa com \$ e o Compose zera o valor."
+echo "  docker compose -f infra/hetzner/docker-compose.app.yml up -d --force-recreate api-gateway integrations"
+echo "  (o service já carrega infra/hetzner/.env.production via env_file)"
