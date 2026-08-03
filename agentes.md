@@ -169,7 +169,7 @@ Desligar: `AGENTS_ENABLED=0` em `infra/hetzner/.env.production`.
 
 | Spec | Onda | Título | Status | Agentes foco |
 |------|------|--------|--------|--------------|
-| — | **0** | Harness + remover `(os)` + rebuild VPS | 🔄 em execução | C-18, C-23, C-25, R-13 |
+| — | **0** | Harness + remover `(os)` + rebuild VPS | 🔄 [PR #33](https://github.com/Kadu207/inova-gastro-360/pull/33) | C-18, C-23, C-25, R-13 |
 | 018 | 1 | Tenant admin + Configurações + filiais/users | 🔲 | C-02, C-03, C-06, C-18 |
 | 019 | 2 | OS shell responsive + KPIs reais | 🔲 | C-18, C-22, R-12 |
 | 020 | 3 | Asaas E2E sandbox (PIX + billing) | 🔲 | C-15, C-09, C-25, R-15 |

@@ -2,10 +2,11 @@
 
 **Última atualização:** 2026-08-03
 
-## Foco: Onda 0 (em execução → PR)
+## Foco: Onda 0 → PR #33
 - Harness completo: [`agentes.md`](../agentes.md), [`memory.md`](../memory.md), `AGENTS.md`, rules
 - Removido `app/(os)/` — layouts em `dashboard/`, `painel/`, `cardapio/` + `OsShellLayout`
-- Próximo após merge: rebuild web VPS + smoke chunk `app/dashboard/page-*.js` = 200
+- PR: https://github.com/Kadu207/inova-gastro-360/pull/33
+- Após merge: rebuild web VPS + smoke chunk `app/dashboard/page-*.js` = 200
 - Depois: Spec Kit **018-tenant-admin** (atualizar `.specify/feature.json`)
 
 ## Runtime

@@ -12,7 +12,7 @@
 | Item | Status |
 |------|--------|
 | Plano | OS Tenants + Asaas (A+B UI; Asaas 1→2→3) |
-| Onda | **0** — harness completo + fix `(os)` + rebuild VPS |
+| Onda | **0** — harness + fix `(os)` → [PR #33](https://github.com/Kadu207/inova-gastro-360/pull/33); VPS rebuild **após merge** |
 | Feature Spec Kit ativa | `specs/017-asaas-pagamentos` → **próxima:** `018-tenant-admin` após merge Onda 0 |
 | Harness | `agentes.md` + este arquivo + rules + Spec Kit skills |
 | Chunks web | Sem route group `(os)`; paths `_next/.../app/dashboard/` |
