@@ -3,7 +3,7 @@
 **Produto:** Inova Gastro 360  
 **Atualizado:** 2026-08-03 (Onda 1 — 018-tenant-admin)  
 **Uso:** ler este índice no início da sessão; detalhes nos arquivos linkados.  
-**Catálogo agentes:** [`agentes.md`](agentes.md)
+**Catálogo agentes:** [`docs/agents.md`](docs/agents.md)
 
 ---
 
@@ -14,7 +14,7 @@
 | Plano | OS Tenants + Asaas (A+B UI; Asaas 1→2→3) |
 | Onda | **1** em andamento (`018-tenant-admin`) — Onda 0 ✅ smoke VPS chunk/login 200 |
 | Feature Spec Kit ativa | `specs/017-asaas-pagamentos` → **próxima:** `018-tenant-admin` após merge Onda 0 |
-| Harness | `agentes.md` + este arquivo + rules + Spec Kit skills |
+| Harness | `docs/agents.md` + este arquivo + rules + Spec Kit skills |
 | Chunks web | Sem route group `(os)`; paths `_next/.../app/dashboard/` |
 | Deploy VPS web | Rebuild `out/` **pendente** após merge Onda 0 |
 | Asaas VPS | Key `$$`, webhook 401, `payments/status` asaas=true; E2E sandbox = onda 3 (020) |
@@ -32,7 +32,7 @@ Tunnel → nginx `:9088` → web `:3102` / api `:8792` / integrations `:8791`
 
 | Onda | Specs | Done when |
 |------|-------|-----------|
-| 0 | harness + `(os)` | `agentes.md`/`memory.md` completos; chunks sem `(os)`; VPS rebuild 200 |
+| 0 | harness + `(os)` | `docs/agents.md`/`memory.md` completos; chunks sem `(os)`; VPS rebuild 200 |
 | 1 | 018 | Config + admin tenants + seletor filial |
 | 2 | 019 | KPIs reais + mobile drawer + polish rotas |
 | 3 | 020–021 | Asaas E2E PIX/billing + cartão/cancel/expiração |
@@ -41,15 +41,15 @@ Tunnel → nginx `:9088` → web `:3102` / api `:8792` / integrations `:8791`
 | 6 | 026 | Atendimento inbox |
 | 7 | 027 | Marketplace Asaas por tenant |
 
-Detalhe agentes × onda: [`agentes.md`](agentes.md) §5.
+Detalhe agentes × onda: [`docs/agents.md`](docs/agents.md) §5.
 
 ---
 
 ## Ciclo harness (resumo)
 
-Ver checklist completo em [`agentes.md`](agentes.md) §0.
+Ver checklist completo em [`docs/agents.md`](docs/agents.md) §0.
 
-Session: `memory.md` → activeContext → agentes → constitution → feature.json → PORT_REGISTRY.  
+Session: `memory.md` → activeContext → docs/agents.md → constitution → feature.json → PORT_REGISTRY.  
 Spec Kit: specify → clarify → checklist → plan → tasks → analyze → git-feature → implement.  
 Gates: R-* + CI + `npm run test`.  
 Fim: activeContext + progress + este snapshot.
@@ -158,7 +158,7 @@ Favicon: `docs/runbooks/favicon.md`.
 
 | Artefato | Papel |
 |----------|--------|
-| [`agentes.md`](agentes.md) | Ciclo + SK/C/R/EMB + roadmap 018–027 |
+| [`docs/agents.md`](docs/agents.md) | Ciclo + SK/C/R/EMB + roadmap 018–027 |
 | [`AGENTS.md`](AGENTS.md) | Entrada Cursor |
 | [`memory.md`](memory.md) | Este índice |
 | `.cursor/rules/*.mdc` | Rules always |

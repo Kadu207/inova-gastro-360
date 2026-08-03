@@ -1,8 +1,9 @@
-# agentes.md — Harness completo (Inova Gastro 360)
+# agents.md — Harness completo (Inova Gastro 360)
 
 **Produto:** Inova Gastro 360 (nunca "Inova Food")  
 **Domínio:** https://inovagastro360.inovatitech.com.br  
-**Canônico:** este arquivo + [`AGENTS.md`](AGENTS.md) + [`memory.md`](memory.md)  
+**Canônico:** este arquivo (`docs/agents.md`) + [`AGENTS.md`](../AGENTS.md) + [`memory.md`](../memory.md)  
+**Nota:** na raiz do repo o Cursor usa `AGENTS.md`; o catálogo completo fica em `docs/agents.md` (no Windows, `agents.md` e `AGENTS.md` colidem no mesmo path).  
 **Plano ativo:** OS Tenants + Asaas (ondas 0–7) — A+B UI; Asaas 1→2→3
 
 Pipeline: **25 construção | 15 revisão | 15 embarcados** (55) + **14 skills Spec Kit**.
@@ -14,7 +15,7 @@ Pipeline: **25 construção | 15 revisão | 15 embarcados** (55) + **14 skills S
 ```text
 INÍCIO SESSÃO
   memory.md → memory-bank/activeContext.md → projectbrief.md
-  → agentes.md → AGENTS.md → .specify/memory/constitution.md
+  → docs/agents.md → AGENTS.md → .specify/memory/constitution.md
   → .specify/feature.json → PORT_REGISTRY.md
   → docs/cursor-tooling.md (se deploy/MCP/skills)
 
@@ -45,7 +46,7 @@ FIM SESSÃO
 
 **Proibido:** código de produção sem specify/plan/tasks; merge sem `npm run test`; commit de secrets.
 
-Rules: [`.cursor/rules/inova-gastro-360.mdc`](.cursor/rules/inova-gastro-360.mdc) (harness alwaysApply), `specify-rules.mdc`, `cloudflare-workers.mdc`
+Rules: [`.cursor/rules/inova-gastro-360.mdc`](../.cursor/rules/inova-gastro-360.mdc) (harness alwaysApply), `specify-rules.mdc`, `cloudflare-workers.mdc`
 
 ---
 
@@ -80,7 +81,7 @@ Path: `.cursor/skills/speckit-*`
 | Canvas | canvas skill | relatórios / auditorias |
 | Browser | cursor-ide-browser / MCP | smoke UI R-12/R-13 |
 
-Matriz MCP: [`docs/cursor-tooling.md`](docs/cursor-tooling.md)
+Matriz MCP: [`cursor-tooling.md`](cursor-tooling.md)
 
 ---
 
@@ -140,7 +141,7 @@ Matriz MCP: [`docs/cursor-tooling.md`](docs/cursor-tooling.md)
 
 ## 4. Embarcados EMB-01…15
 
-Código: [`apps/workers/api-gateway/src/lib/agents.ts`](apps/workers/api-gateway/src/lib/agents.ts)  
+Código: [`apps/workers/api-gateway/src/lib/agents.ts`](../apps/workers/api-gateway/src/lib/agents.ts)  
 Flags: `AGENTS_ENABLED=1`, `AGENTS_INTERVAL_MS=300000`, `OUTBOX_FLUSH_INTERVAL_MS`
 
 | ID | Nome | Status | Função |
@@ -170,7 +171,7 @@ Desligar: `AGENTS_ENABLED=0` em `infra/hetzner/.env.production`.
 | Spec | Onda | Título | Status | Agentes foco |
 |------|------|--------|--------|--------------|
 | — | **0** | Harness + remover `(os)` + rebuild VPS | ✅ #33 + smoke VPS 200 | C-18, C-23, C-25, R-13 |
-| 018 | 1 | Tenant admin + Configurações + filiais/users | 🔄 feat/018-tenant-admin | C-02, C-03, C-06, C-18 |
+| 018 | 1 | Tenant admin + Configurações + filiais/users | ✅ #34 MERGED | C-02, C-03, C-06, C-18 |
 | 019 | 2 | OS shell responsive + KPIs reais | 🔲 | C-18, C-22, R-12 |
 | 020 | 3 | Asaas E2E sandbox (PIX + billing) | 🔲 | C-15, C-09, C-25, R-15 |
 | 021 | 3 | Asaas cartão + cancel/estorno + expiração | 🔲 | C-15, EMB-06, R-15 |
@@ -181,7 +182,7 @@ Desligar: `AGENTS_ENABLED=0` em `infra/hetzner/.env.production`.
 | 026 | 6 | Atendimento (inbox; Chatwoot P2) | 🔲 | C-06, C-18, C-09 |
 | 027 | 7 | Asaas marketplace (subconta/tenant) | 🔲 após 0–6 | C-15, C-09, C-03, C-21 |
 
-Specs entregues (base): 000–017 (ver [`memory.md`](memory.md)).
+Specs entregues (base): 000–017 (ver [`memory.md`](../memory.md)).
 
 ### Mapa onda → revisão / MCP
 
@@ -226,8 +227,8 @@ Super-admin seed: `superadmin@inovagastro360.local`.
 
 ## 8. Referências
 
-- [`memory.md`](memory.md) — snapshot + ops VPS  
-- [`docs/architecture.md`](docs/architecture.md)  
-- [`.specify/memory/constitution.md`](.specify/memory/constitution.md)  
+- [`memory.md`](../memory.md) — snapshot + ops VPS  
+- [`architecture.md`](architecture.md)  
+- [`.specify/memory/constitution.md`](../.specify/memory/constitution.md)  
 - `docs/runbooks/` — pagamentos, favicon, print-agent  
 - Plano Cursor: OS Tenants Asaas (ondas 0–7)

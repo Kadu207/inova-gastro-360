@@ -4,7 +4,7 @@
 
 ## Harness completo
 
-Obrigatório em toda feature: [`agentes.md`](../agentes.md) + [`memory.md`](../memory.md) + [`AGENTS.md`](../AGENTS.md).  
+Obrigatório em toda feature: [`docs/agents.md`](../docs/agents.md) + [`memory.md`](../memory.md) + [`AGENTS.md`](../AGENTS.md).  
 Ciclo: Spec Kit skills → papéis C-* → gates R-* → EMB/MCP → atualizar memory-bank.
 
 ## Metodologia integrada

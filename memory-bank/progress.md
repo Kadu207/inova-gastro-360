@@ -20,7 +20,7 @@
 - [ ] Workers Paid + Queues (T050–T051)
 
 ## Onda 0 — Harness + fix chunks (2026-08-03)
-- [x] `agentes.md` + `memory.md` (ciclo harness + roadmap 018–027)
+- [x] `docs/agents.md` + `memory.md` (ciclo harness + roadmap 018–027)
 - [x] Sync `AGENTS.md` + rules
 - [x] Remover route group `app/(os)/`
 - [x] PR #33 merge → `master`
