@@ -35,4 +35,4 @@
 ## Phase 6: Polish
 
 - [ ] T050 `npm run test` api-gateway + validation
-- [ ] T051 Atualizar `memory.md` / `agentes.md` / activeContext (Onda 1)
+- [ ] T051 Atualizar `memory.md` / `docs/agents.md` / activeContext (Onda 1)

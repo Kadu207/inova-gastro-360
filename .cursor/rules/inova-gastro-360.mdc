@@ -1,50 +1,50 @@
 ---
-description: Regras permanentes do projeto Inova Gastro 360 — sempre aplicar
+description: Regras permanentes do projeto Inova Gastro 360 ÔÇö sempre aplicar
 globs: "**/*"
 alwaysApply: true
 ---
 
-# Inova Gastro 360 — Regras do Projeto
+# Inova Gastro 360 ÔÇö Regras do Projeto
 
 ## Identidade
-- Nome: **Inova Gastro 360** (não usar "Inova Food")
-- Domínio: inovagastro360.inovatitech.com.br
+- Nome: **Inova Gastro 360** (n├úo usar "Inova Food")
+- Dom├¡nio: inovagastro360.inovatitech.com.br
 
-## Memória permanente (harness completo)
-No início de cada sessão, ler nesta ordem:
-- memory.md (índice + snapshot + roadmap ondas)
+## Mem├│ria permanente (harness completo)
+No in├¡cio de cada sess├úo, ler nesta ordem:
+- memory.md (├¡ndice + snapshot + roadmap ondas)
 - memory-bank/activeContext.md
 - memory-bank/projectbrief.md
-- gentes.md (ciclo SK/C/R/EMB + specs 018–027)
-- AGENTS.md
+- gentes.md (ciclo SK/C/R/EMB + specs 018ÔÇô027)
+- docs/agents.md (catalog) + AGENTS.md
 - .specify/memory/constitution.md
 - .specify/feature.json
 - PORT_REGISTRY.md (antes de bind)
 - docs/cursor-tooling.md (se deploy/MCP/skills)
 
-**Proibido:** feature de produção sem Spec Kit (specify→plan→tasks→implement); merge sem 
+**Proibido:** feature de produ├º├úo sem Spec Kit (specifyÔåÆplanÔåÆtasksÔåÆimplement); merge sem 
 pm run test.
 
 Ao final, atualizar memory-bank/activeContext.md, progress.md, snapshot em memory.md e status de specs em gentes.md se mudou.
 
 ## Spec Kit (SDD)
 - Feature ativa: .specify/feature.json
-- Skills: .cursor/skills/speckit-* — /speckit-specify → /speckit-plan → /speckit-tasks → /speckit-implement
+- Skills: .cursor/skills/speckit-* ÔÇö /speckit-specify ÔåÆ /speckit-plan ÔåÆ /speckit-tasks ÔåÆ /speckit-implement
 - Rules: .cursor/rules/specify-rules.mdc, .cursor/rules/cloudflare-workers.mdc
 
 ## Desenvolvimento
-- SDD + TDD + Spec Kit obrigatórios
-- Specs em specs/ antes de código de produção
+- SDD + TDD + Spec Kit obrigat├│rios
+- Specs em specs/ antes de c├│digo de produ├º├úo
 - 
 pm run test verde antes de merge
 - Multitenant: sempre 	enant_id + RLS
-- Event-first: mudanças de estado via filas
-- Workers separados: API, mensageria, realtime, integrações
+- Event-first: mudan├ºas de estado via filas
+- Workers separados: API, mensageria, realtime, integra├º├Áes
 
-## Segurança
-- Sem segredos no repositório
-- HTTPS via Cloudflare em produção
+## Seguran├ºa
+- Sem segredos no reposit├│rio
+- HTTPS via Cloudflare em produ├º├úo
 - Validar uploads; rate limit em auth
 
 ## Idioma
-Specs, docs e mensagens de usuário em português (pt-BR).
+Specs, docs e mensagens de usu├írio em portugu├¬s (pt-BR).
