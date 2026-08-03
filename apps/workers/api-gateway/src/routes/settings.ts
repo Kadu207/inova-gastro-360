@@ -81,12 +81,17 @@ export async function handlePatchCompany(
       if (!existing[0]) return jsonResponse({ error: "not_found" }, 404);
 
       const p = parsed.data;
+      const tradeName = p.tradeName ?? null;
+      const legalName = p.legalName ?? null;
+      const documentNumber = p.documentNumber ?? null;
+      const setPhone = p.phone !== undefined;
+      const phone = p.phone ?? null;
       await tx`
         UPDATE companies SET
-          trade_name = COALESCE(${p.tradeName ?? null}, trade_name),
-          legal_name = COALESCE(${p.legalName ?? null}, legal_name),
-          document_number = COALESCE(${p.documentNumber ?? null}, document_number),
-          phone = CASE WHEN ${p.phone === undefined} THEN phone ELSE ${p.phone} END,
+          trade_name = COALESCE(${tradeName}, trade_name),
+          legal_name = COALESCE(${legalName}, legal_name),
+          document_number = COALESCE(${documentNumber}, document_number),
+          phone = CASE WHEN ${setPhone} THEN ${phone} ELSE phone END,
           updated_at = NOW()
         WHERE id = ${existing[0].id}::uuid
       `;
@@ -209,12 +214,18 @@ export async function handlePatchBranch(
   try {
     return await withTenant(sql, user.tid, async (tx) => {
       const p = parsed.data;
+      const name = p.name ?? null;
+      const setAddress = p.address !== undefined;
+      const address = p.address ?? null;
+      const timezone = p.timezone ?? null;
+      const setActive = p.isActive !== undefined;
+      const isActive = p.isActive ?? false;
       const updated = await tx<{ id: string }[]>`
         UPDATE branches SET
-          name = COALESCE(${p.name ?? null}, name),
-          address = CASE WHEN ${p.address === undefined} THEN address ELSE ${p.address} END,
-          timezone = COALESCE(${p.timezone ?? null}, timezone),
-          is_active = COALESCE(${p.isActive ?? null}, is_active),
+          name = COALESCE(${name}, name),
+          address = CASE WHEN ${setAddress} THEN ${address} ELSE address END,
+          timezone = COALESCE(${timezone}, timezone),
+          is_active = CASE WHEN ${setActive} THEN ${isActive} ELSE is_active END,
           updated_at = NOW()
         WHERE id = ${branchId}::uuid AND tenant_id = ${user.tid}::uuid
         RETURNING id
@@ -292,12 +303,13 @@ export async function handleCreateUser(
   const sql = getSql(env);
   try {
     return await withTenant(sql, user.tid, async (tx) => {
+      const branchIds = parsed.data.branchIds;
       const branchesOk = await tx<{ c: string }[]>`
         SELECT COUNT(*)::text AS c FROM branches
         WHERE tenant_id = ${user.tid}::uuid
-          AND id = ANY(${parsed.data.branchIds}::uuid[])
+          AND id IN ${tx(branchIds)}
       `;
-      if (Number(branchesOk[0]?.c ?? 0) !== parsed.data.branchIds.length) {
+      if (Number(branchesOk[0]?.c ?? 0) !== branchIds.length) {
         return jsonResponse({ error: "invalid_branches" }, 400);
       }
 
@@ -310,7 +322,7 @@ export async function handleCreateUser(
           )
           RETURNING id
         `;
-        for (const branchId of parsed.data.branchIds) {
+        for (const branchId of branchIds) {
           await tx`
             INSERT INTO user_branch_access (id, user_id, branch_id, tenant_id)
             VALUES (gen_random_uuid(), ${created.id}::uuid, ${branchId}::uuid, ${user.tid}::uuid)
@@ -348,12 +360,16 @@ export async function handlePatchUser(
   try {
     return await withTenant(sql, user.tid, async (tx) => {
       const p = parsed.data;
+      const name = p.name ?? null;
+      const role = p.role ?? null;
+      const setActive = p.isActive !== undefined;
+      const isActive = p.isActive ?? false;
       const passwordHash = p.password ? await hashPassword(p.password) : null;
       const updated = await tx<{ id: string }[]>`
         UPDATE users SET
-          name = COALESCE(${p.name ?? null}, name),
-          role = COALESCE(${p.role ?? null}, role),
-          is_active = COALESCE(${p.isActive ?? null}, is_active),
+          name = COALESCE(${name}, name),
+          role = COALESCE(${role}, role),
+          is_active = CASE WHEN ${setActive} THEN ${isActive} ELSE is_active END,
           password_hash = COALESCE(${passwordHash}, password_hash),
           updated_at = NOW()
         WHERE id = ${userId}::uuid AND tenant_id = ${user.tid}::uuid
@@ -362,16 +378,17 @@ export async function handlePatchUser(
       if (!updated[0]) return jsonResponse({ error: "not_found" }, 404);
 
       if (p.branchIds) {
+        const branchIds = p.branchIds;
         const branchesOk = await tx<{ c: string }[]>`
           SELECT COUNT(*)::text AS c FROM branches
           WHERE tenant_id = ${user.tid}::uuid
-            AND id = ANY(${p.branchIds}::uuid[])
+            AND id IN ${tx(branchIds)}
         `;
-        if (Number(branchesOk[0]?.c ?? 0) !== p.branchIds.length) {
+        if (Number(branchesOk[0]?.c ?? 0) !== branchIds.length) {
           return jsonResponse({ error: "invalid_branches" }, 400);
         }
         await tx`DELETE FROM user_branch_access WHERE user_id = ${userId}::uuid`;
-        for (const branchId of p.branchIds) {
+        for (const branchId of branchIds) {
           await tx`
             INSERT INTO user_branch_access (id, user_id, branch_id, tenant_id)
             VALUES (gen_random_uuid(), ${userId}::uuid, ${branchId}::uuid, ${user.tid}::uuid)
