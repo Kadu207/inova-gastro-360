@@ -1,82 +1,75 @@
 # AGENTS.md — Inova Gastro 360
 
-Instruções para agentes Cursor e pipeline de 55 agentes.
+Instruções para agentes Cursor. **Harness completo obrigatório.**
+
+**Catálogo + ciclo:** [`agentes.md`](agentes.md)  
+**Memória (índice):** [`memory.md`](memory.md)  
+**Tooling MCP/skills:** [`docs/cursor-tooling.md`](docs/cursor-tooling.md)
 
 ## Início de sessão (OBRIGATÓRIO)
-1. Ler `memory-bank/activeContext.md`
-2. Ler `memory-bank/projectbrief.md`
-3. Ler `.specify/memory/constitution.md`
-4. Consultar `PORT_REGISTRY.md` antes de bind de portas
-5. Ler `docs/cursor-tooling.md` se a tarefa envolver MCP/skills/deploy
+1. Ler [`memory.md`](memory.md) (snapshot + roadmap)
+2. Ler `memory-bank/activeContext.md` e `memory-bank/projectbrief.md`
+3. Ler [`agentes.md`](agentes.md) (ciclo SK → C → R → EMB)
+4. Ler este arquivo
+5. Ler `.specify/memory/constitution.md`
+6. Consultar `PORT_REGISTRY.md` antes de bind de portas
+7. Feature ativa: `.specify/feature.json`
+8. Ler `docs/cursor-tooling.md` se MCP/skills/deploy
+
+**Proibido:** código de produção sem `/speckit-specify` → plan → tasks; merge sem `npm run test`.
 
 ## Nome do produto
 **Inova Gastro 360** — nunca "Inova Food"
 
-## Metodologia (SDD + TDD + Spec Kit)
+## Metodologia (SDD + TDD + Spec Kit + harness)
 
 | Fase | Comando Cursor | Artefato |
 |------|----------------|----------|
 | Spec | `/speckit-specify` | `specs/###/spec.md` |
+| Clarify | `/speckit-clarify` | perguntas |
+| Checklist | `/speckit-checklist` | gate |
 | Plan | `/speckit-plan` | `plan.md` |
 | Tasks | `/speckit-tasks` | `tasks.md` |
+| Analyze | `/speckit-analyze` | gaps |
 | Implement | `/speckit-implement` | código + testes |
-| Analyze | `/speckit-analyze` | relatório gaps |
 
-Rules: `.cursor/rules/specify-rules.mdc`, `.cursor/rules/cloudflare-workers.mdc`
+Rules: `.cursor/rules/specify-rules.mdc`, `.cursor/rules/cloudflare-workers.mdc`, `.cursor/rules/inova-gastro-360.mdc` (harness completo)
 
-**TDD:** `npm run test` MUST passar antes de PR. Testes críticos: auth, multitenant, pedidos (constitution).
+**TDD:** `npm run test` MUST passar antes de PR. Críticos: auth, multitenant, pedidos, pagamentos.
 
 ## Code review (CodeRabbit + CI)
 
-- PRs em `master`/`main`/`develop` passam por **CI** (lint, typecheck, test, build, audit high, secrets-guard).
-- **CodeRabbit** (GitHub App) usa [`.coderabbit.yaml`](.coderabbit.yaml) — path instructions de segurança/multitenant.
-- Instalação do app e uso: [`docs/coderabbit.md`](docs/coderabbit.md).
+- PRs: CI lint, typecheck, test, build, audit high, secrets-guard.
+- CodeRabbit: [`.coderabbit.yaml`](.coderabbit.yaml) — [`docs/coderabbit.md`](docs/coderabbit.md).
+- Gates R-01…R-15: [`agentes.md`](agentes.md) §3.
 
 ## Arquitetura
-- Cloudflare-first: Workers desacoplados (Service Bindings twist)
-- PostgreSQL multitenant na VPS via Hyperdrive
-- Eventos via outbox + Queues (fase 2 — Workers Paid)
+- Cloudflare-first: Workers desacoplados (Service Bindings)
+- PostgreSQL multitenant na VPS via Hyperdrive (prod edge futuro)
+- Runtime atual: VPS Docker (spec 013); Queues = Fase F (Paid)
 
-## MCPs recomendados (produção)
-
-- **cloudflare-bindings** — workers, hyperdrive
-- **cloudflare-observability** — logs
-- **cloudflare-docs** — wrangler/DO
-- **cursor-ide-browser** — smoke web
-
-Matriz completa: `docs/cursor-tooling.md`
+## MCPs recomendados
+cloudflare-bindings, cloudflare-observability, cloudflare-docs, Prisma, cursor-ide-browser — ver `docs/cursor-tooling.md`.
 
 ## Skills
-
-**Locais:** `.cursor/skills/speckit-*` (14 skills)  
-**Globais:** Cloudflare (`wrangler`, `workers-best-practices`), Prisma (`prisma-cli-*`), Next.js
+**Locais:** `.cursor/skills/speckit-*` (14)  
+**Globais:** Cloudflare, Prisma, Stripe (legado), canvas
 
 ## Fim de sessão
-Atualizar `memory-bank/activeContext.md` e `memory-bank/progress.md`
+Atualizar `memory-bank/activeContext.md`, `progress.md` e snapshot em [`memory.md`](memory.md). Atualizar mapa specs em [`agentes.md`](agentes.md) se status de onda mudou.
 
-## Agentes runtime embarcados (pós go-live)
+## Agentes runtime embarcados
+EMB-01…04 em `apps/workers/api-gateway/src/lib/agents.ts`. Catálogo completo: [`agentes.md`](agentes.md) §4.  
+`AGENTS_ENABLED=0` desliga.
 
-Automações determinísticas no `node-server` do api-gateway (`AGENTS_ENABLED=1`, intervalo `AGENTS_INTERVAL_MS=300000`). Código: `apps/workers/api-gateway/src/lib/agents.ts`.
-
-| Agente | Função |
-|--------|--------|
-| **EMB-01** Order State Guardian | Pedidos presos >30min → evento `order.stuck` |
-| **EMB-02** Session Sweeper | Limpa sessões expiradas |
-| **EMB-03** Trial Expiry Notifier | Trial expirando em ≤3 dias → `subscription.trial_expiring` |
-| **EMB-04** Outbox Replayer | `flushPendingOutbox` (intervalo `OUTBOX_FLUSH_INTERVAL_MS`) |
-
-Desligar agentes: `AGENTS_ENABLED=0` no `.env.production`.
-
-Documentação completa: `docs/architecture.md` (EMB-05…15 planejados).
-
-## Feature ativa (Spec Kit)
-
-## Feature ativa (Spec Kit)
+## Login demo (VPS)
+Tenant `demo-burger` / `admin@inovagastro360.local` / `SEED_ADMIN_PASSWORD` no `.env.production`.
 
 ## Feature ativa (Spec Kit)
 
 <!-- speckit:active-feature:start -->
-- **Diretório:** `specs/017-asaas-pagamentos` (+ 005 financeiro, 009 LGPD em PRs)
-- **Spec:** `spec.md` | **Plan:** `plan.md` | **Tasks:** `tasks.md`
-- **Atualizado:** 2026-07-31 (Asaas BR + Onda 4 financeiro/LGPD)
+- **Diretório:** `specs/017-asaas-pagamentos` (base Asaas)
+- **Próxima após Onda 0:** `specs/018-tenant-admin`
+- **Roadmap:** 018–027 em [`agentes.md`](agentes.md) §5 / [`memory.md`](memory.md)
+- **Atualizado:** 2026-08-03 (Onda 0 harness + fix chunks `(os)`)
 <!-- speckit:active-feature:end -->

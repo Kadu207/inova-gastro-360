@@ -19,12 +19,30 @@
 ## Fase F — Cloudflare go-live comercial
 - [ ] Workers Paid + Queues (T050–T051)
 
-## Onda 4 — Financeiro / Pagamentos / LGPD (2026-08-02)
+## Onda 0 — Harness + fix chunks (2026-08-03)
+- [x] `agentes.md` + `memory.md` (ciclo harness + roadmap 018–027)
+- [x] Sync `AGENTS.md` + `.cursor/rules/inova-gastro-360.mdc`
+- [x] Remover route group `app/(os)/` (chunks sem parênteses)
+- [ ] PR merge → `master`
+- [ ] VPS: pull + rebuild `out/` + recreate `web` + curl chunk 200
+
+## Plano OS + Asaas (ondas 1–7)
+- [ ] 018 tenant-admin / config
+- [ ] 019 OS responsive + KPIs
+- [ ] 020–021 Asaas E2E + card lifecycle
+- [ ] 022–023 clientes + relatórios
+- [ ] 024–025 estoque + promoções
+- [ ] 026 atendimento
+- [ ] 027 Asaas marketplace (último)
+
+## Onda 4 — Financeiro / Pagamentos / LGPD (2026-08-02…03)
 - [x] Spec 005 — caixa/ledger/contas/DRE/export + UI (merge via PR #26; fix UI #28)
 - [x] Spec 009 LGPD — consent/export/erasure/UI (PR #26 MERGED)
 - [x] Spec 017 Asaas — código + testes (PR #25 MERGED)
 - [x] PR #27 fechado (superseded por #26)
-- [ ] VPS: `git pull` + migrate + `ASAAS_API_KEY` + smoke-payments (SSH bloqueado neste host)
+- [x] VPS: migrate + Asaas `$$` + webhook 401 + payments/status asaas
+- [x] Favicon IG + home→`/login` (#31/#32)
+- [ ] Smoke browser pós Onda 0 rebuild
 
 ## Spec 016 CodeRabbit + security layers (PR #23)
 - [x] `.coderabbit.yaml` + `docs/coderabbit.md` + nota AGENTS.md
