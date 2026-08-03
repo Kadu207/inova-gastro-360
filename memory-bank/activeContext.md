@@ -31,4 +31,9 @@
 - Cloudflare Workers Paid + Queues (Fase F)
 
 ## Feature Spec Kit
-- Ativa: `specs/017-asaas-pagamentos` (código mergeado; go-live VPS pendente)
+- Ativa: `specs/017-asaas-pagamentos` (código mergeado; go-live VPS ok)
+
+## Favicon (2026-08-02)
+- Assets: `apps/web/src/app/{icon,apple-icon,favicon.ico}` + `public/favicon*.png`
+- Runbook VPS: `docs/runbooks/favicon.md` (`force-recreate web`)
+- WordPress: upload manual de `public/favicon-48.png` (fora do monorepo)
