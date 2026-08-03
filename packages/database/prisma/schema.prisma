@@ -27,6 +27,7 @@ model Company {
   legalName      String?  @map("legal_name")
   tradeName      String   @map("trade_name")
   documentNumber String?  @map("document_number")
+  phone          String?
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 

@@ -95,11 +95,18 @@ export async function handleLogin(request: Request, env: GatewayEnv): Promise<Re
     let tenantId: string | undefined;
 
     if (tenantSlug) {
-      const tenants = await sql<{ id: string }[]>`
-        SELECT id FROM tenants WHERE slug = ${tenantSlug} AND status = 'active' LIMIT 1
+      const tenants = await sql<{ id: string; status: string }[]>`
+        SELECT id, status FROM tenants WHERE slug = ${tenantSlug} LIMIT 1
       `;
-      tenantId = tenants[0]?.id;
-      if (!tenantId) return jsonResponse({ error: "tenant_not_found" }, 404);
+      const t = tenants[0];
+      if (!t) return jsonResponse({ error: "tenant_not_found" }, 404);
+      if (t.status !== "active") {
+        return jsonResponse(
+          { error: "tenant_suspended", message: "Conta do estabelecimento suspensa ou encerrada." },
+          403,
+        );
+      }
+      tenantId = t.id;
     }
 
     const users = tenantId
@@ -122,6 +129,16 @@ export async function handleLogin(request: Request, env: GatewayEnv): Promise<Re
     const user = users[0];
     if (!user || !user.is_active) {
       return jsonResponse({ error: "invalid_credentials" }, 401);
+    }
+
+    const tenantRows = await sql<{ status: string }[]>`
+      SELECT status FROM tenants WHERE id = ${user.tenant_id}::uuid LIMIT 1
+    `;
+    if (tenantRows[0]?.status !== "active") {
+      return jsonResponse(
+        { error: "tenant_suspended", message: "Conta do estabelecimento suspensa ou encerrada." },
+        403,
+      );
     }
 
     const valid = await verifyPassword(password, user.password_hash);

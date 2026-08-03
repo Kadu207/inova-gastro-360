@@ -21,10 +21,16 @@
 
 ## Onda 0 — Harness + fix chunks (2026-08-03)
 - [x] `agentes.md` + `memory.md` (ciclo harness + roadmap 018–027)
-- [x] Sync `AGENTS.md` + `.cursor/rules/inova-gastro-360.mdc`
-- [x] Remover route group `app/(os)/` (chunks sem parênteses)
-- [ ] PR merge → `master`
-- [ ] VPS: pull + rebuild `out/` + recreate `web` + curl chunk 200
+- [x] Sync `AGENTS.md` + rules
+- [x] Remover route group `app/(os)/`
+- [x] PR #33 merge → `master`
+- [x] VPS: pull + rebuild `out/` + recreate `web` + curl chunk **200**
+
+## Onda 1 — 018-tenant-admin (2026-08-03)
+- [x] Spec/plan/tasks + feature.json
+- [x] Validation + migration phone + settings/admin API + testes RBAC
+- [x] UI configuracoes + admin tenants + seletor filial + nav
+- [ ] PR + migrate VPS `company_phone_018` + smoke UI
 
 ## Plano OS + Asaas (ondas 1–7)
 - [ ] 018 tenant-admin / config

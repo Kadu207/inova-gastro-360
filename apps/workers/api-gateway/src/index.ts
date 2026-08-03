@@ -1,6 +1,16 @@
 import { healthHandler, jsonResponse } from "./lib";
 import { handleLogin, handleMe, handleRefresh, handleLogout } from "./routes/auth";
-import { handleCreateTenant } from "./routes/admin-tenants";
+import { handleCreateTenant, handleListTenants, handlePatchTenant } from "./routes/admin-tenants";
+import {
+  handleCreateBranch,
+  handleCreateUser,
+  handleGetCompany,
+  handleListBranches,
+  handleListUsers,
+  handlePatchBranch,
+  handlePatchCompany,
+  handlePatchUser,
+} from "./routes/settings";
 import { handleCatalogCategories, handleCatalogProducts } from "./routes/catalog";
 import {
   handleAdminCreateCategory,
@@ -163,10 +173,68 @@ async function route(request: Request, env: Env): Promise<Response> {
       return withCors(await handleLogout(request, env));
     }
 
+    if (path === "/api/v1/admin/tenants" && request.method === "GET") {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      return withCors(await handleListTenants(request, env, auth.user));
+    }
+
     if (path === "/api/v1/admin/tenants" && request.method === "POST") {
       const auth = await requireAuth(request, env);
       if (!auth.ok) return withCors(auth.response);
       return withCors(await handleCreateTenant(request, env, auth.user));
+    }
+
+    const adminTenantPatch = path.match(/^\/api\/v1\/admin\/tenants\/([^/]+)$/);
+    if (adminTenantPatch && request.method === "PATCH") {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      return withCors(await handlePatchTenant(request, env, auth.user, adminTenantPatch[1]));
+    }
+
+    if (path === "/api/v1/settings/company" && request.method === "GET") {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      return withCors(await handleGetCompany(request, env, auth.user));
+    }
+    if (path === "/api/v1/settings/company" && request.method === "PATCH") {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      return withCors(await handlePatchCompany(request, env, auth.user));
+    }
+
+    if (path === "/api/v1/settings/branches" && request.method === "GET") {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      return withCors(await handleListBranches(request, env, auth.user));
+    }
+    if (path === "/api/v1/settings/branches" && request.method === "POST") {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      return withCors(await handleCreateBranch(request, env, auth.user));
+    }
+    const branchPatch = path.match(/^\/api\/v1\/settings\/branches\/([^/]+)$/);
+    if (branchPatch && request.method === "PATCH") {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      return withCors(await handlePatchBranch(request, env, auth.user, branchPatch[1]));
+    }
+
+    if (path === "/api/v1/settings/users" && request.method === "GET") {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      return withCors(await handleListUsers(request, env, auth.user));
+    }
+    if (path === "/api/v1/settings/users" && request.method === "POST") {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      return withCors(await handleCreateUser(request, env, auth.user));
+    }
+    const userPatch = path.match(/^\/api\/v1\/settings\/users\/([^/]+)$/);
+    if (userPatch && request.method === "PATCH") {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      return withCors(await handlePatchUser(request, env, auth.user, userPatch[1]));
     }
 
     if (path.startsWith("/media/") && (request.method === "GET" || request.method === "HEAD")) {
