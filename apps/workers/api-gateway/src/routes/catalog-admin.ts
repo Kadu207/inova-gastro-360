@@ -339,9 +339,15 @@ export async function handleAdminUpdateProduct(
   const { categoryId, name, description, priceCents, isAvailable, imageUrl } = parsed.data;
 
   if (imageUrl !== undefined && imageUrl !== null) {
-    if (!isAllowedStoredProductImageUrl(imageUrl, env.S3_PUBLIC_BASE_URL)) {
+    if (
+      !isAllowedStoredProductImageUrl(imageUrl, env.S3_PUBLIC_BASE_URL, {
+        tenantId: access.tenantId,
+        branchId,
+        productId,
+      })
+    ) {
       return jsonResponse(
-        { error: "validation_error", message: "imageUrl deve ser URL do storage do tenant" },
+        { error: "validation_error", message: "imageUrl deve ser URL do storage do produto" },
         400,
       );
     }

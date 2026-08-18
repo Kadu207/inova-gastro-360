@@ -160,8 +160,8 @@ export async function handleLogin(request: Request, env: GatewayEnv): Promise<Re
 }
 
 function refreshTokenFromRequest(request: Request, raw: unknown): string | null {
-  const fromBody = (raw as { refreshToken?: string } | null)?.refreshToken;
-  if (fromBody?.trim()) return fromBody.trim();
+  const fromBody = (raw as { refreshToken?: unknown } | null)?.refreshToken;
+  if (typeof fromBody === "string" && fromBody.trim()) return fromBody.trim();
   const cookies = parseCookieHeader(request.headers.get("cookie"));
   return cookies[REFRESH_COOKIE_NAME]?.trim() || null;
 }

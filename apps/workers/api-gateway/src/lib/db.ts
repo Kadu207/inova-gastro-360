@@ -1,5 +1,6 @@
 import postgres from "postgres";
 import type { GatewayEnv } from "../types/env";
+import { ConfigError } from "./config";
 
 /** Remove parâmetros de query do Prisma (?schema=public) incompatíveis com postgres.js */
 export function normalizeDatabaseUrl(url: string): string {
@@ -25,7 +26,7 @@ export function hasDatabase(env: GatewayEnv): boolean {
 export function getSql(env: GatewayEnv) {
   const url = getDatabaseUrl(env);
   if (!url) throw new Error("Banco não configurado (HYPERDRIVE ou DATABASE_URL)");
-  warnIfDatabaseRoleBypassesRls(url, env);
+  assertAppDbRoleDoesNotBypassRls(url, env);
   const options: Parameters<typeof postgres>[1] = { max: 1, prepare: false };
   if (env.DATABASE_SSL_INSECURE === "1" || env.DATABASE_SSL_INSECURE === "true") {
     options.ssl = { rejectUnauthorized: false };
@@ -33,14 +34,22 @@ export function getSql(env: GatewayEnv) {
   return postgres(normalizeDatabaseUrl(url), options);
 }
 
-/** Em produção, owner `inova_gastro` ignora RLS — a API deve usar `inova_gastro_app`. */
-export function warnIfDatabaseRoleBypassesRls(url: string, env: GatewayEnv): void {
+/**
+ * Em produção, owner `inova_gastro` ignora RLS — a API deve usar `inova_gastro_app`.
+ * Falha hard para não operar sem defense-in-depth.
+ */
+export function assertAppDbRoleDoesNotBypassRls(url: string, env: GatewayEnv): void {
   if (env.ENVIRONMENT !== "production") return;
   if (/:\/\/inova_gastro(?!_app)[:@]/.test(url)) {
-    console.warn(
-      "security_rls_bypass: DATABASE_URL usa role owner inova_gastro; configure inova_gastro_app (setup-app-db-role-vps.sh)",
+    throw new ConfigError(
+      "DATABASE_URL usa role owner inova_gastro (bypassa RLS). Configure inova_gastro_app via setup-app-db-role-vps.sh",
     );
   }
+}
+
+/** Alias de compatibilidade para testes/logs legados. */
+export function warnIfDatabaseRoleBypassesRls(url: string, env: GatewayEnv): void {
+  assertAppDbRoleDoesNotBypassRls(url, env);
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

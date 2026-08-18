@@ -75,6 +75,21 @@ describe("orders handlers — validação (sem DB)", () => {
     expect(res.status).toBe(403);
   });
 
+  it("list orders rejeita branchId inválido", async () => {
+    const req = new Request("http://test/api/v1/orders?branchId=not-a-uuid");
+    const user = {
+      sub: "user-1",
+      tid: "tenant-1",
+      email: "a@b.com",
+      role: "admin_cliente",
+      branches: [],
+    };
+    const res = await handleListOrders(req, env, user);
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe("invalid_branch_id");
+  });
+
   it("update status rejeita status inválido", async () => {
     const req = new Request("http://test/api/v1/orders/x/status", {
       method: "PATCH",

@@ -77,13 +77,12 @@ export function clearSession(): void {
 
 async function tryRefresh(): Promise<boolean> {
   const refreshToken = getRefreshToken();
-  if (!refreshToken) return false;
   try {
     const res = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ refreshToken }),
+      body: JSON.stringify(refreshToken ? { refreshToken } : {}),
     });
     if (!res.ok) return false;
     const data = (await res.json()) as { accessToken?: string; refreshToken?: string };
@@ -121,16 +120,15 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
 
 export async function logout(): Promise<void> {
   const refreshToken = getRefreshToken();
-  if (refreshToken) {
-    try {
-      await fetch(`${API_BASE}/api/v1/auth/logout`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ refreshToken }),
-      });
-    } catch {
-      // logout local mesmo se a chamada falhar
-    }
+  try {
+    await fetch(`${API_BASE}/api/v1/auth/logout`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(refreshToken ? { refreshToken } : {}),
+    });
+  } catch {
+    // logout local mesmo se a chamada falhar
   }
   clearSession();
   if (typeof window !== "undefined") window.location.href = "/login";

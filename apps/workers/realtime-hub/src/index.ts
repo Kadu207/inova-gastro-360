@@ -95,6 +95,14 @@ export default {
       headers.set("sec-websocket-protocol", WS_PROTOCOL_MARKER);
     }
 
-    return stub.fetch(new Request(targetUrl.toString(), { method: request.method, headers, body: request.body }));
+    return stub.fetch(
+      new Request(targetUrl.toString(), {
+        method: request.method,
+        headers,
+        body: request.body,
+        // Required by undici/Node when forwarding a ReadableStream body
+        duplex: "half",
+      } as RequestInit),
+    );
   },
 };

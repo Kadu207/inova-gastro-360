@@ -19,25 +19,21 @@ describe("getDatabaseUrl", () => {
   });
 });
 
-describe("warnIfDatabaseRoleBypassesRls", () => {
-  it("alerta em produção quando URL usa owner inova_gastro", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    warnIfDatabaseRoleBypassesRls(
-      "postgresql://inova_gastro:x@host/db",
-      { ENVIRONMENT: "production" } as GatewayEnv,
-    );
-    expect(warn).toHaveBeenCalled();
-    warn.mockRestore();
+describe("warnIfDatabaseRoleBypassesRls / assertAppDbRoleDoesNotBypassRls", () => {
+  it("lança em produção quando URL usa owner inova_gastro", () => {
+    expect(() =>
+      warnIfDatabaseRoleBypassesRls("postgresql://inova_gastro:x@host/db", {
+        ENVIRONMENT: "production",
+      } as GatewayEnv),
+    ).toThrow(/inova_gastro_app/);
   });
 
-  it("não alerta para inova_gastro_app", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    warnIfDatabaseRoleBypassesRls(
-      "postgresql://inova_gastro_app:x@host/db",
-      { ENVIRONMENT: "production" } as GatewayEnv,
-    );
-    expect(warn).not.toHaveBeenCalled();
-    warn.mockRestore();
+  it("não lança para inova_gastro_app", () => {
+    expect(() =>
+      warnIfDatabaseRoleBypassesRls("postgresql://inova_gastro_app:x@host/db", {
+        ENVIRONMENT: "production",
+      } as GatewayEnv),
+    ).not.toThrow();
   });
 });
 

@@ -66,12 +66,24 @@ describe("image-policy", () => {
     expect(validateImageBuffer(png, "image/png").ok).toBe(true);
   });
 
-  it("isAllowedStoredProductImageUrl restringe ao publicBase", () => {
+  it("isAllowedStoredProductImageUrl restringe ao publicBase e ao produto", () => {
     const base = "https://cdn.example.com/bucket";
     const key = `tenants/${tenantId}/branches/${branchId}/products/${productId}/abc.webp`;
     expect(isAllowedStoredProductImageUrl(null, base)).toBe(true);
     expect(isAllowedStoredProductImageUrl(`${base}/${key}`, base)).toBe(true);
     expect(isAllowedStoredProductImageUrl("https://evil.example/x.webp", base)).toBe(false);
     expect(isAllowedStoredProductImageUrl(`${base}/other/path.jpg`, base)).toBe(false);
+    const otherProduct = "44444444-4444-4444-8444-444444444444";
+    const foreignKey = `tenants/${tenantId}/branches/${branchId}/products/${otherProduct}/abc.webp`;
+    expect(
+      isAllowedStoredProductImageUrl(`${base}/${foreignKey}`, base, {
+        tenantId,
+        branchId,
+        productId,
+      }),
+    ).toBe(false);
+    expect(
+      isAllowedStoredProductImageUrl(`${base}/${key}`, base, { tenantId, branchId, productId }),
+    ).toBe(true);
   });
 });
