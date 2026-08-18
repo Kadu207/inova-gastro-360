@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { getDatabaseUrl, normalizeDatabaseUrl, withTenant } from "./db";
+import { getDatabaseUrl, normalizeDatabaseUrl, warnIfDatabaseRoleBypassesRls, withTenant } from "./db";
 import type { GatewayEnv } from "../types/env";
 
 describe("getDatabaseUrl", () => {
@@ -16,6 +16,24 @@ describe("getDatabaseUrl", () => {
       HYPERDRIVE: { connectionString: "postgresql://vps:5440/db" },
     };
     expect(getDatabaseUrl(env)).toBe("postgresql://vps:5440/db");
+  });
+});
+
+describe("warnIfDatabaseRoleBypassesRls / assertAppDbRoleDoesNotBypassRls", () => {
+  it("lança em produção quando URL usa owner inova_gastro", () => {
+    expect(() =>
+      warnIfDatabaseRoleBypassesRls("postgresql://inova_gastro:x@host/db", {
+        ENVIRONMENT: "production",
+      } as GatewayEnv),
+    ).toThrow(/inova_gastro_app/);
+  });
+
+  it("não lança para inova_gastro_app", () => {
+    expect(() =>
+      warnIfDatabaseRoleBypassesRls("postgresql://inova_gastro_app:x@host/db", {
+        ENVIRONMENT: "production",
+      } as GatewayEnv),
+    ).not.toThrow();
   });
 });
 

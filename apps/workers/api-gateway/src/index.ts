@@ -83,12 +83,13 @@ export interface Env extends GatewayEnv {}
 const CORS_METHODS = "GET, POST, PATCH, DELETE, PUT, OPTIONS";
 const CORS_ALLOW_HEADERS = "Content-Type, Authorization, Idempotency-Key, X-Requested-With";
 
-/** Aplica cabeçalhos CORS ecoando apenas origens permitidas. */
+/** Aplica cabeçalhos CORS ecoando apenas origens permitidas (credenciais = cookies HttpOnly). */
 function applyCors(response: Response, request: Request, env: Env): Response {
   const headers = new Headers(response.headers);
   const origin = request.headers.get("origin");
   if (origin && isOriginAllowed(origin, parseAllowedOrigins(env))) {
     headers.set("access-control-allow-origin", origin);
+    headers.set("access-control-allow-credentials", "true");
     headers.set("vary", "origin");
     headers.set("access-control-allow-methods", CORS_METHODS);
     headers.set("access-control-allow-headers", CORS_ALLOW_HEADERS);

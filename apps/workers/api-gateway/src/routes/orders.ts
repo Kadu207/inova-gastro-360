@@ -4,6 +4,7 @@ import { jsonResponse, parseJsonBody, clientIp } from "../lib";
 import { getSql, withTenant, setTenantContext } from "../lib/db";
 import { publishOutboxEvent, EVENT_TYPES } from "../lib/outbox";
 import { hitRateLimitAsync } from "../lib/rate-limit";
+import { assertBranchOpsAccess } from "../lib/branch-ops-access";
 import { checkSubscriptionAllowsWrites } from "../middleware/subscription-guard";
 import type { GatewayEnv } from "../types/env";
 import type { JwtPayload } from "@inova-gastro-360/auth";
@@ -11,18 +12,19 @@ import type { JwtPayload } from "@inova-gastro-360/auth";
 const CreateOrderSchema = z.object({
   branchId: z.string().uuid(),
   channel: z.enum(["web", "balcao", "delivery"]).default("web"),
-  customerName: z.string().optional(),
-  customerPhone: z.string().optional(),
-  notes: z.string().optional(),
+  customerName: z.string().trim().max(120).optional(),
+  customerPhone: z.string().trim().max(32).optional(),
+  notes: z.string().trim().max(500).optional(),
   items: z
     .array(
       z.object({
         productId: z.string().uuid(),
-        quantity: z.number().int().min(1),
-        notes: z.string().optional(),
+        quantity: z.number().int().min(1).max(99),
+        notes: z.string().trim().max(200).optional(),
       }),
     )
-    .min(1),
+    .min(1)
+    .max(50),
 });
 
 const UpdateStatusSchema = z.object({
@@ -317,7 +319,9 @@ export async function handleListOrders(request: Request, env: GatewayEnv, user: 
   const url = new URL(request.url);
   const branchId = url.searchParams.get("branchId");
 
-  if (!branchId) return jsonResponse({ error: "branch_id_required" }, 400);
+  const access = assertBranchOpsAccess(user, branchId);
+  if (!access.ok) return access.response;
+  const scopedBranchId = access.branchId;
 
   const pagination = parseListPagination(url);
   if (!pagination.ok) return pagination.response;
@@ -334,7 +338,7 @@ export async function handleListOrders(request: Request, env: GatewayEnv, user: 
     await setTenantContext(sql, user.tid);
     const [{ count }] = await sql<{ count: number }[]>`
       SELECT COUNT(*)::int AS count FROM orders
-      WHERE tenant_id = ${user.tid}::uuid AND branch_id = ${branchId}::uuid
+      WHERE tenant_id = ${user.tid}::uuid AND branch_id = ${scopedBranchId}::uuid
         ${status ? sql`AND status = ${status}` : sql``}
         ${channel ? sql`AND channel = ${channel}` : sql``}
         ${q
@@ -353,7 +357,7 @@ export async function handleListOrders(request: Request, env: GatewayEnv, user: 
       SELECT id, order_number, channel, status, customer_name, customer_phone,
              total_cents, payment_status, payment_method, paid_at, created_at
       FROM orders
-      WHERE tenant_id = ${user.tid}::uuid AND branch_id = ${branchId}::uuid
+      WHERE tenant_id = ${user.tid}::uuid AND branch_id = ${scopedBranchId}::uuid
         ${status ? sql`AND status = ${status}` : sql``}
         ${channel ? sql`AND channel = ${channel}` : sql``}
         ${q
@@ -397,6 +401,16 @@ export async function handleUpdateOrderStatus(
   const sql = getSql(env);
   try {
     await setTenantContext(sql, user.tid);
+    const existing = await sql<{ id: string; branch_id: string }[]>`
+      SELECT id, branch_id FROM orders
+      WHERE id = ${orderId}::uuid AND tenant_id = ${user.tid}::uuid
+      LIMIT 1
+    `;
+    if (!existing[0]) return jsonResponse({ error: "not_found" }, 404);
+
+    const access = assertBranchOpsAccess(user, existing[0].branch_id);
+    if (!access.ok) return access.response;
+
     const updated = await sql<{ id: string; branch_id: string; status: string }[]>`
       UPDATE orders SET status = ${parsed.data.status}, updated_at = NOW()
       WHERE id = ${orderId}::uuid AND tenant_id = ${user.tid}::uuid
@@ -433,10 +447,13 @@ export async function handleGetOrder(
   const sql = getSql(env);
   try {
     await setTenantContext(sql, user.tid);
-    const orders = await sql`
+    const orders = await sql<{ id: string; branch_id: string }[]>`
       SELECT * FROM orders WHERE id = ${orderId}::uuid AND tenant_id = ${user.tid}::uuid LIMIT 1
     `;
     if (!orders[0]) return jsonResponse({ error: "not_found" }, 404);
+
+    const access = assertBranchOpsAccess(user, orders[0].branch_id);
+    if (!access.ok) return access.response;
 
     const items = await sql`
       SELECT oi.*, p.name as product_name

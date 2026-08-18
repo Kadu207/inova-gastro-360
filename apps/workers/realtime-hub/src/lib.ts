@@ -10,10 +10,21 @@ export function healthHandler(service: string): Response {
   );
 }
 
+/**
+ * Durable Object por filial. Autenticação ocorre no Worker de entrada;
+ * só aceita fetch com `x-inova-internal-auth` (setado após JWT/secret).
+ */
 export class BranchRealtimeHub {
   constructor(private state: DurableObjectState) {}
 
   async fetch(request: Request): Promise<Response> {
+    if (request.headers.get("x-inova-internal-auth") !== "1") {
+      return new Response(JSON.stringify({ error: "forbidden" }), {
+        status: 403,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
     const url = new URL(request.url);
 
     if (url.pathname === "/health") {
@@ -32,7 +43,9 @@ export class BranchRealtimeHub {
       const pair = new WebSocketPair();
       const [client, server] = Object.values(pair);
       this.state.acceptWebSocket(server);
-      return new Response(null, { status: 101, webSocket: client });
+      const proto = request.headers.get("sec-websocket-protocol");
+      const headers = proto ? { "Sec-WebSocket-Protocol": proto } : undefined;
+      return new Response(null, { status: 101, webSocket: client, headers });
     }
 
     return new Response(JSON.stringify({ error: "not_found" }), {

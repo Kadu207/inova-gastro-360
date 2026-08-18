@@ -12,6 +12,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@inova-gastro-360/auth": "*",
     "@inova-gastro-360/runtime-node": "*"
   },
   "devDependencies": {

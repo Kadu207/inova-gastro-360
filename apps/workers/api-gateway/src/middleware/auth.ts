@@ -1,4 +1,8 @@
-import { verifyAccessToken, type JwtPayload } from "@inova-gastro-360/auth";
+import {
+  extractAccessToken,
+  verifyAccessToken,
+  type JwtPayload,
+} from "@inova-gastro-360/auth";
 import type { GatewayEnv } from "../types/env";
 import { getJwtSecret } from "../lib/config";
 
@@ -6,14 +10,20 @@ export async function requireAuth(
   request: Request,
   env: GatewayEnv,
 ): Promise<{ ok: true; user: JwtPayload } | { ok: false; response: Response }> {
-  const auth = request.headers.get("authorization");
-  if (!auth?.startsWith("Bearer ")) {
-    return { ok: false, response: new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 }) };
+  const token = extractAccessToken(request.headers);
+  if (!token) {
+    return {
+      ok: false,
+      response: new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 }),
+    };
   }
   const secret = getJwtSecret(env);
-  const user = await verifyAccessToken(auth.slice(7), secret);
+  const user = await verifyAccessToken(token, secret);
   if (!user) {
-    return { ok: false, response: new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 }) };
+    return {
+      ok: false,
+      response: new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 }),
+    };
   }
   return { ok: true, user };
 }

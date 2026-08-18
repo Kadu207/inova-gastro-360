@@ -18,9 +18,14 @@ export const REALTIME_BASE = resolvePublicBase(process.env.NEXT_PUBLIC_REALTIME_
 
 export function realtimeWsUrl(branchId: string): string {
   const base = REALTIME_BASE.replace(/^http/, "ws");
+  return `${base}/ws?branchId=${encodeURIComponent(branchId)}`;
+}
+
+/** Protocolos WS com JWT (nunca na query string). */
+export function realtimeWsProtocols(): string[] | undefined {
   const token = getToken();
-  const tokenParam = token ? `&token=${encodeURIComponent(token)}` : "";
-  return `${base}/ws?branchId=${branchId}${tokenParam}`;
+  if (!token) return undefined;
+  return ["inova.jwt", token];
 }
 
 export const DEMO_BRANCH_ID = "00000000-0000-4000-8000-000000000002";
@@ -72,12 +77,12 @@ export function clearSession(): void {
 
 async function tryRefresh(): Promise<boolean> {
   const refreshToken = getRefreshToken();
-  if (!refreshToken) return false;
   try {
     const res = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ refreshToken }),
+      credentials: "include",
+      body: JSON.stringify(refreshToken ? { refreshToken } : {}),
     });
     if (!res.ok) return false;
     const data = (await res.json()) as { accessToken?: string; refreshToken?: string };
@@ -97,7 +102,7 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   const withAuth = (token: string | null): RequestInit => {
     const headers = new Headers(init.headers);
     if (token) headers.set("authorization", `Bearer ${token}`);
-    return { ...init, headers };
+    return { ...init, headers, credentials: "include" };
   };
 
   const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
@@ -115,16 +120,15 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
 
 export async function logout(): Promise<void> {
   const refreshToken = getRefreshToken();
-  if (refreshToken) {
-    try {
-      await fetch(`${API_BASE}/api/v1/auth/logout`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ refreshToken }),
-      });
-    } catch {
-      // logout local mesmo se a chamada falhar
-    }
+  try {
+    await fetch(`${API_BASE}/api/v1/auth/logout`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(refreshToken ? { refreshToken } : {}),
+    });
+  } catch {
+    // logout local mesmo se a chamada falhar
   }
   clearSession();
   if (typeof window !== "undefined") window.location.href = "/login";
