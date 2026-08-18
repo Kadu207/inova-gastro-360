@@ -205,9 +205,8 @@ describe.runIf(integrationReady)("orders integration — DB", () => {
       authRequest(`https://api.test/api/v1/orders?branchId=${DEMO_BRANCH_ID}`, tokenB),
       env,
     );
-    expect(listRes.status).toBe(200);
-    const listed = (await listRes.json()) as { orders: { id: string }[] };
-    expect(listed.orders.some((o) => o.id === order.id)).toBe(false);
+    // Filial de outro tenant fora do JWT → 403 (antes: 200 vazio via RLS)
+    expect(listRes.status).toBe(403);
   });
 
   it("cross-tenant: tenant B cria pedido apenas no próprio catálogo", async () => {
