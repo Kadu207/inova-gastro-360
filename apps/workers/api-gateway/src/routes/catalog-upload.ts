@@ -1,6 +1,5 @@
 import type { JwtPayload } from "@inova-gastro-360/auth";
-import { PresignInputSchema } from "@inova-gastro-360/validation";
-import { jsonResponse, parseJsonBody } from "../lib";
+import { jsonResponse } from "../lib";
 import { writeCatalogAuditLog } from "../lib/audit-log";
 import { assertCatalogBranchAccess } from "../lib/catalog-access";
 import { getSql, setTenantContext } from "../lib/db";
@@ -8,7 +7,7 @@ import {
   MAX_CATALOG_IMAGE_BYTES,
   validateImageBuffer,
 } from "../lib/storage/image-policy";
-import { presignProductImageUpload, uploadProductImage } from "../lib/storage/s3-client";
+import { uploadProductImage } from "../lib/storage/s3-client";
 import type { GatewayEnv } from "../types/env";
 
 async function assertProductAccess(
@@ -43,41 +42,20 @@ async function assertProductAccess(
 }
 
 export async function handleAdminPresignProductImage(
-  request: Request,
-  env: GatewayEnv,
-  user: JwtPayload,
-  branchId: string,
-  productId: string,
+  _request: Request,
+  _env: GatewayEnv,
+  _user: JwtPayload,
+  _branchId: string,
+  _productId: string,
 ): Promise<Response> {
-  const access = await assertProductAccess(env, user, branchId, productId);
-  if (!access.ok) return access.response;
-
-  const parsed = PresignInputSchema.safeParse(await parseJsonBody(request));
-  if (!parsed.success) {
-    return jsonResponse({ error: "validation_error", details: parsed.error.flatten() }, 400);
-  }
-
-  const presigned = await presignProductImageUpload(env, {
-    tenantId: access.tenantId,
-    branchId,
-    productId: access.productId,
-    contentType: parsed.data.contentType,
-  });
-
-  if (!presigned) {
-    return jsonResponse({ error: "storage_not_configured" }, 503);
-  }
-
-  if (!presigned.objectKey.includes(access.tenantId)) {
-    return jsonResponse({ error: "invalid_image" }, 400);
-  }
-
-  return jsonResponse({
-    uploadUrl: presigned.uploadUrl,
-    publicUrl: presigned.publicUrl,
-    method: presigned.method,
-    headers: presigned.headers,
-  });
+  // Presign aberto permite PUT arbitrário no object key. Upload só via multipart + magic bytes.
+  return jsonResponse(
+    {
+      error: "presign_disabled",
+      message: "Use POST multipart /image (validação de conteúdo no servidor)",
+    },
+    410,
+  );
 }
 
 export async function handleAdminUploadProductImage(

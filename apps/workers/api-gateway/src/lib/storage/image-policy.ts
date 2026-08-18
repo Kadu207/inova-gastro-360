@@ -103,3 +103,19 @@ export function parseMediaPath(pathname: string, bucket: string): string | null 
   if (!key || key.includes("..")) return null;
   return key;
 }
+
+/**
+ * Aceita null (remover) ou URL sob o publicBase do storage com object key de catálogo.
+ * Bloqueia URLs externas / javascript: / hosts arbitrários.
+ */
+export function isAllowedStoredProductImageUrl(
+  imageUrl: string | null,
+  publicBaseUrl: string | undefined,
+): boolean {
+  if (imageUrl === null) return true;
+  const base = publicBaseUrl?.trim().replace(/\/$/, "");
+  if (!base) return false;
+  if (!imageUrl.startsWith(`${base}/`)) return false;
+  const key = imageUrl.slice(base.length + 1);
+  return isPublicCatalogObjectKey(key);
+}

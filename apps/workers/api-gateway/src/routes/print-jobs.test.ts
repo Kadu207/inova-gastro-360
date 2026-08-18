@@ -30,6 +30,20 @@ describe("print-jobs handlers — validação (sem DB)", () => {
     expect(body.error).toBe("invalid_status");
   });
 
+  it("list rejeita filial fora do escopo do JWT", async () => {
+    const scoped = {
+      ...user,
+      role: "atendente",
+      branches: ["00000000-0000-4000-8000-000000000099"],
+    };
+    const res = await handleListPrintJobs(
+      new Request(`http://test/api/v1/print-jobs?branchId=${DEMO_BRANCH_ID}`),
+      env,
+      scoped,
+    );
+    expect(res.status).toBe(403);
+  });
+
   it("update rejeita status inválido", async () => {
     const res = await handleUpdatePrintJobStatus(
       new Request("http://test/api/v1/print-jobs/x", {

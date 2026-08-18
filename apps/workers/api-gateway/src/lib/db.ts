@@ -25,11 +25,22 @@ export function hasDatabase(env: GatewayEnv): boolean {
 export function getSql(env: GatewayEnv) {
   const url = getDatabaseUrl(env);
   if (!url) throw new Error("Banco não configurado (HYPERDRIVE ou DATABASE_URL)");
+  warnIfDatabaseRoleBypassesRls(url, env);
   const options: Parameters<typeof postgres>[1] = { max: 1, prepare: false };
   if (env.DATABASE_SSL_INSECURE === "1" || env.DATABASE_SSL_INSECURE === "true") {
     options.ssl = { rejectUnauthorized: false };
   }
   return postgres(normalizeDatabaseUrl(url), options);
+}
+
+/** Em produção, owner `inova_gastro` ignora RLS — a API deve usar `inova_gastro_app`. */
+export function warnIfDatabaseRoleBypassesRls(url: string, env: GatewayEnv): void {
+  if (env.ENVIRONMENT !== "production") return;
+  if (/:\/\/inova_gastro(?!_app)[:@]/.test(url)) {
+    console.warn(
+      "security_rls_bypass: DATABASE_URL usa role owner inova_gastro; configure inova_gastro_app (setup-app-db-role-vps.sh)",
+    );
+  }
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

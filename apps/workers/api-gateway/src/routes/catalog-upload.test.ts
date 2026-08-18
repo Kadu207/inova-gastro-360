@@ -80,15 +80,16 @@ describe("catalog-upload — validação (sem DB)", () => {
     ).toBe(false);
   });
 
-  it("presign sem DB lança após validação", async () => {
+  it("presign desabilitado (410) — use multipart", async () => {
     const req = new Request("http://test/presign", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ contentType: "image/jpeg", contentLength: 1000 }),
     });
-    await expect(
-      handleAdminPresignProductImage(req, env, user, DEMO_BRANCH_ID, DEMO_PRODUCT_ID),
-    ).rejects.toThrow(/Banco não configurado/);
+    const res = await handleAdminPresignProductImage(req, env, user, DEMO_BRANCH_ID, DEMO_PRODUCT_ID);
+    expect(res.status).toBe(410);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe("presign_disabled");
   });
 });
 

@@ -9,6 +9,7 @@ import { jsonResponse, parseJsonBody } from "../lib";
 import { writeCatalogAuditLog } from "../lib/audit-log";
 import { assertCatalogBranchAccess } from "../lib/catalog-access";
 import { getSql, setTenantContext } from "../lib/db";
+import { isAllowedStoredProductImageUrl } from "../lib/storage/image-policy";
 import type { GatewayEnv } from "../types/env";
 
 type ProductRow = {
@@ -336,6 +337,16 @@ export async function handleAdminUpdateProduct(
   }
 
   const { categoryId, name, description, priceCents, isAvailable, imageUrl } = parsed.data;
+
+  if (imageUrl !== undefined && imageUrl !== null) {
+    if (!isAllowedStoredProductImageUrl(imageUrl, env.S3_PUBLIC_BASE_URL)) {
+      return jsonResponse(
+        { error: "validation_error", message: "imageUrl deve ser URL do storage do tenant" },
+        400,
+      );
+    }
+  }
+
   const sql = getSql(env);
   try {
     await setTenantContext(sql, user.tid);

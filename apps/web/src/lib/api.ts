@@ -18,9 +18,14 @@ export const REALTIME_BASE = resolvePublicBase(process.env.NEXT_PUBLIC_REALTIME_
 
 export function realtimeWsUrl(branchId: string): string {
   const base = REALTIME_BASE.replace(/^http/, "ws");
+  return `${base}/ws?branchId=${encodeURIComponent(branchId)}`;
+}
+
+/** Protocolos WS com JWT (nunca na query string). */
+export function realtimeWsProtocols(): string[] | undefined {
   const token = getToken();
-  const tokenParam = token ? `&token=${encodeURIComponent(token)}` : "";
-  return `${base}/ws?branchId=${branchId}${tokenParam}`;
+  if (!token) return undefined;
+  return ["inova.jwt", token];
 }
 
 export const DEMO_BRANCH_ID = "00000000-0000-4000-8000-000000000002";
@@ -77,6 +82,7 @@ async function tryRefresh(): Promise<boolean> {
     const res = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
       method: "POST",
       headers: { "content-type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ refreshToken }),
     });
     if (!res.ok) return false;
@@ -97,7 +103,7 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   const withAuth = (token: string | null): RequestInit => {
     const headers = new Headers(init.headers);
     if (token) headers.set("authorization", `Bearer ${token}`);
-    return { ...init, headers };
+    return { ...init, headers, credentials: "include" };
   };
 
   const url = path.startsWith("http") ? path : `${API_BASE}${path}`;

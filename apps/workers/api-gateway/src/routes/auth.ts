@@ -7,12 +7,16 @@ import {
   accessTokenExpiresInSeconds,
   LoginInputSchema,
   hashPassword,
+  extractAccessToken,
+  parseCookieHeader,
+  REFRESH_COOKIE_NAME,
   type AuthUser,
 } from "@inova-gastro-360/auth";
 import { jsonResponse, parseJsonBody, clientIp } from "../lib";
 import { getSql, withTenant } from "../lib/db";
 import { getJwtSecret } from "../lib/config";
 import { hitRateLimitAsync, clearRateLimitAsync } from "../lib/rate-limit";
+import { clearSessionCookies, withSessionCookies } from "../lib/session-cookies";
 
 import type { GatewayEnv } from "../types/env";
 
@@ -146,7 +150,7 @@ export async function handleLogin(request: Request, env: GatewayEnv): Promise<Re
 
     await clearRateLimitAsync(rlKey);
     const session = await withTenant(sql, user.tenant_id, (tx) => issueSession(tx, user, jwtSecret));
-    return jsonResponse(session);
+    return withSessionCookies(jsonResponse(session), request, session, env.ENVIRONMENT);
   } catch (err) {
     console.error("login_error", err);
     return jsonResponse({ error: "internal_error" }, 500);
@@ -155,9 +159,16 @@ export async function handleLogin(request: Request, env: GatewayEnv): Promise<Re
   }
 }
 
+function refreshTokenFromRequest(request: Request, raw: unknown): string | null {
+  const fromBody = (raw as { refreshToken?: string } | null)?.refreshToken;
+  if (fromBody?.trim()) return fromBody.trim();
+  const cookies = parseCookieHeader(request.headers.get("cookie"));
+  return cookies[REFRESH_COOKIE_NAME]?.trim() || null;
+}
+
 export async function handleRefresh(request: Request, env: GatewayEnv): Promise<Response> {
   const raw = await parseJsonBody(request);
-  const token = (raw as { refreshToken?: string } | null)?.refreshToken;
+  const token = refreshTokenFromRequest(request, raw);
   if (!token) return jsonResponse({ error: "invalid_request", message: "refreshToken obrigatório" }, 400);
 
   const jwtSecret = getJwtSecret(env);
@@ -191,7 +202,7 @@ export async function handleRefresh(request: Request, env: GatewayEnv): Promise<
 
       await tx`DELETE FROM sessions WHERE id = ${matched}::uuid`;
       const session = await issueSession(tx, user, jwtSecret);
-      return jsonResponse(session);
+      return withSessionCookies(jsonResponse(session), request, session, env.ENVIRONMENT);
     });
   } catch (err) {
     console.error("refresh_error", err);
@@ -203,12 +214,16 @@ export async function handleRefresh(request: Request, env: GatewayEnv): Promise<
 
 export async function handleLogout(request: Request, env: GatewayEnv): Promise<Response> {
   const raw = await parseJsonBody(request);
-  const token = (raw as { refreshToken?: string } | null)?.refreshToken;
-  if (!token) return jsonResponse({ ok: true });
+  const token = refreshTokenFromRequest(request, raw);
+  if (!token) {
+    return clearSessionCookies(jsonResponse({ ok: true }), request, env.ENVIRONMENT);
+  }
 
   const jwtSecret = getJwtSecret(env);
   const decoded = await verifyRefreshToken(token, jwtSecret);
-  if (!decoded) return jsonResponse({ ok: true });
+  if (!decoded) {
+    return clearSessionCookies(jsonResponse({ ok: true }), request, env.ENVIRONMENT);
+  }
 
   const sql = getSql(env);
   try {
@@ -216,7 +231,9 @@ export async function handleLogout(request: Request, env: GatewayEnv): Promise<R
       SELECT tenant_id FROM app_find_active_user_by_id(${decoded.sub}::uuid)
     `;
     const tenantId = users[0]?.tenant_id;
-    if (!tenantId) return jsonResponse({ ok: true });
+    if (!tenantId) {
+      return clearSessionCookies(jsonResponse({ ok: true }), request, env.ENVIRONMENT);
+    }
 
     await withTenant(sql, tenantId, async (tx) => {
       const sessions = await tx<{ id: string; refresh_token_hash: string }[]>`
@@ -229,20 +246,20 @@ export async function handleLogout(request: Request, env: GatewayEnv): Promise<R
         }
       }
     });
-    return jsonResponse({ ok: true });
+    return clearSessionCookies(jsonResponse({ ok: true }), request, env.ENVIRONMENT);
   } finally {
     await sql.end();
   }
 }
 
 export async function handleMe(request: Request, env: GatewayEnv): Promise<Response> {
-  const auth = request.headers.get("authorization");
-  if (!auth?.startsWith("Bearer ")) {
+  const token = extractAccessToken(request.headers);
+  if (!token) {
     return jsonResponse({ error: "unauthorized" }, 401);
   }
 
   const jwtSecret = getJwtSecret(env);
-  const payload = await verifyAccessToken(auth.slice(7), jwtSecret);
+  const payload = await verifyAccessToken(token, jwtSecret);
 
   if (!payload) return jsonResponse({ error: "unauthorized" }, 401);
 

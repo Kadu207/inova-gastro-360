@@ -231,7 +231,7 @@ describe.skipIf(!canRun)("catalog-admin integration", () => {
     expect(delCatRes.status).toBe(200);
   });
 
-  it("presign rejeita MIME inválido", async () => {
+  it("presign desabilitado retorna 410", async () => {
     const token = await bearerToken({
       sub: demoUserId,
       tid: demoTenantId,
@@ -246,11 +246,11 @@ describe.skipIf(!canRun)("catalog-admin integration", () => {
         token,
         {
           method: "POST",
-          body: JSON.stringify({ contentType: "application/pdf", contentLength: 1000 }),
+          body: JSON.stringify({ contentType: "image/jpeg", contentLength: 1000 }),
         },
       ),
       env,
     );
-    expect(badRes.status).toBe(400);
+    expect(badRes.status).toBe(410);
   });
 });

@@ -62,6 +62,19 @@ describe("orders handlers — validação (sem DB)", () => {
     expect(body.error).toBe("branch_id_required");
   });
 
+  it("list orders rejeita filial fora do escopo", async () => {
+    const req = new Request(`http://test/api/v1/orders?branchId=${DEMO_BRANCH_ID}`);
+    const user = {
+      sub: "user-1",
+      tid: "tenant-1",
+      email: "a@b.com",
+      role: "atendente",
+      branches: ["00000000-0000-4000-8000-000000000099"],
+    };
+    const res = await handleListOrders(req, env, user);
+    expect(res.status).toBe(403);
+  });
+
   it("update status rejeita status inválido", async () => {
     const req = new Request("http://test/api/v1/orders/x/status", {
       method: "PATCH",

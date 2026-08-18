@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE, formatBRL, getActiveBranchId, getToken, realtimeWsUrl } from "@/lib/api";
+import { API_BASE, formatBRL, getActiveBranchId, getToken, realtimeWsProtocols, realtimeWsUrl } from "@/lib/api";
 import {
   buildOrdersQueryParams,
   CHANNEL_LABELS,
@@ -102,7 +102,10 @@ export default function PainelPage({
 
     let ws: WebSocket | null = null;
     try {
-      ws = new WebSocket(realtimeWsUrl(getActiveBranchId()));
+      const protocols = realtimeWsProtocols();
+      ws = protocols
+        ? new WebSocket(realtimeWsUrl(getActiveBranchId()), protocols)
+        : new WebSocket(realtimeWsUrl(getActiveBranchId()));
       ws.onmessage = () => load();
     } catch {
       /* realtime offline — polling continua */

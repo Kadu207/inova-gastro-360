@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { jsonResponse, parseJsonBody } from "../lib";
+import { assertBranchOpsAccess } from "../lib/branch-ops-access";
 import { getSql, setTenantContext } from "../lib/db";
 import type { GatewayEnv } from "../types/env";
 import type { JwtPayload } from "@inova-gastro-360/auth";
@@ -20,7 +21,10 @@ export async function handleListPrintJobs(
   const sector = url.searchParams.get("sector");
   const status = url.searchParams.get("status") ?? "pending";
 
-  if (!branchId) return jsonResponse({ error: "branch_id_required" }, 400);
+  const access = assertBranchOpsAccess(user, branchId);
+  if (!access.ok) return access.response;
+  const scopedBranchId = access.branchId;
+
   if (!VALID_LIST_STATUSES.includes(status as (typeof VALID_LIST_STATUSES)[number])) {
     return jsonResponse({ error: "invalid_status" }, 400);
   }
@@ -33,7 +37,7 @@ export async function handleListPrintJobs(
           SELECT id, branch_id, order_id, sector, status, payload, created_at, updated_at
           FROM print_jobs
           WHERE tenant_id = ${user.tid}::uuid
-            AND branch_id = ${branchId}::uuid
+            AND branch_id = ${scopedBranchId}::uuid
             AND sector = ${sector}
             AND status = ${status}
           ORDER BY created_at ASC
@@ -43,7 +47,7 @@ export async function handleListPrintJobs(
           SELECT id, branch_id, order_id, sector, status, payload, created_at, updated_at
           FROM print_jobs
           WHERE tenant_id = ${user.tid}::uuid
-            AND branch_id = ${branchId}::uuid
+            AND branch_id = ${scopedBranchId}::uuid
             AND status = ${status}
           ORDER BY created_at ASC
           LIMIT 50
@@ -70,6 +74,16 @@ export async function handleUpdatePrintJobStatus(
   const sql = getSql(env);
   try {
     await setTenantContext(sql, user.tid);
+    const existing = await sql<{ id: string; branch_id: string }[]>`
+      SELECT id, branch_id FROM print_jobs
+      WHERE id = ${jobId}::uuid AND tenant_id = ${user.tid}::uuid
+      LIMIT 1
+    `;
+    if (!existing[0]) return jsonResponse({ error: "not_found" }, 404);
+
+    const access = assertBranchOpsAccess(user, existing[0].branch_id);
+    if (!access.ok) return access.response;
+
     const updated = await sql<{ id: string; status: string; sector: string; order_id: string }[]>`
       UPDATE print_jobs
       SET status = ${parsed.data.status}, updated_at = NOW()
