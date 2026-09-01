@@ -1,10 +1,11 @@
 import { describe, it, expect } from "vitest";
 import worker from "./index";
-import { healthHandler } from "./lib";
 
 describe("messaging-bus", () => {
-  it("health is ok", async () => {
-    const body = (await (await healthHandler("messaging-bus")).json()) as { service: string };
+  it("health via worker.fetch", async () => {
+    const res = await worker.fetch(new Request("http://msg.test/health"), {});
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { service: string };
     expect(body.service).toBe("messaging-bus");
   });
 
@@ -42,15 +43,19 @@ describe("messaging-bus", () => {
         "content-type": "application/json",
         "x-internal-secret": secret,
       },
-      body: JSON.stringify({ type: "order.created", payload: { branchId: "b1" } }),
+      body: JSON.stringify({
+        type: "order.created",
+        payload: { tenantId: "t1", branchId: "b1" },
+      }),
     });
     const res = await worker.fetch(req, { INTERNAL_SHARED_SECRET: secret });
     expect(res.status).toBe(200);
   });
 
-  it("encaminha tenantId e branchId para a sala realtime", async () => {
+  it("encaminha tenantId/branchId ao realtime e notifica integrations", async () => {
     const secret = "a-secret-with-32-characters-total!";
     let forwardedUrl = "";
+    let integrationsUrl = "";
     const req = new Request("http://msg.test/internal/publish", {
       method: "POST",
       headers: {
@@ -70,8 +75,15 @@ describe("messaging-bus", () => {
           return new Response(null, { status: 200 });
         },
       } as unknown as Fetcher,
+      INTEGRATIONS_SERVICE: {
+        fetch: async (input: RequestInfo | URL) => {
+          integrationsUrl = String(input);
+          return new Response(null, { status: 200 });
+        },
+      } as unknown as Fetcher,
     });
     expect(res.status).toBe(200);
     expect(forwardedUrl).toContain("tenantId=tenant-a&branchId=branch-b");
+    expect(integrationsUrl).toContain("/internal/notify");
   });
 });

@@ -169,14 +169,15 @@ export async function createOrderPayment(
   method: "pix" | "card",
   customerPhone?: string,
 ): Promise<OrderPaymentResponse> {
-  const headers: Record<string, string> = { "content-type": "application/json" };
-  const token = getToken();
-  if (token) headers.authorization = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE}/api/v1/branches/${branchId}/orders/${orderId}/pay`, {
+  const path = `/api/v1/branches/${branchId}/orders/${orderId}/pay`;
+  const init: RequestInit = {
     method: "POST",
-    headers,
+    headers: { "content-type": "application/json" },
     body: JSON.stringify({ method, customerPhone }),
-  });
+  };
+  const res = getToken()
+    ? await apiFetch(path, init)
+    : await fetch(`${API_BASE}${path}`, { ...init, credentials: "include" });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message ?? data.error ?? "payment_failed");
   return data as OrderPaymentResponse;
@@ -187,14 +188,13 @@ export async function getOrderPaymentStatus(
   orderId: string,
   customerPhone?: string,
 ): Promise<{ paymentStatus: string; paidAt: string | null; expiresAt: string | null }> {
-  const query = customerPhone ? `?phone=${encodeURIComponent(customerPhone)}` : "";
+  const path = `/api/v1/branches/${branchId}/orders/${orderId}/payment`;
   const headers: Record<string, string> = {};
-  const token = getToken();
-  if (token) headers.authorization = `Bearer ${token}`;
-  const res = await fetch(
-    `${API_BASE}/api/v1/branches/${branchId}/orders/${orderId}/payment${query}`,
-    { headers },
-  );
+  if (customerPhone) headers["x-guest-phone"] = customerPhone;
+  const init: RequestInit = { headers };
+  const res = getToken()
+    ? await apiFetch(path, init)
+    : await fetch(`${API_BASE}${path}`, { ...init, credentials: "include" });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? "payment_status_failed");
   return data;

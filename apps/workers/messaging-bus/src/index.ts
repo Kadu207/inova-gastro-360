@@ -19,8 +19,12 @@ function internalHeaders(env: Env): Record<string, string> {
 
 async function forwardToRealtime(env: Env, body: { type: string; payload: unknown }): Promise<void> {
   const payload = body.payload as Record<string, unknown> | undefined;
-  const branchId = typeof payload?.branchId === "string" ? payload.branchId : "default";
+  const branchId = typeof payload?.branchId === "string" ? payload.branchId : "";
   const tenantId = typeof payload?.tenantId === "string" ? payload.tenantId : "";
+  if (!tenantId || !branchId || branchId === "default") {
+    console.error("realtime_forward_skipped", { tenantId: Boolean(tenantId), branchId });
+    return;
+  }
   const query = `tenantId=${encodeURIComponent(tenantId)}&branchId=${encodeURIComponent(branchId)}`;
 
   if (env.REALTIME_URL) {

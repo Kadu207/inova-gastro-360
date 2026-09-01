@@ -296,6 +296,10 @@ export async function handleCreatePayable(
   if (!gate.ok) return gate.response;
   const parsed = PayableSchema.safeParse(await parseJsonBody(request));
   if (!parsed.success) return jsonResponse({ error: "validation_error" }, 400);
+  if (parsed.data.branchId) {
+    const denied = branchGate(user, parsed.data.branchId);
+    if (denied) return denied;
+  }
 
   const sql = getSql(env);
   try {
@@ -345,6 +349,10 @@ export async function handleCreateReceivable(
   if (!gate.ok) return gate.response;
   const parsed = ReceivableSchema.safeParse(await parseJsonBody(request));
   if (!parsed.success) return jsonResponse({ error: "validation_error" }, 400);
+  if (parsed.data.branchId) {
+    const denied = branchGate(user, parsed.data.branchId);
+    if (denied) return denied;
+  }
 
   const sql = getSql(env);
   try {

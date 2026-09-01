@@ -21,10 +21,8 @@ export async function dispatchOutboxEvent(env: GatewayEnv, row: OutboxRow): Prom
         type: row.event_type,
         payload: {
           ...row.payload,
-          tenantId:
-            typeof row.payload.tenantId === "string" && row.payload.tenantId
-              ? row.payload.tenantId
-              : row.tenant_id,
+          // Fonte de verdade: tenant da linha outbox (não confiar no payload do evento).
+          tenantId: row.tenant_id,
         },
       }),
     });

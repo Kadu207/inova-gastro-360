@@ -31,8 +31,8 @@ export function isUsableWebhookSecret(value: string | undefined | null): boolean
 /**
  * Autorização de rotas /internal/*.
  * - Secret utilizável: exige header `x-internal-secret` igual.
- * - Sem secret utilizável: libera só em ENVIRONMENT de desenvolvimento/teste.
- * - Produção (ou ENVIRONMENT ausente/desconhecido) sem secret: nega (fail-closed).
+ * - Sem secret utilizável: libera somente em ENVIRONMENT=test (CI/unit).
+ * - development/local/produção sem secret: nega (fail-closed).
  */
 export function isInternalRequestAuthorized(
   request: Request,
@@ -40,7 +40,7 @@ export function isInternalRequestAuthorized(
 ): boolean {
   const secret = env.INTERNAL_SHARED_SECRET?.trim();
   if (!isUsableSecret(secret)) {
-    return isNonProductionEnvironment(env.ENVIRONMENT);
+    return (env.ENVIRONMENT ?? "").trim().toLowerCase() === "test";
   }
   return request.headers.get("x-internal-secret") === secret;
 }

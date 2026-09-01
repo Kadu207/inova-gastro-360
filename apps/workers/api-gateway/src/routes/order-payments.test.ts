@@ -103,7 +103,7 @@ describe("order-payments — contrato (mock Asaas)", () => {
 
     const env = testEnv({ ASAAS_API_KEY: ASAAS_KEY });
     const res = await handleGetOrderPayment(
-      new Request("https://api.test/?phone=11988887777"),
+      new Request("https://api.test/", { headers: { "x-guest-phone": "11988887777" } }),
       env,
       DEMO_BRANCH_ID,
       order.id,
@@ -243,7 +243,7 @@ describe("order-payments — contrato (mock Asaas)", () => {
     expect(payRes.status).toBe(403);
 
     const statusRes = await handleGetOrderPayment(
-      new Request("https://api.test/payment?phone=11900000000"),
+      new Request("https://api.test/payment", { headers: { "x-guest-phone": "11900000000" } }),
       env,
       DEMO_BRANCH_ID,
       order.id,

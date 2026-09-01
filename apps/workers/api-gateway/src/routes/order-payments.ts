@@ -319,7 +319,8 @@ export async function handleGetOrderPayment(
     `;
     if (!order) return jsonResponse({ error: "order_not_found" }, 404);
     const staffAuthorized = await isAuthorizedStaff(request, env, branchId);
-    const phone = new URL(request.url).searchParams.get("phone");
+    const phone =
+      request.headers.get("x-guest-phone") ?? new URL(request.url).searchParams.get("phone");
     if (!staffAuthorized && !guestOwnsOrder(phone, order.customer_phone)) {
       return jsonResponse({ error: "order_proof_required" }, 403);
     }

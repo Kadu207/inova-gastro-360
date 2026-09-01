@@ -39,9 +39,10 @@ describe("isInternalRequestAuthorized", () => {
     expect(isInternalRequestAuthorized(req, {})).toBe(false);
   });
 
-  it("permite dev sem secret", () => {
+  it("permite somente ENVIRONMENT=test sem secret", () => {
     const req = new Request("http://x/internal/publish", { method: "POST" });
-    expect(isInternalRequestAuthorized(req, { ENVIRONMENT: "development" })).toBe(true);
+    expect(isInternalRequestAuthorized(req, { ENVIRONMENT: "test" })).toBe(true);
+    expect(isInternalRequestAuthorized(req, { ENVIRONMENT: "development" })).toBe(false);
   });
 
   it("exige header quando secret configurado", () => {
