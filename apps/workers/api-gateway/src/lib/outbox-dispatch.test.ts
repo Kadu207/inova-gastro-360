@@ -24,7 +24,10 @@ describe("dispatchOutboxEvent", () => {
     });
     expect(ok).toBe(true);
     expect(fetch).toHaveBeenCalledOnce();
-    const body = JSON.parse(String(fetch.mock.calls[0][1]?.body));
+    const call = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    const body = JSON.parse(String(call[1].body)) as {
+      payload: { tenantId: string; branchId: string };
+    };
     expect(body.payload.tenantId).toBe("tenant-from-row");
     expect(body.payload.branchId).toBe("b");
   });
