@@ -1,0 +1,9 @@
+{
+  "npm.autoDetect": "on",
+  "npm.exclude": [
+    "**/.next/**",
+    "**/docs/security-audit/**",
+    "**/.venv/**",
+    "**/coverage/**"
+  ]
+}

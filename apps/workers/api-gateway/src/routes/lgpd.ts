@@ -72,6 +72,9 @@ export async function handleLgpdExport(
   env: GatewayEnv,
   user: JwtPayload,
 ): Promise<Response> {
+  const gate = requireRole(user, "admin_cliente", "super_admin");
+  if (!gate.ok) return gate.response;
+
   const sql = getSql(env);
   try {
     await setTenantContext(sql, user.tid);
@@ -86,12 +89,9 @@ export async function handleLgpdExport(
         AND (user_id = ${user.sub}::uuid OR subject_id = ${user.email})
       ORDER BY created_at DESC LIMIT 50
     `;
-    const orders = await sql`
-      SELECT id, order_number, channel, status, total_cents, payment_status, created_at
-      FROM orders
-      WHERE tenant_id = ${user.tid}::uuid AND customer_phone IS NOT NULL
-      ORDER BY created_at DESC LIMIT 100
-    `;
+    // O modelo atual não relaciona users a customer_phone nem registra created_by
+    // em orders. Sem vínculo verificável com o titular, a exportação falha fechada.
+    const orders: unknown[] = [];
 
     await writeAuditLog(sql, {
       tenantId: user.tid,

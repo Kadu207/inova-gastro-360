@@ -1,3 +1,4 @@
+import { assertUsableSecret } from "@inova-gastro-360/runtime-node";
 import type { GatewayEnv } from "../types/env";
 
 /** Erro de configuração de ambiente — vira 500 server_misconfigured no router. */
@@ -8,31 +9,25 @@ export class ConfigError extends Error {
   }
 }
 
-const MIN_SECRET_LENGTH = 16;
-
 /**
- * Segredo JWT obrigatório. Sem fallback: se ausente ou fraco, lança ConfigError.
+ * Segredo JWT obrigatório. Sem fallback: se ausente, fraco ou placeholder, lança ConfigError.
  * Único ponto de leitura de JWT_SECRET em toda a API.
  */
 export function getJwtSecret(env: GatewayEnv): string {
-  const secret = env.JWT_SECRET;
-  if (!secret || secret.length < MIN_SECRET_LENGTH) {
-    throw new ConfigError(
-      "JWT_SECRET ausente ou muito curto (mínimo 16 caracteres). Configure a variável de ambiente.",
-    );
+  try {
+    return assertUsableSecret(env.JWT_SECRET, "JWT_SECRET");
+  } catch (err) {
+    throw new ConfigError(err instanceof Error ? err.message : "JWT_SECRET inválido");
   }
-  return secret;
 }
 
-/** Segredo compartilhado entre workers para rotas internas. Obrigatório em produção. */
+/** Segredo compartilhado entre workers para rotas internas. Obrigatório e não-placeholder. */
 export function getInternalSecret(env: GatewayEnv): string {
-  const secret = env.INTERNAL_SHARED_SECRET;
-  if (!secret || secret.length < MIN_SECRET_LENGTH) {
-    throw new ConfigError(
-      "INTERNAL_SHARED_SECRET ausente ou muito curto (mínimo 16 caracteres).",
-    );
+  try {
+    return assertUsableSecret(env.INTERNAL_SHARED_SECRET, "INTERNAL_SHARED_SECRET");
+  } catch (err) {
+    throw new ConfigError(err instanceof Error ? err.message : "INTERNAL_SHARED_SECRET inválido");
   }
-  return secret;
 }
 
 /** Origem local de desenvolvimento (localhost/127.0.0.1 em qualquer porta). */

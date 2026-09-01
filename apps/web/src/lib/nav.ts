@@ -3,6 +3,7 @@ export interface NavItem {
   label: string;
   icon: string;
   disabled?: boolean;
+  roles?: string[];
 }
 
 export const MAIN_NAV: NavItem[] = [
@@ -10,20 +11,45 @@ export const MAIN_NAV: NavItem[] = [
   { href: "/painel/delivery", label: "Pedidos", icon: "◎" },
   { href: "/painel/balcao", label: "Balcão", icon: "▣" },
   { href: "/dashboard/catalogo", label: "Gestão cardápio", icon: "✎" },
-  { href: "/dashboard/billing", label: "Assinatura", icon: "◆" },
+  {
+    href: "/dashboard/billing",
+    label: "Assinatura",
+    icon: "◆",
+    roles: ["admin_cliente", "super_admin"],
+  },
   { href: "/cardapio", label: "Cardápio público", icon: "☰" },
   { href: "/painel/cozinha", label: "Cozinha (KDS)", icon: "◫" },
   { href: "/dashboard/impressao", label: "Impressão", icon: "⎙" },
   { href: "/painel/delivery", label: "Delivery", icon: "➤" },
   { href: "#", label: "Clientes", icon: "◌", disabled: true },
-  { href: "/dashboard/financeiro", label: "Financeiro", icon: "◈" },
-  { href: "/dashboard/lgpd", label: "Privacidade / LGPD", icon: "🔒" },
+  {
+    href: "/dashboard/financeiro",
+    label: "Financeiro",
+    icon: "◈",
+    roles: ["admin_cliente", "super_admin", "financeiro", "gerente"],
+  },
+  {
+    href: "/dashboard/lgpd",
+    label: "Privacidade / LGPD",
+    icon: "🔒",
+    roles: ["admin_cliente", "super_admin"],
+  },
   { href: "#", label: "Relatórios", icon: "▤", disabled: true },
   { href: "#", label: "Atendimento", icon: "◍", disabled: true },
   { href: "#", label: "Estoque", icon: "▦", disabled: true },
   { href: "#", label: "Promoções", icon: "★", disabled: true },
-  { href: "/dashboard/configuracoes", label: "Configurações", icon: "⚙" },
-  { href: "/dashboard/admin/tenants", label: "Tenants", icon: "⬡" },
+  {
+    href: "/dashboard/configuracoes",
+    label: "Configurações",
+    icon: "⚙",
+    roles: ["admin_cliente", "super_admin"],
+  },
+  {
+    href: "/dashboard/admin/tenants",
+    label: "Tenants",
+    icon: "⬡",
+    roles: ["super_admin"],
+  },
 ];
 
 export const FOOTER_FEATURES = [

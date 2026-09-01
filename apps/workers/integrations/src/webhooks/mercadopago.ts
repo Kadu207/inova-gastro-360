@@ -1,3 +1,4 @@
+import { isUsableWebhookSecret } from "@inova-gastro-360/runtime-node";
 import { parseExternalReference } from "./mercadopago-bridge";
 import type { IntegrationsEnv } from "../env";
 
@@ -88,15 +89,21 @@ export async function handleMercadoPagoWebhook(
   const rawBody = await request.text();
   const { verifyMercadoPagoSignature } = await import("../lib/signature");
 
-  if (env.MERCADOPAGO_WEBHOOK_SECRET) {
-    const valid = verifyMercadoPagoSignature(
-      request.headers,
-      rawBody,
-      env.MERCADOPAGO_WEBHOOK_SECRET,
-    );
-    if (!valid) {
-      return new Response(JSON.stringify({ error: "invalid_signature" }), { status: 401 });
-    }
+  // Fail-closed: sem secret configurado (ou placeholder), não processa.
+  if (!isUsableWebhookSecret(env.MERCADOPAGO_WEBHOOK_SECRET)) {
+    return new Response(JSON.stringify({ error: "webhook_not_configured" }), {
+      status: 503,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  const valid = verifyMercadoPagoSignature(
+    request.headers,
+    rawBody,
+    env.MERCADOPAGO_WEBHOOK_SECRET,
+  );
+  if (!valid) {
+    return new Response(JSON.stringify({ error: "invalid_signature" }), { status: 401 });
   }
 
   let notification: { data?: { id?: string | number }; id?: string | number };

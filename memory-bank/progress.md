@@ -87,6 +87,9 @@
 
 ## Spec 015 security-hardening — implementado (branch feat/015-security-hardening)
 - [x] P0–P2 + EMB + ops T050–T053 (VPS revalidado 2026-07-21)
+- [x] Auditoria 2026-09-01: salas realtime tenant-scoped, LGPD fail-closed, guest payment proof, finance branch ACL
+- [x] Auditoria 2026-09-01: JWT web em memória/cookie refresh, nav RBAC, DATABASE_URL obrigatório e gitignore de produção
+- [x] Testes direcionados (58) + typecheck dos workspaces alterados
 
 ## Spec 016 CodeRabbit + security layers (PR #23)
 - [x] `.coderabbit.yaml` + `docs/coderabbit.md` + nota AGENTS.md

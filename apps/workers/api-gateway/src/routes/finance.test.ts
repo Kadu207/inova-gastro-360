@@ -16,6 +16,22 @@ import postgres from "postgres";
 import { normalizeDatabaseUrl } from "../lib/db";
 
 describe("finance — caixa", () => {
+  it("nega acesso a caixa de filial fora do JWT", async () => {
+    const res = await handleGetOpenCash(
+      new Request("https://api.test/"),
+      testEnv(),
+      {
+        sub: "00000000-0000-4000-8000-000000000010",
+        tid: "00000000-0000-4000-8000-000000000001",
+        role: "gerente",
+        email: "gerente@test.local",
+        branches: ["00000000-0000-4000-8000-000000000099"],
+      },
+      DEMO_BRANCH_ID,
+    );
+    expect(res.status).toBe(403);
+  });
+
   it("abre caixa, sangria e fecha (TDD)", async () => {
     const sql = postgres(normalizeDatabaseUrl(testDatabaseUrl()), { max: 1, prepare: false });
     const [tenant] = await sql<{ id: string }[]>`

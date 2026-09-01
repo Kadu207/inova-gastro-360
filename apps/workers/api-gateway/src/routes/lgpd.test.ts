@@ -70,6 +70,21 @@ describe("lgpd — consentimento (sem DB obrigatório para validação)", () => 
     );
     expect(res.status).toBe(404);
   });
+
+  it("export exige papel administrativo antes de acessar o banco", async () => {
+    const res = await handleLgpdExport(
+      new Request("https://api.test/api/v1/lgpd/export"),
+      testEnv(),
+      {
+        sub: "00000000-0000-4000-8000-000000000010",
+        tid: "00000000-0000-4000-8000-000000000001",
+        role: "atendente",
+        email: "atendente@test.local",
+        branches: [],
+      },
+    );
+    expect(res.status).toBe(403);
+  });
 });
 
 describe.runIf(dbReady)("lgpd — export, erasure e RBAC (DB)", () => {
@@ -190,7 +205,7 @@ describe.runIf(dbReady)("lgpd — export, erasure e RBAC (DB)", () => {
     const body = (await res.json()) as { subject: { id: string }; consents: unknown[]; ordersSample: unknown[] };
     expect(body.subject.id).toBe(userId);
     expect(Array.isArray(body.consents)).toBe(true);
-    expect(Array.isArray(body.ordersSample)).toBe(true);
+    expect(body.ordersSample).toEqual([]);
   });
 
   it("cross-tenant: tenant B não vê solicitações do tenant A (RLS)", async () => {

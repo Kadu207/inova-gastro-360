@@ -1,3 +1,4 @@
+import { isInternalRequestAuthorized } from "@inova-gastro-360/runtime-node";
 import { healthHandler, jsonResponse } from "./lib";
 import type { IntegrationsEnv } from "./env";
 import { handleMercadoPagoWebhook } from "./webhooks/mercadopago";
@@ -5,11 +6,6 @@ import { handleStripeWebhook } from "./webhooks/stripe";
 import { handleAsaasWebhook } from "./webhooks/asaas";
 
 export type Env = IntegrationsEnv;
-
-function internalAuthorized(request: Request, env: Env): boolean {
-  if (!env.INTERNAL_SHARED_SECRET) return env.ENVIRONMENT !== "production";
-  return request.headers.get("x-internal-secret") === env.INTERNAL_SHARED_SECRET;
-}
 
 async function forwardWebhook(url: string | undefined, body: unknown): Promise<void> {
   if (!url) return;
@@ -41,7 +37,7 @@ export default {
     }
 
     if (url.pathname === "/internal/notify" && request.method === "POST") {
-      if (!internalAuthorized(request, env)) return jsonResponse({ error: "forbidden" }, 403);
+      if (!isInternalRequestAuthorized(request, env)) return jsonResponse({ error: "forbidden" }, 403);
       const body = (await request.json()) as { type: string; payload: unknown };
       ctx.waitUntil(
         Promise.all([

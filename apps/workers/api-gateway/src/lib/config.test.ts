@@ -15,11 +15,23 @@ describe("getJwtSecret", () => {
   it("lança ConfigError quando muito curto", () => {
     expect(() => getJwtSecret({ JWT_SECRET: "curto" } as GatewayEnv)).toThrow(ConfigError);
   });
+
+  it("lança ConfigError em placeholder CHANGE_ME_*", () => {
+    expect(() =>
+      getJwtSecret({ JWT_SECRET: "CHANGE_ME_JWT_SECRET_16" } as GatewayEnv),
+    ).toThrow(ConfigError);
+  });
 });
 
 describe("getInternalSecret", () => {
   it("lança ConfigError quando ausente", () => {
     expect(() => getInternalSecret({} as GatewayEnv)).toThrow(ConfigError);
+  });
+
+  it("lança ConfigError em placeholder", () => {
+    expect(() =>
+      getInternalSecret({ INTERNAL_SHARED_SECRET: "CHANGE_ME_INTERNAL_16" } as GatewayEnv),
+    ).toThrow(ConfigError);
   });
 });
 

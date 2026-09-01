@@ -79,7 +79,7 @@ export default function CardapioPage() {
     if (!pendingOrder || paymentStatus === "paid") return;
     const t = setInterval(async () => {
       try {
-        const st = await getOrderPaymentStatus(branchId, pendingOrder.id);
+        const st = await getOrderPaymentStatus(branchId, pendingOrder.id, customerPhone);
         setPaymentStatus(st.paymentStatus);
         if (st.paymentStatus === "paid") {
           setMessage(`Pagamento confirmado! Pedido #${pendingOrder.orderNumber}.`);
@@ -89,7 +89,7 @@ export default function CardapioPage() {
       }
     }, 4000);
     return () => clearInterval(t);
-  }, [pendingOrder, paymentStatus, branchId]);
+  }, [pendingOrder, paymentStatus, branchId, customerPhone]);
 
   const countdown = useMemo(() => {
     if (!expiresAt) return "";
@@ -102,13 +102,13 @@ export default function CardapioPage() {
 
   async function startPayment(order: PendingOrder) {
     if (payMethod === "card") {
-      const pay = await createOrderPayment(branchId, order.id, "card");
+      const pay = await createOrderPayment(branchId, order.id, "card", customerPhone);
       if (pay.card?.redirectUrl) {
         window.location.href = pay.card.redirectUrl;
         return;
       }
     }
-    const pay = await createOrderPayment(branchId, order.id, "pix");
+    const pay = await createOrderPayment(branchId, order.id, "pix", customerPhone);
     setPixQr(pay.pix?.qrCodeBase64 ?? null);
     setPixCopy(pay.pix?.copyPaste ?? null);
     setExpiresAt(pay.expiresAt);

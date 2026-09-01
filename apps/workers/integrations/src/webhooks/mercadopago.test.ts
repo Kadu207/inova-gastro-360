@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { processMercadoPagoNotification } from "./mercadopago";
+import { handleMercadoPagoWebhook, processMercadoPagoNotification } from "./mercadopago";
 
 describe("mercadopago webhook idempotência", () => {
   const applyCalls: unknown[] = [];
@@ -45,5 +45,15 @@ describe("mercadopago webhook idempotência", () => {
     expect(r1.applied).toBe(true);
     expect(applyCalls.length).toBe(2);
     expect(r2.applied).toBe(true);
+  });
+
+  it("fail-closed sem MERCADOPAGO_WEBHOOK_SECRET", async () => {
+    const req = new Request("https://int.test/webhooks/mercadopago", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ data: { id: "999" } }),
+    });
+    const res = await handleMercadoPagoWebhook(req, {});
+    expect(res.status).toBe(503);
   });
 });

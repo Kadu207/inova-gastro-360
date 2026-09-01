@@ -1,3 +1,4 @@
+import { isUsableWebhookSecret } from "@inova-gastro-360/runtime-node";
 import type { IntegrationsEnv } from "../env";
 
 export interface AsaasWebhookEnv extends IntegrationsEnv {
@@ -14,6 +15,20 @@ function parseExternalReference(ref: string): { tenantId: string; orderId: strin
   const [tenantId, orderId] = parts;
   if (!tenantId || !orderId) return null;
   return { tenantId, orderId };
+}
+
+function mapSubscriptionStatus(status: string): string {
+  switch (status) {
+    case "ACTIVE":
+      return "active";
+    case "INACTIVE":
+    case "EXPIRED":
+      return "canceled";
+    case "OVERDUE":
+      return "past_due";
+    default:
+      return "active";
+  }
 }
 
 function asaasBaseUrl(env: AsaasWebhookEnv): string {
@@ -74,6 +89,24 @@ async function fetchPayment(
   return data;
 }
 
+/** Revalida assinatura na API Asaas — não confia no body do webhook. */
+export async function fetchSubscription(
+  env: AsaasWebhookEnv,
+  subscriptionId: string,
+): Promise<Record<string, unknown>> {
+  const key = env.ASAAS_API_KEY;
+  if (!key) throw new Error("asaas_key_missing");
+  const res = await fetch(`${asaasBaseUrl(env)}/subscriptions/${subscriptionId}`, {
+    headers: {
+      access_token: key,
+      "User-Agent": "InovaGastro360/1.0",
+    },
+  });
+  const data = (await res.json()) as Record<string, unknown>;
+  if (!res.ok) throw new Error("asaas_subscription_fetch_failed");
+  return data;
+}
+
 const PAID_STATUSES = new Set(["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"]);
 
 export async function processAsaasNotification(
@@ -87,28 +120,13 @@ export async function processAsaasNotification(
   const event = String(notification.event ?? "");
 
   if (notification.subscription?.id && event.startsWith("SUBSCRIPTION_")) {
-    const status = String(notification.subscription.status ?? "");
-    const ref = String(notification.subscription.externalReference ?? "");
+    const subscription = await fetchSubscription(env, notification.subscription.id);
+    const status = String(subscription.status ?? "");
+    const ref = String(subscription.externalReference ?? "");
     const [tenantId, planCode] = ref.split(":");
     if (!tenantId) return { applied: false, reason: "invalid_subscription_ref" };
 
-    let mapped: string;
-    switch (status) {
-      case "ACTIVE":
-        mapped = "active";
-        break;
-      case "INACTIVE":
-      case "EXPIRED":
-        mapped = "canceled";
-        break;
-      case "OVERDUE":
-        mapped = "past_due";
-        break;
-      default:
-        mapped = "active";
-        break;
-    }
-
+    const mapped = mapSubscriptionStatus(status);
     const eventId = `asaas-sub-${notification.subscription.id}-${event}`;
     const res = await callApplySubscription(env, {
       provider: "asaas",
@@ -166,11 +184,17 @@ export async function handleAsaasWebhook(
   const rawBody = await request.text();
   const { verifyAsaasWebhookToken } = await import("../lib/signature");
 
-  if (env.ASAAS_WEBHOOK_TOKEN) {
-    const valid = verifyAsaasWebhookToken(request.headers, env.ASAAS_WEBHOOK_TOKEN);
-    if (!valid) {
-      return new Response(JSON.stringify({ error: "invalid_signature" }), { status: 401 });
-    }
+  // Fail-closed: sem token configurado (ou placeholder), não processa.
+  if (!isUsableWebhookSecret(env.ASAAS_WEBHOOK_TOKEN)) {
+    return new Response(JSON.stringify({ error: "webhook_not_configured" }), {
+      status: 503,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  const valid = verifyAsaasWebhookToken(request.headers, env.ASAAS_WEBHOOK_TOKEN);
+  if (!valid) {
+    return new Response(JSON.stringify({ error: "invalid_signature" }), { status: 401 });
   }
 
   let notification: {

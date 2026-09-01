@@ -17,7 +17,16 @@ export async function dispatchOutboxEvent(env: GatewayEnv, row: OutboxRow): Prom
     const res = await env.MESSAGING_SERVICE.fetch("http://internal/internal/publish", {
       method: "POST",
       headers,
-      body: JSON.stringify({ type: row.event_type, payload: row.payload }),
+      body: JSON.stringify({
+        type: row.event_type,
+        payload: {
+          ...row.payload,
+          tenantId:
+            typeof row.payload.tenantId === "string" && row.payload.tenantId
+              ? row.payload.tenantId
+              : row.tenant_id,
+        },
+      }),
     });
     if (!res.ok) {
       console.error("outbox_dispatch_http_error", row.id, res.status);

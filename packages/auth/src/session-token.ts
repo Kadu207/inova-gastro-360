@@ -72,6 +72,11 @@ export function canAccessBranch(user: Pick<JwtPayload, "branches">, branchId: st
   return user.branches.includes(branchId);
 }
 
+/** Chave canônica de isolamento realtime por tenant e filial. */
+export function realtimeRoomKey(tenantId: string, branchId: string): string {
+  return `${tenantId}:${branchId}`;
+}
+
 export function hasOrderOpsRole(role: string): boolean {
   return (ORDER_OPS_ROLES as readonly string[]).includes(role);
 }

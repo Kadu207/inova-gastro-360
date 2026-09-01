@@ -14,6 +14,8 @@ build/
 .env
 .env.local
 .env.*.local
+.env.production
+infra/hetzner/.env.production
 !.env.example
 
 # Logs
@@ -43,6 +45,9 @@ docs/Senhas - produção.odt
 docs/**/*[Tt]oken*.txt
 docs/**/*[Ss]enha*.txt
 docs/**/*[Ss]enha*.odt
+
+# Security audit local tooling
+docs/security-audit/.venv/
 
 # Temp
 docx_extract.txt

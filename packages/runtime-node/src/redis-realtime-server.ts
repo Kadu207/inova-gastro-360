@@ -5,9 +5,11 @@ import {
   WS_PROTOCOL_MARKER,
   canAccessBranch,
   extractAccessToken,
+  realtimeRoomKey,
   verifyAccessToken,
 } from "@inova-gastro-360/auth";
 import { resolveBindHost } from "./bind-host.js";
+import { assertUsableSecret } from "./secrets.js";
 
 export interface RedisRealtimeServer {
   readonly httpServer: http.Server;
@@ -36,13 +38,9 @@ export async function createRedisRealtimeServer(options: {
   /** Segredo JWT para autenticar conexões WebSocket. Obrigatório. */
   jwtSecret: string;
 }): Promise<RedisRealtimeServer> {
-  const { port, redisUrl, serviceName = "realtime-hub", internalSecret, jwtSecret } = options;
-  if (!internalSecret || internalSecret.length < 16) {
-    throw new Error("INTERNAL_SHARED_SECRET ausente ou fraco para realtime-hub");
-  }
-  if (!jwtSecret || jwtSecret.length < 16) {
-    throw new Error("JWT_SECRET ausente ou fraco para realtime-hub");
-  }
+  const { port, redisUrl, serviceName = "realtime-hub" } = options;
+  const internalSecret = assertUsableSecret(options.internalSecret, "INTERNAL_SHARED_SECRET");
+  const jwtSecret = assertUsableSecret(options.jwtSecret, "JWT_SECRET");
 
   const sockets = new Map<string, Set<WebSocket>>();
 
@@ -51,9 +49,9 @@ export async function createRedisRealtimeServer(options: {
   await pub.connect();
   await sub.connect();
 
-  function deliverLocal(branchId: string, message: string): number {
+  function deliverLocal(roomKey: string, message: string): number {
     let delivered = 0;
-    for (const ws of sockets.get(branchId) ?? []) {
+    for (const ws of sockets.get(roomKey) ?? []) {
       if (ws.readyState === ws.OPEN) {
         ws.send(message);
         delivered++;
@@ -63,14 +61,14 @@ export async function createRedisRealtimeServer(options: {
   }
 
   await sub.pSubscribe("branch:*", (message, channel) => {
-    const branchId = channel.replace(/^branch:/, "");
-    deliverLocal(branchId, message);
+    const roomKey = channel.replace(/^branch:/, "");
+    deliverLocal(roomKey, message);
   });
 
-  function trackSocket(branchId: string, ws: WebSocket): void {
-    if (!sockets.has(branchId)) sockets.set(branchId, new Set());
-    sockets.get(branchId)!.add(ws);
-    ws.on("close", () => sockets.get(branchId)?.delete(ws));
+  function trackSocket(roomKey: string, ws: WebSocket): void {
+    if (!sockets.has(roomKey)) sockets.set(roomKey, new Set());
+    sockets.get(roomKey)!.add(ws);
+    ws.on("close", () => sockets.get(roomKey)?.delete(ws));
   }
 
   const httpServer = http.createServer(async (req, res) => {
@@ -97,7 +95,7 @@ export async function createRedisRealtimeServer(options: {
           service: serviceName,
           health: "/health",
           websocket: "/ws?branchId=<uuid> (auth: cookie ou Sec-WebSocket-Protocol)",
-          broadcast: "POST /broadcast?branchId=<uuid> (x-internal-secret)",
+          broadcast: "POST /broadcast?tenantId=<uuid>&branchId=<uuid> (x-internal-secret)",
         }),
       );
       return;
@@ -115,12 +113,19 @@ export async function createRedisRealtimeServer(options: {
         res.end(JSON.stringify({ error: "branch_id_required" }));
         return;
       }
+      const tenantId = url.searchParams.get("tenantId") ?? "";
+      if (!tenantId) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "tenant_id_required" }));
+        return;
+      }
+      const roomKey = realtimeRoomKey(tenantId, branchId);
       const chunks: Buffer[] = [];
       for await (const chunk of req) chunks.push(chunk as Buffer);
       const body = Buffer.concat(chunks).toString("utf8");
-      await pub.publish(`branch:${branchId}`, body);
+      await pub.publish(`branch:${roomKey}`, body);
       res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({ ok: true, subscribers: sockets.get(branchId)?.size ?? 0 }));
+      res.end(JSON.stringify({ ok: true, subscribers: sockets.get(roomKey)?.size ?? 0 }));
       return;
     }
 
@@ -153,8 +158,9 @@ export async function createRedisRealtimeServer(options: {
         socket.destroy();
         return;
       }
+      const roomKey = realtimeRoomKey(payload.tid, branchId);
       wss.handleUpgrade(req, socket, head, (ws) => {
-        trackSocket(branchId, ws);
+        trackSocket(roomKey, ws);
       });
     })();
   });

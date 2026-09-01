@@ -28,8 +28,7 @@ export default function LoginPage() {
       const data = (await res.json()) as {
         error?: string;
         accessToken?: string;
-        refreshToken?: string;
-        user?: { branchIds?: string[] };
+        user?: { branchIds?: string[]; role?: string };
       };
       if (!res.ok) {
         setError(loginErrorMessage(data.error, API_BASE));
@@ -39,7 +38,7 @@ export default function LoginPage() {
         setError("Resposta inválida da API.");
         return;
       }
-      storeSession(data.accessToken, data.refreshToken);
+      storeSession(data.accessToken, data.user?.role);
       if (data.user?.branchIds?.[0]) setActiveBranchId(data.user.branchIds[0]);
       window.location.href = "/dashboard";
     } catch {

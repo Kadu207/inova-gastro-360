@@ -1,7 +1,13 @@
 import { z } from "zod";
 import type { JSONValue } from "postgres";
+import {
+  canAccessBranch,
+  hasOrderOpsRole,
+  verifyAccessToken,
+} from "@inova-gastro-360/auth";
 import { jsonResponse, parseJsonBody } from "../lib";
 import { getSql, withTenant, setTenantContext } from "../lib/db";
+import { getJwtSecret } from "../lib/config";
 import type { GatewayEnv } from "../types/env";
 import {
   createPixPayment as createAsaasPix,
@@ -23,6 +29,7 @@ const PayOrderSchema = z.object({
   method: z.enum(["pix", "card"]),
   successUrl: z.string().url().optional(),
   cancelUrl: z.string().url().optional(),
+  customerPhone: z.string().min(1).optional(),
 });
 
 const PHONE_MIN = 8;
@@ -31,6 +38,29 @@ function guestPhoneValid(phone: string | null | undefined): boolean {
   if (!phone) return false;
   const digits = phone.replace(/\D/g, "");
   return digits.length >= PHONE_MIN;
+}
+
+function normalizePhone(phone: string | null | undefined): string {
+  return phone?.replace(/\D/g, "") ?? "";
+}
+
+function guestOwnsOrder(provided: string | null | undefined, orderPhone: string | null): boolean {
+  const providedDigits = normalizePhone(provided);
+  const orderDigits = normalizePhone(orderPhone);
+  return providedDigits.length >= PHONE_MIN && providedDigits === orderDigits;
+}
+
+async function isAuthorizedStaff(
+  request: Request,
+  env: GatewayEnv,
+  branchId: string,
+): Promise<boolean> {
+  const authorization = request.headers.get("authorization");
+  if (!authorization?.startsWith("Bearer ")) return false;
+  const token = authorization.slice(7).trim();
+  if (!token) return false;
+  const user = await verifyAccessToken(token, getJwtSecret(env));
+  return !!user && hasOrderOpsRole(user.role) && canAccessBranch(user, branchId);
 }
 
 async function resolveBranchTenant(
@@ -92,10 +122,14 @@ export async function handlePayOrder(
     });
 
     if (!order) return jsonResponse({ error: "order_not_found" }, 404);
+    const staffAuthorized = await isAuthorizedStaff(request, env, branchId);
+    if (!staffAuthorized && !guestOwnsOrder(parsed.data.customerPhone, order.customer_phone)) {
+      return jsonResponse({ error: "order_proof_required" }, 403);
+    }
     if (order.payment_status === "paid") {
       return jsonResponse({ error: "already_paid", paymentStatus: "paid" }, 409);
     }
-    if (!guestPhoneValid(order.customer_phone)) {
+    if (!staffAuthorized && !guestPhoneValid(order.customer_phone)) {
       return jsonResponse(
         { error: "guest_contact_required", message: "Telefone válido obrigatório antes do PIX" },
         400,
@@ -258,7 +292,7 @@ export async function handlePayOrder(
 }
 
 export async function handleGetOrderPayment(
-  _request: Request,
+  request: Request,
   env: GatewayEnv,
   branchId: string,
   orderId: string,
@@ -271,14 +305,24 @@ export async function handleGetOrderPayment(
     await setTenantContext(sql, branchCtx.tenantId);
 
     const [order] = await sql<
-      { payment_status: string; payment_method: string | null; paid_at: Date | null }[]
+      {
+        payment_status: string;
+        payment_method: string | null;
+        paid_at: Date | null;
+        customer_phone: string | null;
+      }[]
     >`
-      SELECT payment_status, payment_method, paid_at
+      SELECT payment_status, payment_method, paid_at, customer_phone
       FROM orders
       WHERE id = ${orderId}::uuid AND branch_id = ${branchId}::uuid
       LIMIT 1
     `;
     if (!order) return jsonResponse({ error: "order_not_found" }, 404);
+    const staffAuthorized = await isAuthorizedStaff(request, env, branchId);
+    const phone = new URL(request.url).searchParams.get("phone");
+    if (!staffAuthorized && !guestOwnsOrder(phone, order.customer_phone)) {
+      return jsonResponse({ error: "order_proof_required" }, 403);
+    }
 
     const [intent] = await sql<
       { method: string; expires_at: Date | null }[]
