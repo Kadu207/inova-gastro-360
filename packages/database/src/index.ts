@@ -5,11 +5,11 @@ import pg from "pg";
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
 function getConnectionString(databaseUrl?: string): string {
-  return (
-    databaseUrl ??
-    process.env.DATABASE_URL ??
-    "postgresql://inova_gastro:inova_gastro_dev@127.0.0.1:5440/inova_gastro_360"
-  );
+  const connectionString = databaseUrl ?? process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is required");
+  }
+  return connectionString;
 }
 
 function normalizePgConnectionString(connectionString: string): string {

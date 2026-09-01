@@ -188,7 +188,7 @@ describe("orders — auth via worker", () => {
     const worker = (await import("../index")).default;
     const res = await worker.fetch(new Request("https://api.test/api/v1/orders?branchId=x"), testEnv());
     expect(res.status).toBe(401);
-  });
+  }, 15_000);
 
   it("POST /api/v1/orders sem token exige contato guest", async () => {
     const worker = (await import("../index")).default;

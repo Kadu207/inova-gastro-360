@@ -1,3 +1,4 @@
+import { isInternalRequestAuthorized } from "@inova-gastro-360/runtime-node";
 import { healthHandler, jsonResponse } from "./lib";
 
 export interface Env {
@@ -10,12 +11,6 @@ export interface Env {
   INTERNAL_SHARED_SECRET?: string;
 }
 
-/** Valida o segredo interno quando configurado. Sem secret (dev), libera. */
-function internalAuthorized(request: Request, env: Env): boolean {
-  if (!env.INTERNAL_SHARED_SECRET) return true;
-  return request.headers.get("x-internal-secret") === env.INTERNAL_SHARED_SECRET;
-}
-
 function internalHeaders(env: Env): Record<string, string> {
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (env.INTERNAL_SHARED_SECRET) headers["x-internal-secret"] = env.INTERNAL_SHARED_SECRET;
@@ -24,11 +19,17 @@ function internalHeaders(env: Env): Record<string, string> {
 
 async function forwardToRealtime(env: Env, body: { type: string; payload: unknown }): Promise<void> {
   const payload = body.payload as Record<string, unknown> | undefined;
-  const branchId = typeof payload?.branchId === "string" ? payload.branchId : "default";
+  const branchId = typeof payload?.branchId === "string" ? payload.branchId : "";
+  const tenantId = typeof payload?.tenantId === "string" ? payload.tenantId : "";
+  if (!tenantId || !branchId || branchId === "default") {
+    console.error("realtime_forward_skipped", { tenantId: Boolean(tenantId), branchId });
+    return;
+  }
+  const query = `tenantId=${encodeURIComponent(tenantId)}&branchId=${encodeURIComponent(branchId)}`;
 
   if (env.REALTIME_URL) {
     const base = env.REALTIME_URL.replace(/\/$/, "");
-    await fetch(`${base}/broadcast?branchId=${encodeURIComponent(branchId)}`, {
+    await fetch(`${base}/broadcast?${query}`, {
       method: "POST",
       headers: internalHeaders(env),
       body: JSON.stringify(body),
@@ -37,7 +38,7 @@ async function forwardToRealtime(env: Env, body: { type: string; payload: unknow
   }
 
   if (!env.REALTIME_SERVICE) return;
-  await env.REALTIME_SERVICE.fetch(`http://internal/broadcast?branchId=${branchId}`, {
+  await env.REALTIME_SERVICE.fetch(`http://internal/broadcast?${query}`, {
     method: "POST",
     headers: internalHeaders(env),
     body: JSON.stringify(body),
@@ -72,7 +73,7 @@ export default {
     }
 
     if (url.pathname === "/internal/publish" && request.method === "POST") {
-      if (!internalAuthorized(request, env)) return jsonResponse({ error: "forbidden" }, 403);
+      if (!isInternalRequestAuthorized(request, env)) return jsonResponse({ error: "forbidden" }, 403);
       const body = (await request.json()) as { type: string; payload: unknown };
       if (env.ORDERS_QUEUE) {
         await env.ORDERS_QUEUE.send(body);

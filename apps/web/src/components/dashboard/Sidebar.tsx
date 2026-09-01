@@ -2,11 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { logout } from "@/lib/api";
+import { getSessionRole, logout } from "@/lib/api";
 import { MAIN_NAV } from "@/lib/nav";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const role = getSessionRole();
+  const visibleNav = MAIN_NAV.filter(
+    (item) => !item.roles || (!!role && item.roles.includes(role)),
+  );
 
   function isActive(href: string) {
     if (href === "#") return false;
@@ -29,7 +33,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="os-nav">
-        {MAIN_NAV.map((item) =>
+        {visibleNav.map((item) =>
           item.disabled ? (
             <span key={item.label} className="os-nav-item disabled" title="Em breve">
               <span className="os-nav-icon">{item.icon}</span>

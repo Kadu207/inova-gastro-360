@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { handlePayOrder, handleGetOrderPayment } from "./order-payments";
-import { testEnv, DEMO_BRANCH_ID, testDatabaseUrl } from "../test/helpers";
+import { bearerToken, testEnv, DEMO_BRANCH_ID, testDatabaseUrl } from "../test/helpers";
 import postgres from "postgres";
 import { normalizeDatabaseUrl } from "../lib/db";
 
@@ -66,7 +66,7 @@ describe("order-payments — contrato (mock Asaas)", () => {
       {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ method: "pix" }),
+        body: JSON.stringify({ method: "pix", customerPhone: "(11) 99999-8888" }),
       },
     );
 
@@ -103,7 +103,7 @@ describe("order-payments — contrato (mock Asaas)", () => {
 
     const env = testEnv({ ASAAS_API_KEY: ASAAS_KEY });
     const res = await handleGetOrderPayment(
-      new Request("https://api.test/"),
+      new Request("https://api.test/", { headers: { "x-guest-phone": "11988887777" } }),
       env,
       DEMO_BRANCH_ID,
       order.id,
@@ -137,10 +137,10 @@ describe("order-payments — contrato (mock Asaas)", () => {
     const req = new Request("https://api.test/pay", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ method: "pix" }),
+      body: JSON.stringify({ method: "pix", customerPhone: "123" }),
     });
     const res = await handlePayOrder(req, env, DEMO_BRANCH_ID, order.id);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(403);
   });
 
   it("POST card retorna redirectUrl", async () => {
@@ -169,6 +169,7 @@ describe("order-payments — contrato (mock Asaas)", () => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         method: "card",
+        customerPhone: "11977776666",
         successUrl: "https://app.test/ok",
         cancelUrl: "https://app.test/cancel",
       }),
@@ -203,9 +204,89 @@ describe("order-payments — contrato (mock Asaas)", () => {
     const req = new Request("https://api.test/pay", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ method: "pix" }),
+      body: JSON.stringify({ method: "pix", customerPhone: "11966665555" }),
     });
     const res = await handlePayOrder(req, env, DEMO_BRANCH_ID, order.id);
     expect(res.status).toBe(409);
+  });
+
+  it("nega pagamento e status de convidado com telefone incorreto", async () => {
+    const sql = postgres(normalizeDatabaseUrl(testDatabaseUrl()), { max: 1, prepare: false });
+    const [tenant] = await sql<{ id: string }[]>`SELECT id FROM tenants WHERE slug = 'demo-burger' LIMIT 1`;
+    if (!tenant) {
+      await sql.end();
+      return;
+    }
+    const [order] = await sql<{ id: string }[]>`
+      INSERT INTO orders (
+        id, tenant_id, branch_id, order_number, channel, status,
+        customer_phone, total_cents, payment_status, created_at, updated_at
+      ) VALUES (
+        gen_random_uuid(), ${tenant.id}::uuid, ${DEMO_BRANCH_ID}::uuid,
+        ${uniqueOrderNumber()}, 'delivery', 'pending', '11955554444',
+        2500, 'unpaid', NOW(), NOW()
+      ) RETURNING id
+    `;
+    await sql.end();
+
+    const env = testEnv({ ASAAS_API_KEY: ASAAS_KEY });
+    const payRes = await handlePayOrder(
+      new Request("https://api.test/pay", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ method: "pix", customerPhone: "11900000000" }),
+      }),
+      env,
+      DEMO_BRANCH_ID,
+      order.id,
+    );
+    expect(payRes.status).toBe(403);
+
+    const statusRes = await handleGetOrderPayment(
+      new Request("https://api.test/payment", { headers: { "x-guest-phone": "11900000000" } }),
+      env,
+      DEMO_BRANCH_ID,
+      order.id,
+    );
+    expect(statusRes.status).toBe(403);
+  });
+
+  it("permite staff autorizado consultar status sem telefone", async () => {
+    const sql = postgres(normalizeDatabaseUrl(testDatabaseUrl()), { max: 1, prepare: false });
+    const [tenant] = await sql<{ id: string }[]>`SELECT id FROM tenants WHERE slug = 'demo-burger' LIMIT 1`;
+    const [user] = await sql<{ id: string }[]>`
+      SELECT id FROM users WHERE email = 'admin@inovagastro360.local' LIMIT 1
+    `;
+    if (!tenant || !user) {
+      await sql.end();
+      return;
+    }
+    const [order] = await sql<{ id: string }[]>`
+      INSERT INTO orders (
+        id, tenant_id, branch_id, order_number, channel, status,
+        customer_phone, total_cents, payment_status, created_at, updated_at
+      ) VALUES (
+        gen_random_uuid(), ${tenant.id}::uuid, ${DEMO_BRANCH_ID}::uuid,
+        ${uniqueOrderNumber()}, 'delivery', 'pending', NULL,
+        2500, 'pending', NOW(), NOW()
+      ) RETURNING id
+    `;
+    await sql.end();
+    const token = await bearerToken({
+      sub: user.id,
+      tid: tenant.id,
+      role: "admin_cliente",
+      email: "admin@inovagastro360.local",
+      branches: [DEMO_BRANCH_ID],
+    });
+    const res = await handleGetOrderPayment(
+      new Request("https://api.test/payment", {
+        headers: { authorization: `Bearer ${token}` },
+      }),
+      testEnv(),
+      DEMO_BRANCH_ID,
+      order.id,
+    );
+    expect(res.status).toBe(200);
   });
 });

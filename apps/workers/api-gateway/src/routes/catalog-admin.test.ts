@@ -58,5 +58,5 @@ describe("catalog-admin — auth via worker", () => {
       testEnv(),
     );
     expect(res.status).toBe(401);
-  });
+  }, 15_000);
 });

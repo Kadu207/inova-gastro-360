@@ -16,6 +16,9 @@ function resolvePublicBase(configured: string | undefined, localDefault: string)
 export const API_BASE = resolvePublicBase(process.env.NEXT_PUBLIC_API_URL, LOCAL_API);
 export const REALTIME_BASE = resolvePublicBase(process.env.NEXT_PUBLIC_REALTIME_URL, LOCAL_RT);
 
+let accessTokenMemory: string | null = null;
+let userRoleMemory: string | null = null;
+
 export function realtimeWsUrl(branchId: string): string {
   const base = REALTIME_BASE.replace(/^http/, "ws");
   return `${base}/ws?branchId=${encodeURIComponent(branchId)}`;
@@ -52,46 +55,63 @@ export function formatBRL(cents: number): string {
 }
 
 export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("accessToken");
+  return accessTokenMemory;
 }
 
-function getRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("refreshToken");
+function roleFromAccessToken(accessToken: string): string | null {
+  try {
+    const payload = accessToken.split(".")[1];
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const base64 = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const decoded = JSON.parse(atob(base64)) as { role?: unknown };
+    return typeof decoded.role === "string" ? decoded.role : null;
+  } catch {
+    return null;
+  }
 }
 
-/** Persiste os tokens após login/refresh. */
-export function storeSession(accessToken: string, refreshToken?: string): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("accessToken", accessToken);
-  if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
+export function getSessionRole(): string | null {
+  return userRoleMemory;
 }
 
-/** Remove tokens da sessão local (logout). */
+/** Mantém o access token e o papel somente na memória desta aba. */
+export function storeSession(accessToken: string, userRole?: string): void {
+  accessTokenMemory = accessToken;
+  userRoleMemory = userRole ?? roleFromAccessToken(accessToken);
+}
+
+/** Remove a sessão mantida em memória; refresh permanece apenas em cookie HttpOnly. */
 export function clearSession(): void {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
+  accessTokenMemory = null;
+  userRoleMemory = null;
 }
 
 async function tryRefresh(): Promise<boolean> {
-  const refreshToken = getRefreshToken();
   try {
     const res = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       credentials: "include",
-      body: JSON.stringify(refreshToken ? { refreshToken } : {}),
+      body: "{}",
     });
     if (!res.ok) return false;
-    const data = (await res.json()) as { accessToken?: string; refreshToken?: string };
+    const data = (await res.json()) as {
+      accessToken?: string;
+      user?: { role?: string };
+    };
     if (!data.accessToken) return false;
-    storeSession(data.accessToken, data.refreshToken);
+    storeSession(data.accessToken, data.user?.role);
     return true;
   } catch {
     return false;
   }
+}
+
+/** Restaura a sessão em memória a partir do refresh cookie HttpOnly. */
+export async function ensureSession(): Promise<boolean> {
+  if (getToken()) return true;
+  return tryRefresh();
 }
 
 /**
@@ -119,13 +139,12 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
 }
 
 export async function logout(): Promise<void> {
-  const refreshToken = getRefreshToken();
   try {
     await fetch(`${API_BASE}/api/v1/auth/logout`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       credentials: "include",
-      body: JSON.stringify(refreshToken ? { refreshToken } : {}),
+      body: "{}",
     });
   } catch {
     // logout local mesmo se a chamada falhar
@@ -148,12 +167,17 @@ export async function createOrderPayment(
   branchId: string,
   orderId: string,
   method: "pix" | "card",
+  customerPhone?: string,
 ): Promise<OrderPaymentResponse> {
-  const res = await fetch(`${API_BASE}/api/v1/branches/${branchId}/orders/${orderId}/pay`, {
+  const path = `/api/v1/branches/${branchId}/orders/${orderId}/pay`;
+  const init: RequestInit = {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ method }),
-  });
+    body: JSON.stringify({ method, customerPhone }),
+  };
+  const res = getToken()
+    ? await apiFetch(path, init)
+    : await fetch(`${API_BASE}${path}`, { ...init, credentials: "include" });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message ?? data.error ?? "payment_failed");
   return data as OrderPaymentResponse;
@@ -162,8 +186,15 @@ export async function createOrderPayment(
 export async function getOrderPaymentStatus(
   branchId: string,
   orderId: string,
+  customerPhone?: string,
 ): Promise<{ paymentStatus: string; paidAt: string | null; expiresAt: string | null }> {
-  const res = await fetch(`${API_BASE}/api/v1/branches/${branchId}/orders/${orderId}/payment`);
+  const path = `/api/v1/branches/${branchId}/orders/${orderId}/payment`;
+  const headers: Record<string, string> = {};
+  if (customerPhone) headers["x-guest-phone"] = customerPhone;
+  const init: RequestInit = { headers };
+  const res = getToken()
+    ? await apiFetch(path, init)
+    : await fetch(`${API_BASE}${path}`, { ...init, credentials: "include" });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? "payment_status_failed");
   return data;

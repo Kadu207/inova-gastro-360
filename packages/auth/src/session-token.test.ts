@@ -7,6 +7,7 @@ import {
   extractAccessToken,
   hasOrderOpsRole,
   parseCookieHeader,
+  realtimeRoomKey,
 } from "./session-token";
 
 describe("session-token", () => {
@@ -45,6 +46,10 @@ describe("session-token", () => {
     expect(canAccessBranch({ branches: ["b1"] }, "b1")).toBe(true);
     expect(canAccessBranch({ branches: ["b1"] }, "b2")).toBe(false);
     expect(canAccessBranch({ branches: [] }, "default")).toBe(false);
+  });
+
+  it("compõe sala realtime com tenant e filial", () => {
+    expect(realtimeRoomKey("tenant-a", "branch-b")).toBe("tenant-a:branch-b");
   });
 
   it("hasOrderOpsRole e buildWsProtocols", () => {

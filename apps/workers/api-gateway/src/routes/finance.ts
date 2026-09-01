@@ -3,10 +3,10 @@ import { jsonResponse, parseJsonBody } from "../lib";
 import { getSql, setTenantContext, withTenant } from "../lib/db";
 import { requireRole } from "../middleware/auth";
 import type { GatewayEnv } from "../types/env";
-import type { JwtPayload } from "@inova-gastro-360/auth";
+import { canAccessBranch, type JwtPayload } from "@inova-gastro-360/auth";
 import { writeAuditLog } from "../lib/audit-log";
 
-const FINANCE_ROLES = ["admin_cliente", "super_admin", "gerente"] as const;
+const FINANCE_ROLES = ["admin_cliente", "super_admin", "gerente", "financeiro"] as const;
 
 const OpenCashSchema = z.object({
   branchId: z.string().uuid(),
@@ -45,6 +45,12 @@ function roleGate(user: JwtPayload) {
   return requireRole(user, ...FINANCE_ROLES);
 }
 
+function branchGate(user: JwtPayload, branchId: string): Response | null {
+  return canAccessBranch(user, branchId)
+    ? null
+    : jsonResponse({ error: "forbidden" }, 403);
+}
+
 export async function handleOpenCash(
   request: Request,
   env: GatewayEnv,
@@ -54,6 +60,8 @@ export async function handleOpenCash(
   if (!gate.ok) return gate.response;
   const parsed = OpenCashSchema.safeParse(await parseJsonBody(request));
   if (!parsed.success) return jsonResponse({ error: "validation_error" }, 400);
+  const denied = branchGate(user, parsed.data.branchId);
+  if (denied) return denied;
 
   const sql = getSql(env);
   try {
@@ -119,6 +127,17 @@ export async function handleCloseCash(
   const sql = getSql(env);
   try {
     await setTenantContext(sql, user.tid);
+    const [session] = await sql<{ branch_id: string; status: string }[]>`
+      SELECT branch_id, status FROM cash_sessions
+      WHERE id = ${sessionId}::uuid AND tenant_id = ${user.tid}::uuid
+      LIMIT 1
+    `;
+    if (!session || session.status !== "open") {
+      return jsonResponse({ error: "session_not_found_or_closed" }, 404);
+    }
+    const denied = branchGate(user, session.branch_id);
+    if (denied) return denied;
+
     const updated = await withTenant(sql, user.tid, async (tx) => {
       const [row] = await tx<{ id: string; status: string }[]>`
         UPDATE cash_sessions
@@ -190,6 +209,8 @@ async function cashMove(
     if (!session || session.status !== "open") {
       return jsonResponse({ error: "session_not_open" }, 404);
     }
+    const denied = branchGate(user, session.branch_id);
+    if (denied) return denied;
 
     const signed =
       entryType === "sangria" ? -Math.abs(parsed.data.amountCents) : Math.abs(parsed.data.amountCents);
@@ -227,6 +248,8 @@ export async function handleGetOpenCash(
 ): Promise<Response> {
   const gate = roleGate(user);
   if (!gate.ok) return gate.response;
+  const denied = branchGate(user, branchId);
+  if (denied) return denied;
   const sql = getSql(env);
   try {
     await setTenantContext(sql, user.tid);
@@ -273,6 +296,10 @@ export async function handleCreatePayable(
   if (!gate.ok) return gate.response;
   const parsed = PayableSchema.safeParse(await parseJsonBody(request));
   if (!parsed.success) return jsonResponse({ error: "validation_error" }, 400);
+  if (parsed.data.branchId) {
+    const denied = branchGate(user, parsed.data.branchId);
+    if (denied) return denied;
+  }
 
   const sql = getSql(env);
   try {
@@ -322,6 +349,10 @@ export async function handleCreateReceivable(
   if (!gate.ok) return gate.response;
   const parsed = ReceivableSchema.safeParse(await parseJsonBody(request));
   if (!parsed.success) return jsonResponse({ error: "validation_error" }, 400);
+  if (parsed.data.branchId) {
+    const denied = branchGate(user, parsed.data.branchId);
+    if (denied) return denied;
+  }
 
   const sql = getSql(env);
   try {

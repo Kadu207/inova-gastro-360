@@ -6,6 +6,7 @@ import worker from "./index";
 const JWT_SECRET = "test-secret-min-32-characters-long!!";
 const INTERNAL = "test-internal-secret-min-32-chars";
 const BRANCH = "00000000-0000-4000-8000-000000000002";
+const TENANT = "00000000-0000-4000-8000-000000000001";
 
 describe("realtime-hub", () => {
   it("health ok", async () => {
@@ -37,7 +38,7 @@ describe("realtime-hub", () => {
 
   it("broadcast sem secret retorna 403", async () => {
     const res = await worker.fetch(
-      new Request(`http://rt/broadcast?branchId=${BRANCH}`, {
+      new Request(`http://rt/broadcast?tenantId=${TENANT}&branchId=${BRANCH}`, {
         method: "POST",
         body: JSON.stringify({ type: "ping", payload: {} }),
       }),
@@ -56,7 +57,7 @@ describe("realtime-hub", () => {
   it("broadcast com secret encaminha ao DO", async () => {
     let forwarded = false;
     const res = await worker.fetch(
-      new Request(`http://rt/broadcast?branchId=${BRANCH}`, {
+      new Request(`http://rt/broadcast?tenantId=${TENANT}&branchId=${BRANCH}`, {
         method: "POST",
         headers: { "x-internal-secret": INTERNAL, "content-type": "application/json" },
         body: JSON.stringify({ type: "ping", payload: {} }),
@@ -109,5 +110,41 @@ describe("realtime-hub", () => {
       },
     );
     expect(res.status).toBe(401);
+  });
+
+  it("admin sem branches entra em sala isolada pelo próprio tenant", async () => {
+    const foreignBranch = "00000000-0000-4000-8000-000000000099";
+    const token = await signAccessToken(
+      {
+        sub: "u-admin",
+        tid: TENANT,
+        email: "admin@test.local",
+        role: "admin_cliente",
+        branches: [],
+      },
+      JWT_SECRET,
+    );
+    let roomKey = "";
+    const res = await worker.fetch(
+      new Request(`http://rt/ws?branchId=${foreignBranch}`, {
+        headers: {
+          Upgrade: "websocket",
+          "Sec-WebSocket-Protocol": `inova.jwt, ${token}`,
+        },
+      }),
+      {
+        BRANCH_HUB: {
+          idFromName: (name: string) => {
+            roomKey = name;
+            return { toString: () => "id" };
+          },
+          get: () => ({ fetch: async () => new Response("ok") }),
+        } as unknown as DurableObjectNamespace,
+        JWT_SECRET,
+        INTERNAL_SHARED_SECRET: INTERNAL,
+      },
+    );
+    expect(res.status).toBe(200);
+    expect(roomKey).toBe(`${TENANT}:${foreignBranch}`);
   });
 });

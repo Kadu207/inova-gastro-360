@@ -2,8 +2,10 @@ import {
   WS_PROTOCOL_MARKER,
   canAccessBranch,
   extractAccessToken,
+  realtimeRoomKey,
   verifyAccessToken,
 } from "@inova-gastro-360/auth";
+import { assertUsableSecret } from "@inova-gastro-360/runtime-node";
 import { BranchRealtimeHub, healthHandler } from "./lib";
 
 export interface Env {
@@ -30,10 +32,7 @@ function forbidden(): Response {
 }
 
 function requireSecret(value: string | undefined, name: string): string {
-  if (!value || value.length < 16) {
-    throw new Error(`${name} ausente ou fraco no realtime-hub`);
-  }
-  return value;
+  return assertUsableSecret(value, name);
 }
 
 export default {
@@ -50,11 +49,12 @@ export default {
         app: "Inova Gastro 360",
         health: "/health",
         websocket: "/ws?branchId=<uuid> (cookie ou Sec-WebSocket-Protocol)",
-        broadcast: "POST /broadcast?branchId=<uuid> (x-internal-secret)",
+        broadcast: "POST /broadcast?tenantId=<uuid>&branchId=<uuid> (x-internal-secret)",
       });
     }
 
     const branchId = url.searchParams.get("branchId") ?? "";
+    let tenantId = url.searchParams.get("tenantId") ?? "";
     const isBroadcast = url.pathname === "/broadcast" && request.method === "POST";
     const isWs = url.pathname === "/ws";
 
@@ -69,6 +69,12 @@ export default {
           headers: { "content-type": "application/json" },
         });
       }
+      if (!tenantId) {
+        return new Response(JSON.stringify({ error: "tenant_id_required" }), {
+          status: 400,
+          headers: { "content-type": "application/json" },
+        });
+      }
     } else if (isWs) {
       const jwtSecret = requireSecret(env.JWT_SECRET, "JWT_SECRET");
       const token = extractAccessToken(request.headers);
@@ -76,6 +82,7 @@ export default {
       if (!payload || !canAccessBranch(payload, branchId)) {
         return unauthorized();
       }
+      tenantId = payload.tid;
     } else {
       return new Response(JSON.stringify({ error: "not_found" }), {
         status: 404,
@@ -83,7 +90,7 @@ export default {
       });
     }
 
-    const id = env.BRANCH_HUB.idFromName(branchId);
+    const id = env.BRANCH_HUB.idFromName(realtimeRoomKey(tenantId, branchId));
     const stub = env.BRANCH_HUB.get(id);
 
     const targetUrl = new URL(request.url);

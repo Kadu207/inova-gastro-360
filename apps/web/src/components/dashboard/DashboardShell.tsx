@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "./Sidebar";
 import TopHeader from "./TopHeader";
 import { FOOTER_FEATURES } from "@/lib/nav";
-import { getToken } from "@/lib/api";
+import { ensureSession, getToken } from "@/lib/api";
 
 const PUBLIC_PATHS = ["/cardapio"];
 
@@ -26,11 +26,21 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const router = useRouter();
   const pathname = usePathname();
   const title = TITLES[pathname] ?? "Inova Gastro OS";
+  const [sessionReady, setSessionReady] = useState<boolean | null>(null);
 
   const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
   useEffect(() => {
-    if (!isPublic && !getToken()) router.replace("/login");
+    if (isPublic) return;
+    let active = true;
+    void ensureSession().then((ok) => {
+      if (!active) return;
+      setSessionReady(ok);
+      if (!ok) router.replace("/login");
+    });
+    return () => {
+      active = false;
+    };
   }, [router, isPublic]);
 
   if (isPublic && !getToken()) {
@@ -42,6 +52,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       </div>
     );
   }
+
+  if (!isPublic && sessionReady !== true) return null;
 
   return (
     <div className="os-layout">

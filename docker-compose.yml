@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_DB: inova_gastro_360
       POSTGRES_USER: inova_gastro
-      POSTGRES_PASSWORD: inova_gastro_dev
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-inova_gastro_dev}
     volumes:
       - inova_gastro_pg_data:/var/lib/postgresql/data
     healthcheck:

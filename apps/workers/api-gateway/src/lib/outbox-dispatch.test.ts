@@ -18,12 +18,18 @@ describe("dispatchOutboxEvent", () => {
     const env = { MESSAGING_SERVICE: { fetch } } as unknown as GatewayEnv;
     const ok = await dispatchOutboxEvent(env, {
       id: "id-1",
-      tenant_id: "t",
+      tenant_id: "tenant-from-row",
       event_type: "order.created",
       payload: { branchId: "b" },
     });
     expect(ok).toBe(true);
     expect(fetch).toHaveBeenCalledOnce();
+    const call = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    const body = JSON.parse(String(call[1].body)) as {
+      payload: { tenantId: string; branchId: string };
+    };
+    expect(body.payload.tenantId).toBe("tenant-from-row");
+    expect(body.payload.branchId).toBe("b");
   });
 
   it("retorna false quando messaging falha", async () => {

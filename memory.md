@@ -1,7 +1,7 @@
 # memory.md — Memória permanente (índice harness)
 
 **Produto:** Inova Gastro 360  
-**Atualizado:** 2026-08-03 (Onda 1 — 018-tenant-admin)  
+**Atualizado:** 2026-09-01 (security audit F03/F05–F08/F10–F12)  
 **Uso:** ler este índice no início da sessão; detalhes nos arquivos linkados.  
 **Catálogo agentes:** [`docs/agents.md`](docs/agents.md)
 
@@ -22,6 +22,7 @@
 | Fase F CF Queues | Adiada |
 | Print-agent físico | Pendente LAN |
 | CodeRabbit App | Instalação manual pendente |
+| Security audit restante | F03/F05–F08/F10–F12 implementados e testes direcionados verdes (sem deploy/commit) |
 
 Runtime: `gestaoti@128.140.77.31` → `~/inova-gastro-360`  
 Tunnel → nginx `:9088` → web `:3102` / api `:8792` / integrations `:8791`

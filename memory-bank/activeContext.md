@@ -1,15 +1,20 @@
 # Contexto ativo — Inova Gastro 360
 
-**Última atualização:** 2026-08-18
+**Última atualização:** 2026-09-01
 
-## Deploy VPS (hardening segurança) ✅
-- Código sincronizado via scp (branch local ainda sem push)
-- Recriados: `realtime-hub`, `messaging-bus`, `api-gateway`
-- `DATABASE_URL` confirmado: `inova_gastro_app` (RLS ativo)
-- Health: realtime 200, api 200, messaging ok na rede Docker
-- Testes locais: auth / realtime-hub / orders / print-jobs / catalog-upload / db / image-policy ✅
-- Smoke: WS sem auth → 401; broadcast sem secret → 403; API pública → 200
-- **Asaas:** não finalizado (credenciais pendentes)
+## Security audit — correções restantes
+- F03/F05–F08/F10–F12 implementados localmente, sem commit
+- Realtime isolado por `tenantId:branchId`; guest pay/status exige prova por telefone
+- JWT web somente em memória, refresh por cookie HttpOnly; navegação filtrada por papel
+- LGPD export restrito a admins e sem pedidos quando não existe vínculo verificável no schema
+- Testes direcionados: auth 14, realtime 7, runtime-node 13, messaging 5, rotas API 19 — todos verdes
+- Typecheck dos 7 workspaces alterados: verde
+
+## Deploy + Git ✅
+- PR [#36](https://github.com/Kadu207/inova-gastro-360/pull/36) **MERGED** em `master`
+- VPS: `sync-git-vps.sh master` + recreate realtime/messaging/api
+- `DATABASE_URL` = `inova_gastro_app` (RLS)
+- Asaas: não finalizado (credenciais pendentes)
 
 ## Feature Spec Kit
 - Ativa: `specs/018-tenant-admin`
@@ -17,6 +22,3 @@
 
 ## Runtime
 - VPS `gestaoti@128.140.77.31` (SSH `inovati` :65025) → `~/inova-gastro-360`
-
-## Login demo
-- `demo-burger` / `admin@inovagastro360.local` / `SEED_ADMIN_PASSWORD`
