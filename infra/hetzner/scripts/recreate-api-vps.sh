@@ -16,6 +16,8 @@ if [[ ! -f "$ENV_FILE" ]]; then
 fi
 
 echo "==> Recriando api-gateway (env atualizado)..."
+# Com ASAAS_API_KEY em $$ no .env.production, --env-file no CLI é seguro.
+# Se a key estiver com um único $, o Compose zera o valor — use configure-payments-env-vps.sh.
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate api-gateway
 
 sleep 4

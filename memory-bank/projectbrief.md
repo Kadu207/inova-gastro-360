@@ -5,34 +5,41 @@
 - **Domínio:** https://inovagastro360.inovatitech.com.br
 - **Tipo:** SaaS multitenant para hamburgueria, delivery, cozinha, financeiro
 - **Responsável:** Inova TI Tecnologia da Informação
+- **Runtime atual:** VPS Hetzner Docker (`gestaoti@128.140.77.31`) — Cloudflare Workers Paid = Fase F
 
-## Stack (Onda 0+)
-- Frontend: Next.js 15 + TypeScript + Tailwind + Shadcn/UI
-- Edge: Cloudflare Workers (api-gateway, messaging-bus, realtime-hub, integrations)
-- Banco: PostgreSQL 16 multitenant + RLS (VPS Hetzner via Hyperdrive)
-- Cache/Fila: Redis local; Cloudflare Queues em produção
+## Stack
+- Frontend: Next.js 15 (static export) + TypeScript
+- API / workers Node: api-gateway, messaging-bus, realtime-hub, integrations
+- Banco: PostgreSQL 16 multitenant + RLS (role `inova_gastro_app`)
+- Cache: Redis; Queues Cloudflare = futuro
 - ORM: Prisma
-- Testes: Vitest + Playwright
-- Metodologia: SDD + TDD + Spec Kit
+- Testes: Vitest
+- Metodologia: SDD + TDD + Spec Kit (`docs/agents.md`)
 
 ## Portas reservadas
-Consultar **PORT_REGISTRY.md** antes de qualquer bind. Nunca usar 5432, 5678, 6380, 8000, 8787.
+Consultar **PORT_REGISTRY.md** antes de qualquer bind.
 
 ## Arquitetura
-- Workers separados: API ≠ Mensageria ≠ Realtime ≠ Integrações
-- Comunicação Worker↔Worker: Service Bindings
-- Eventos de domínio via outbox pattern
+- Workers desacoplados; outbox → mensageria
+- Multitenant: JWT `tid` + RLS `app.current_tenant_id`
+- Pagamentos: Asaas (oficial BR); Mercado Pago/Stripe legado/fallback
 
-## Ondas de entrega
-- **Onda 0:** Scaffold monorepo + Spec Kit + Workers skeleton ✅ em execução
-- **Onda 1:** Auth multitenant + RLS + Cloudflare base (escopo a definir)
-- **Onda 2+:** Cardápio, pedidos, painéis, integrações
+## Ondas de entrega (roadmap OS + Asaas)
+
+| Onda | Specs | Status |
+|------|-------|--------|
+| 0 | Harness + chunks sem `(os)` | ✅ #33 |
+| 1 | 018 tenant-admin | ✅ #34 + VPS |
+| 2 | 019 shell responsive + KPIs | ✅ #38 + VPS |
+| 3 | 020–021 Asaas E2E | 🔲 sandbox |
+| 4–7 | 022–027 | 🔲 |
 
 ## Agentes
-- 25 construção | 15 revisão | 15 embarcados runtime
+Catálogo completo: [`docs/agents.md`](../docs/agents.md) (C-*, R-*, EMB-*).
 
 ## Não fazer
 - Não usar nome "Inova Food"
 - Não expor Postgres/Redis publicamente na VPS
 - Não commitar segredos
 - Não ignorar isolamento tenant em queries
+- Não código de produção sem Spec Kit (specify → plan → tasks → implement)

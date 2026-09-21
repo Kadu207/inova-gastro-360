@@ -36,13 +36,12 @@
 ## Onda 2 — 019-os-shell-responsive (2026-09-20)
 - [x] Spec Kit aberto: spec.md + plan.md + tasks.md + contracts/dashboard-summary-api.md
 - [x] Branch `feat/019-os-shell-responsive` + `feature.json`
-- [x] Implementar T010–T052 (drawer + KPIs + polish) — código local
-- [ ] PR + CI + rebuild web VPS + smoke R-12 (login → menu mobile → navegar)
-- Smoke R-12 checklist: viewport ≤1100 → Abrir menu → Configurações / Dashboard; KPIs ≠ mock
+- [x] Implementar T010–T052 (drawer + KPIs + polish)
+- [x] PR #38 MERGED + rebuild web VPS + smoke R-12 / summary API PASS
 
 ## Plano OS + Asaas (ondas 1–7)
 - [x] 018 tenant-admin / config (Onda 1 fechada na VPS)
-- [ ] 019 OS responsive + KPIs (código pronto na branch; falta PR/VPS)
+- [x] 019 OS responsive + KPIs (Onda 2 fechada na VPS)
 - [ ] 020–021 Asaas E2E + card lifecycle
 - [ ] 022–023 clientes + relatórios
 - [ ] 024–025 estoque + promoções
@@ -56,7 +55,7 @@
 - [x] PR #27 fechado (superseded por #26)
 - [x] VPS: migrate + Asaas `$$` + webhook 401 + payments/status asaas
 - [x] Favicon IG + home→`/login` (#31/#32)
-- [ ] Smoke browser pós Onda 0 rebuild
+- [x] Smoke browser / HTTPS pós rebuilds (Onda 0–2); scripts Asaas `$$` no master (fecha #30)
 
 ## Spec 016 CodeRabbit + security layers (PR #23)
 - [x] `.coderabbit.yaml` + `docs/coderabbit.md` + nota AGENTS.md

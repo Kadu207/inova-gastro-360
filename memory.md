@@ -1,7 +1,7 @@
 # memory.md — Memória permanente (índice harness)
 
 **Produto:** Inova Gastro 360  
-**Atualizado:** 2026-09-20 (Onda 2 aberta: Spec Kit 019)  
+**Atualizado:** 2026-09-21 (docs sync + ops Asaas `$$`; Ondas 0–2 ✅)  
 **Uso:** ler este índice no início da sessão; detalhes nos arquivos linkados.  
 **Catálogo agentes:** [`docs/agents.md`](docs/agents.md)
 
@@ -12,17 +12,18 @@
 | Item | Status |
 |------|--------|
 | Plano | OS Tenants + Asaas (A+B UI; Asaas 1→2→3) |
-| Onda | **2 código ✅** — `019-os-shell-responsive` (PR/VPS pendente); Onda 1 ✅ |
-| Feature Spec Kit ativa | `specs/019-os-shell-responsive` (`feat/019-os-shell-responsive`) |
+| Onda | **2 ✅** — próxima **3** = 020/021 (Asaas sandbox) |
+| Feature Spec Kit ativa | `specs/019-os-shell-responsive` (entregue) → abrir `020` quando sandbox estável |
 | Harness | `docs/agents.md` + este arquivo + rules + Spec Kit skills |
-| Chunks web | Sem route group `(os)`; paths `_next/.../app/dashboard/` |
-| Deploy VPS | `master` `b4ee37d` sync + migrate `company_phone_018` + rebuild web/workers; smoke 018 PASS |
-| Asaas VPS | Token presente (webhook 401); E2E sandbox = onda 3 (020/021) quando sandbox estável |
-| Nav disabled | Clientes, Relatórios, Atendimento, Estoque, Promoções (ondas 2–6); Configurações ✅ |
+| Chunks web | Sem route group `(os)` |
+| Deploy VPS | `f716d5b`+ docs/ops; smoke 018/019/R-12 PASS; Asaas key no container |
+| Asaas VPS | `$$` no `.env`; `payments/status` asaas=true; E2E = 020/021 |
+| Nav disabled | Clientes, Relatórios, Atendimento, Estoque, Promoções |
 | Fase F CF Queues | Adiada |
 | Print-agent físico | Pendente LAN |
 | CodeRabbit App | Instalação manual pendente |
-| Security audit | F01–F12 remediados (#37 `b4ee37d`); smokes fail-closed VPS OK |
+| Security audit | F01–F12 (#37) |
+| PR #30 Asaas docker | Superseded — scripts/runbook no master |
 
 Runtime: `gestaoti@128.140.77.31` → `~/inova-gastro-360`  
 Tunnel → nginx `:9088` → web `:3102` / api `:8792` / integrations `:8791`
@@ -33,9 +34,9 @@ Tunnel → nginx `:9088` → web `:3102` / api `:8792` / integrations `:8791`
 
 | Onda | Specs | Done when |
 |------|-------|-----------|
-| 0 | harness + `(os)` | `docs/agents.md`/`memory.md` completos; chunks sem `(os)`; VPS rebuild 200 |
-| 1 | 018 | Config + admin tenants + seletor filial |
-| 2 | 019 | KPIs reais + mobile drawer + polish rotas |
+| 0 | harness + `(os)` | ✅ |
+| 1 | 018 | ✅ |
+| 2 | 019 | ✅ KPIs + drawer + polish |
 | 3 | 020–021 | Asaas E2E PIX/billing + cartão/cancel/expiração |
 | 4 | 022–023 | Clientes + Relatórios (nav on) |
 | 5 | 024–025 | Estoque + Promoções |

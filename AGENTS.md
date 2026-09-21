@@ -68,10 +68,9 @@ Tenant `demo-burger` / `admin@inovagastro360.local` / `SEED_ADMIN_PASSWORD` no `
 ## Feature ativa (Spec Kit)
 
 <!-- speckit:active-feature:start -->
-- **Diretório:** `specs/019-os-shell-responsive` (Onda 2 — implementada na branch)
-- **Branch:** `feat/019-os-shell-responsive`
-- **Anterior:** `018-tenant-admin` ✅ #34 + VPS 2026-09-20
-- **Depois:** PR/merge/VPS 019 → 020/021 só com Asaas sandbox estável → 022–027
-- **Roadmap:** 018–027 em [`docs/agents.md`](docs/agents.md) §5 / [`memory.md`](memory.md)
-- **Atualizado:** 2026-09-20 (`/speckit-implement` T010–T052)
+- **Diretório:** `specs/019-os-shell-responsive` (Onda 2 ✅ #38 + VPS)
+- **Próxima:** `/speckit-specify` **020** quando Asaas sandbox estável → 021 → 022–027
+- **Ops:** Asaas `$$` nos scripts/runbook (fecha legado #30)
+- **Roadmap:** [`docs/agents.md`](docs/agents.md) §5 / [`memory.md`](memory.md)
+- **Atualizado:** 2026-09-21
 <!-- speckit:active-feature:end -->
