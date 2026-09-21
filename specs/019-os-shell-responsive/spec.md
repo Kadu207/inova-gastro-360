@@ -2,7 +2,7 @@
 
 **Feature Branch**: `feat/019-os-shell-responsive`  
 **Created**: 2026-09-20  
-**Status**: Approved  
+**Status**: Done (merged #38, VPS smoke 2026-09-20)  
 **Input**: Onda 2 do plano OS+Asaas — shell responsivo (drawer mobile), KPIs reais no dashboard, polish de rotas/títulos (R-12 UX/a11y).
 
 ## User Scenarios & Testing *(mandatory)*

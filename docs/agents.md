@@ -172,7 +172,7 @@ Desligar: `AGENTS_ENABLED=0` em `infra/hetzner/.env.production`.
 |------|------|--------|--------|--------------|
 | — | **0** | Harness + remover `(os)` + rebuild VPS | ✅ #33 + smoke VPS 200 | C-18, C-23, C-25, R-13 |
 | 018 | 1 | Tenant admin + Configurações + filiais/users | ✅ #34 + VPS migrate/smoke 2026-09-20 | C-02, C-03, C-06, C-18 |
-| 019 | 2 | OS shell responsive + KPIs reais | 🚧 código em `feat/019-os-shell-responsive` (PR/VPS pendente) | C-18, C-22, R-12 |
+| 019 | 2 | OS shell responsive + KPIs reais | ✅ #38 + VPS rebuild/smoke 2026-09-20 | C-18, C-22, R-12 |
 | 020 | 3 | Asaas E2E sandbox (PIX + billing) | 🔲 | C-15, C-09, C-25, R-15 |
 | 021 | 3 | Asaas cartão + cancel/estorno + expiração | 🔲 | C-15, EMB-06, R-15 |
 | 022 | 4 | Clientes | 🔲 | C-06, C-18 |
