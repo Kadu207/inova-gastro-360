@@ -33,6 +33,7 @@ import {
   handleUpdateOrderStatus,
   handleGetOrder,
 } from "./routes/orders";
+import { handleDashboardSummary } from "./routes/dashboard-summary";
 import { handleListPrintJobs, handleUpdatePrintJobStatus } from "./routes/print-jobs";
 import {
   handleApplyOrderPayment,
@@ -414,6 +415,17 @@ async function route(request: Request, env: Env): Promise<Response> {
       if (path === "/api/v1/finance/export" && request.method === "GET") {
         return withCors(await handleFinanceExport(request, env, auth.user));
       }
+    }
+
+    const dashboardSummaryMatch = path.match(
+      /^\/api\/v1\/branches\/([^/]+)\/dashboard\/summary$/,
+    );
+    if (dashboardSummaryMatch && request.method === "GET") {
+      const auth = await requireAuth(request, env);
+      if (!auth.ok) return withCors(auth.response);
+      return withCors(
+        await handleDashboardSummary(request, env, auth.user, dashboardSummaryMatch[1]),
+      );
     }
 
     const branchOrderPayMatch = path.match(

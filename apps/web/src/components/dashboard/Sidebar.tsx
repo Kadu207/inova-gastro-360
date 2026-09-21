@@ -5,7 +5,13 @@ import { usePathname } from "next/navigation";
 import { getSessionRole, logout } from "@/lib/api";
 import { MAIN_NAV } from "@/lib/nav";
 
-export default function Sidebar() {
+type SidebarProps = {
+  id?: string;
+  open?: boolean;
+  onNavigate?: () => void;
+};
+
+export default function Sidebar({ id, open = false, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const role = getSessionRole();
   const visibleNav = MAIN_NAV.filter(
@@ -19,7 +25,11 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="os-sidebar">
+    <aside
+      id={id}
+      className={`os-sidebar${open ? " is-open" : ""}`}
+      data-open={open ? "true" : "false"}
+    >
       <div className="os-brand">
         <span className="os-brand-icon" aria-hidden>
           🍳
@@ -32,7 +42,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav className="os-nav">
+      <nav className="os-nav" aria-label="Principal">
         {visibleNav.map((item) =>
           item.disabled ? (
             <span key={item.label} className="os-nav-item disabled" title="Em breve">
@@ -44,6 +54,7 @@ export default function Sidebar() {
               key={item.label}
               href={item.href}
               className={`os-nav-item${isActive(item.href) ? " active" : ""}`}
+              onClick={() => onNavigate?.()}
             >
               <span className="os-nav-icon">{item.icon}</span>
               {item.label}
