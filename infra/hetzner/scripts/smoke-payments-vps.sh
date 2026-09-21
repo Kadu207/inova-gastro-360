@@ -8,18 +8,19 @@ ENV_FILE="${ENV_FILE:-$ROOT/infra/hetzner/.env.production}"
 source "$ENV_FILE" 2>/dev/null || true
 
 API_URL="${API_URL:-https://inovagastro360.inovatitech.com.br}"
+API_LOCAL="${API_LOCAL:-http://127.0.0.1:8792}"
 INTERNAL_SECRET="${INTERNAL_SHARED_SECRET:?INTERNAL_SHARED_SECRET obrigatório}"
 
 echo "== Health API (local :8792; /health público pode 404 via nginx→web) =="
-curl -sf "http://127.0.0.1:8792/health" | head -c 200
+curl -sf "$API_LOCAL/health" | head -c 200
 echo
 
 echo "== Health integrations (via proxy interno se configurado) =="
 curl -sf "${INTEGRATIONS_URL:-http://127.0.0.1:8791}/health" 2>/dev/null | head -c 200 || echo "(integrations local skip)"
 echo
 
-echo "== POST apply-order (dry validation — espera 400 validation) =="
-code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_URL/internal/payments/apply-order" \
+echo "== POST apply-order (local :8792 — /internal não é público) =="
+code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_LOCAL/internal/payments/apply-order" \
   -H "content-type: application/json" \
   -H "x-internal-secret: $INTERNAL_SECRET" \
   -d '{"invalid":true}')
