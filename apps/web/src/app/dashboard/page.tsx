@@ -31,6 +31,15 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [loadingKpis, setLoadingKpis] = useState(true);
+  const [branchTick, setBranchTick] = useState(0);
+
+  useEffect(() => {
+    function onBranch() {
+      setBranchTick((n) => n + 1);
+    }
+    window.addEventListener("ig360:active-branch", onBranch);
+    return () => window.removeEventListener("ig360:active-branch", onBranch);
+  }, []);
 
   useEffect(() => {
     const branchId = getActiveBranchId();
@@ -68,7 +77,7 @@ export default function DashboardPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [branchTick]);
 
   const kpis = summary?.kpis;
   const week = summary?.series.salesLast7Days ?? [];
@@ -117,7 +126,12 @@ export default function DashboardPage() {
                 <div key={d.date} className="os-bar-wrap" title={`${d.date}: ${formatBRL(d.salesCents)}`}>
                   <div
                     className="os-bar"
-                    style={{ height: `${Math.max(4, Math.round((d.salesCents / maxWeek) * 100))}%` }}
+                    style={{
+                      height:
+                        d.salesCents === 0
+                          ? "0%"
+                          : `${Math.max(4, Math.round((d.salesCents / maxWeek) * 100))}%`,
+                    }}
                   />
                 </div>
               ))}

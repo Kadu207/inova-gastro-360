@@ -533,6 +533,23 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  overflow-y: auto;
+}
+
+.os-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-right: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 1.1rem;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .os-brand {
@@ -1622,22 +1639,6 @@ h1 {
   .os-mobile-preview {
     grid-column: span 12;
   }
-}
-
-.os-menu-btn {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  margin-right: 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: transparent;
-  color: inherit;
-  font-size: 1.1rem;
-  cursor: pointer;
-  flex-shrink: 0;
 }
 
 .os-kpi-card-muted {

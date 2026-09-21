@@ -70,14 +70,18 @@ describe("dashboard-summary integração (DB)", () => {
       const [tenant] = await sql<{ id: string }[]>`
         SELECT id FROM tenants WHERE slug = 'demo-burger' LIMIT 1
       `;
-      if (!tenant) return;
+      if (!tenant) {
+        throw new Error("fixture tenant demo-burger ausente — rode o seed local");
+      }
 
       const [branch] = await sql<{ id: string; timezone: string }[]>`
         SELECT id, timezone FROM branches
         WHERE tenant_id = ${tenant.id}::uuid AND is_active = true
         ORDER BY created_at ASC LIMIT 1
       `;
-      if (!branch) return;
+      if (!branch) {
+        throw new Error("fixture branch demo ausente — rode o seed local");
+      }
 
       const env = testEnv();
       const user = opsUser({ tid: tenant.id, branches: [branch.id] });

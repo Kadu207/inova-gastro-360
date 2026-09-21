@@ -48,6 +48,7 @@ export function getActiveBranchId(): string {
 export function setActiveBranchId(branchId: string): void {
   if (typeof window === "undefined") return;
   localStorage.setItem("activeBranchId", branchId);
+  window.dispatchEvent(new CustomEvent("ig360:active-branch", { detail: { branchId } }));
 }
 
 export function formatBRL(cents: number): string {
