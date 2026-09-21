@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import {
   fetchSettingsBranches,
   getActiveBranchId,
@@ -11,9 +11,19 @@ import {
 
 interface TopHeaderProps {
   title: string;
+  menuButtonRef?: RefObject<HTMLButtonElement | null>;
+  navOpen?: boolean;
+  navPanelId?: string;
+  onToggleNav?: () => void;
 }
 
-export default function TopHeader({ title }: TopHeaderProps) {
+export default function TopHeader({
+  title,
+  menuButtonRef,
+  navOpen = false,
+  navPanelId,
+  onToggleNav,
+}: TopHeaderProps) {
   const today = new Date().toLocaleDateString("pt-BR");
   const [branches, setBranches] = useState<SettingsBranch[]>([]);
   const [active, setActive] = useState("");
@@ -34,7 +44,22 @@ export default function TopHeader({ title }: TopHeaderProps) {
 
   return (
     <header className="os-topbar">
-      <h1>{title}</h1>
+      <div className="os-topbar-start">
+        {onToggleNav ? (
+          <button
+            ref={menuButtonRef}
+            type="button"
+            className="os-menu-btn"
+            aria-label={navOpen ? "Fechar menu" : "Abrir menu"}
+            aria-expanded={navOpen}
+            aria-controls={navPanelId}
+            onClick={onToggleNav}
+          >
+            <span aria-hidden>{navOpen ? "✕" : "☰"}</span>
+          </button>
+        ) : null}
+        <h1>{title}</h1>
+      </div>
       <div className="os-topbar-actions">
         {branches.length > 0 ? (
           <label className="os-date-picker" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>

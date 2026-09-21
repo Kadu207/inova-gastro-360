@@ -26,15 +26,23 @@
 - [x] PR #33 merge → `master`
 - [x] VPS: pull + rebuild `out/` + recreate `web` + curl chunk **200**
 
-## Onda 1 — 018-tenant-admin (2026-08-03)
+## Onda 1 — 018-tenant-admin (2026-08-03 → 2026-09-20)
 - [x] Spec/plan/tasks + feature.json
 - [x] Validation + migration phone + settings/admin API + testes RBAC
 - [x] UI configuracoes + admin tenants + seletor filial + nav
-- [ ] PR + migrate VPS `company_phone_018` + smoke UI
+- [x] PR #34 MERGED + migrate VPS `company_phone_018` + rebuild web + smoke UI/API 018 PASS (2026-09-20)
+- [x] Security remediação F01–F12 PR #37 MERGED (`b4ee37d`) + deploy VPS
+
+## Onda 2 — 019-os-shell-responsive (2026-09-20)
+- [x] Spec Kit aberto: spec.md + plan.md + tasks.md + contracts/dashboard-summary-api.md
+- [x] Branch `feat/019-os-shell-responsive` + `feature.json`
+- [x] Implementar T010–T052 (drawer + KPIs + polish) — código local
+- [ ] PR + CI + rebuild web VPS + smoke R-12 (login → menu mobile → navegar)
+- Smoke R-12 checklist: viewport ≤1100 → Abrir menu → Configurações / Dashboard; KPIs ≠ mock
 
 ## Plano OS + Asaas (ondas 1–7)
-- [ ] 018 tenant-admin / config
-- [ ] 019 OS responsive + KPIs
+- [x] 018 tenant-admin / config (Onda 1 fechada na VPS)
+- [ ] 019 OS responsive + KPIs (código pronto na branch; falta PR/VPS)
 - [ ] 020–021 Asaas E2E + card lifecycle
 - [ ] 022–023 clientes + relatórios
 - [ ] 024–025 estoque + promoções

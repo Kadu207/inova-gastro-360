@@ -1,7 +1,7 @@
 # memory.md — Memória permanente (índice harness)
 
 **Produto:** Inova Gastro 360  
-**Atualizado:** 2026-09-01 (security audit F03/F05–F08/F10–F12)  
+**Atualizado:** 2026-09-20 (Onda 2 aberta: Spec Kit 019)  
 **Uso:** ler este índice no início da sessão; detalhes nos arquivos linkados.  
 **Catálogo agentes:** [`docs/agents.md`](docs/agents.md)
 
@@ -12,17 +12,17 @@
 | Item | Status |
 |------|--------|
 | Plano | OS Tenants + Asaas (A+B UI; Asaas 1→2→3) |
-| Onda | **1** em andamento (`018-tenant-admin`) — Onda 0 ✅ smoke VPS chunk/login 200 |
-| Feature Spec Kit ativa | `specs/017-asaas-pagamentos` → **próxima:** `018-tenant-admin` após merge Onda 0 |
+| Onda | **2 código ✅** — `019-os-shell-responsive` (PR/VPS pendente); Onda 1 ✅ |
+| Feature Spec Kit ativa | `specs/019-os-shell-responsive` (`feat/019-os-shell-responsive`) |
 | Harness | `docs/agents.md` + este arquivo + rules + Spec Kit skills |
 | Chunks web | Sem route group `(os)`; paths `_next/.../app/dashboard/` |
-| Deploy VPS web | Rebuild `out/` **pendente** após merge Onda 0 |
-| Asaas VPS | Key `$$`, webhook 401, `payments/status` asaas=true; E2E sandbox = onda 3 (020) |
-| Nav disabled | Clientes, Relatórios, Atendimento, Estoque, Promoções, Configurações (ondas 1–6) |
+| Deploy VPS | `master` `b4ee37d` sync + migrate `company_phone_018` + rebuild web/workers; smoke 018 PASS |
+| Asaas VPS | Token presente (webhook 401); E2E sandbox = onda 3 (020/021) quando sandbox estável |
+| Nav disabled | Clientes, Relatórios, Atendimento, Estoque, Promoções (ondas 2–6); Configurações ✅ |
 | Fase F CF Queues | Adiada |
 | Print-agent físico | Pendente LAN |
 | CodeRabbit App | Instalação manual pendente |
-| Security audit restante | F03/F05–F08/F10–F12 implementados e testes direcionados verdes (sem deploy/commit) |
+| Security audit | F01–F12 remediados (#37 `b4ee37d`); smokes fail-closed VPS OK |
 
 Runtime: `gestaoti@128.140.77.31` → `~/inova-gastro-360`  
 Tunnel → nginx `:9088` → web `:3102` / api `:8792` / integrations `:8791`

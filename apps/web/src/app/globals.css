@@ -533,6 +533,23 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  overflow-y: auto;
+}
+
+.os-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-right: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 1.1rem;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .os-brand {
@@ -633,10 +650,18 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--border);
   background: rgba(13, 15, 18, 0.85);
   backdrop-filter: blur(8px);
+}
+
+.os-topbar-start {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 .os-topbar h1 {
@@ -1578,7 +1603,31 @@ h1 {
     grid-template-columns: 1fr;
   }
   .os-sidebar {
-    display: none;
+    display: flex;
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(280px, 86vw);
+    z-index: 40;
+    transform: translateX(-105%);
+    transition: transform 0.2s ease;
+    box-shadow: none;
+  }
+  .os-sidebar.is-open {
+    transform: translateX(0);
+    box-shadow: 8px 0 24px rgba(0, 0, 0, 0.35);
+  }
+  .os-nav-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    border: 0;
+    margin: 0;
+    padding: 0;
+    background: rgba(0, 0, 0, 0.45);
+    cursor: pointer;
+  }
+  .os-menu-btn {
+    display: inline-flex;
   }
   .os-kpi-row {
     grid-template-columns: repeat(2, 1fr);
@@ -1591,3 +1640,20 @@ h1 {
     grid-column: span 12;
   }
 }
+
+.os-kpi-card-muted {
+  opacity: 0.65;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+

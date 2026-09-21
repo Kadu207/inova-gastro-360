@@ -48,6 +48,7 @@ export function getActiveBranchId(): string {
 export function setActiveBranchId(branchId: string): void {
   if (typeof window === "undefined") return;
   localStorage.setItem("activeBranchId", branchId);
+  window.dispatchEvent(new CustomEvent("ig360:active-branch", { detail: { branchId } }));
 }
 
 export function formatBRL(cents: number): string {
@@ -564,4 +565,41 @@ export async function createAdminTenant(input: Record<string, unknown>): Promise
     const data = await res.json().catch(() => ({}));
     throw new Error((data as { error?: string }).error ?? "tenant_create_failed");
   }
+}
+
+export type DashboardSummary = {
+  branchId: string;
+  timezone: string;
+  dayBasis?: string;
+  asOf: string;
+  kpis: {
+    salesCentsToday: number;
+    ordersToday: number;
+    avgTicketCentsToday: number;
+  };
+  series: {
+    salesLast7Days: { date: string; salesCents: number; orders: number }[];
+  };
+};
+
+export async function fetchDashboardSummary(branchId: string): Promise<DashboardSummary> {
+  const res = await apiFetch(`/api/v1/branches/${branchId}/dashboard/summary`);
+  const data = await res.json();
+  if (!res.ok) throw new Error((data as { error?: string }).error ?? "summary_failed");
+  return data as DashboardSummary;
+}
+
+export type OrdersFeedItem = {
+  id: string;
+  order_number: number;
+  channel: string;
+  status: string;
+  total_cents: number;
+};
+
+export async function fetchOrdersFeed(branchId: string): Promise<OrdersFeedItem[]> {
+  const res = await apiFetch(`/api/v1/orders?branchId=${encodeURIComponent(branchId)}&limit=10`);
+  const data = await res.json();
+  if (!res.ok) throw new Error((data as { error?: string }).error ?? "orders_failed");
+  return ((data as { orders?: OrdersFeedItem[] }).orders ?? []) as OrdersFeedItem[];
 }
